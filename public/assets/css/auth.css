@@ -1,0 +1,450 @@
+:root {
+    --primary: #216115;
+    --primary-dark: #174b0e;
+    --primary-light: #2d7a1d;
+    --secondary: #6c757d;
+    --success: #2ecc71;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --border-color: #e1e5eb;
+    --border-radius: 10px;
+    --box-shadow: 0 8px 24px rgba(33, 97, 21, 0.15);
+    --transition: all 0.3s ease;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e5e6 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.register-card {
+    background-color: #fff;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 2.75rem;
+    width: 100%;
+    max-width: 520px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.5s ease-out forwards;
+    border-top: 5px solid var(--primary);
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.logo {
+    max-height: 70px;
+    margin-bottom: 1.75rem;
+}
+
+.register-header h1 {
+    font-weight: 700;
+    font-size: 1.85rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.register-header p {
+    color: var(--secondary);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+}
+
+.form-control {
+    border: 1.5px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.875rem 1.125rem;
+    font-size: 1rem;
+    transition: var(--transition);
+    background-color: #f9fafc;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(33, 97, 21, 0.15);
+    background-color: #fff;
+}
+
+.is-invalid {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.password-field {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--secondary);
+    cursor: pointer;
+    padding: 5px;
+    z-index: 10;
+    transition: var(--transition);
+}
+
+.password-toggle:hover {
+    color: var(--primary);
+}
+
+.password-strength {
+    font-size: 0.825rem;
+    height: 20px;
+    margin-top: 0.25rem;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.terms-link {
+    color: var(--primary);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.terms-link:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* Override Bootstrap button styles */
+.btn-primary {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+}
+
+.register-btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.875rem 1.5rem;
+    transition: var(--transition);
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.register-btn:hover,
+.register-btn:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(33, 97, 21, 0.3);
+}
+
+.register-btn:active {
+    transform: translateY(0);
+}
+
+.register-btn:disabled {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    opacity: 0.85;
+}
+
+.register-btn .icon-right {
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.register-btn:hover .icon-right {
+    transform: translateX(4px);
+}
+
+.login-text {
+    color: var(--secondary);
+    font-size: 0.95rem;
+    margin-top: 1.5rem;
+}
+
+.login-text a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.login-text a:hover {
+    text-decoration: underline;
+    color: var(--primary-dark);
+}
+
+.register-error {
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    border-left: 4px solid var(--danger);
+    font-size: 0.9rem;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+    40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+/* Spinner color override */
+.register-btn .spinner-border {
+    border-color: #fff;
+    border-right-color: transparent;
+}
+
+/* Password match indicator */
+.password-match {
+    font-size: 0.825rem;
+    height: 20px;
+    margin-top: 0.25rem;
+}
+
+.text-match {
+    color: var(--success);
+}
+
+.text-mismatch {
+    color: var(--danger);
+}
+
+@media (max-width: 576px) {
+    .register-card {
+        padding: 2rem 1.5rem;
+    }
+}
+
+
+
+
+
+:root {
+    --primary: #216115;
+    --primary-dark: #174b0e;
+    --primary-light: #2d7a1d;
+    --secondary: #6c757d;
+    --success: #2ecc71;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --border-color: #e1e5eb;
+    --border-radius: 10px;
+    --box-shadow: 0 8px 24px rgba(33, 97, 21, 0.15);
+    --transition: all 0.3s ease;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e5e6 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.login-card {
+    background-color: #fff;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 2.75rem;
+    width: 100%;
+    max-width: 520px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.5s ease-out forwards;
+    border-top: 5px solid var(--primary);
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.logo {
+    max-height: 70px;
+    margin-bottom: 1.75rem;
+}
+
+.login-header h1 {
+    font-weight: 700;
+    font-size: 1.85rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.login-header p {
+    color: var(--secondary);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+}
+
+.form-control {
+    border: 1.5px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.875rem 1.125rem;
+    font-size: 1rem;
+    transition: var(--transition);
+    background-color: #f9fafc;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(33, 97, 21, 0.15);
+    background-color: #fff;
+}
+
+.is-invalid {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.password-field {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--secondary);
+    cursor: pointer;
+    padding: 5px;
+    z-index: 10;
+    transition: var(--transition);
+}
+
+.password-toggle:hover {
+    color: var(--primary);
+}
+
+.password-strength {
+    font-size: 0.825rem;
+    height: 20px;
+    margin-top: 0.25rem;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.forgot-link {
+    color: var(--primary);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.forgot-link:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* Override Bootstrap button styles */
+.btn-primary {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+}
+
+.login-btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.875rem 1.5rem;
+    transition: var(--transition);
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-btn:hover,
+.login-btn:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(33, 97, 21, 0.3);
+}
+
+.login-btn:active {
+    transform: translateY(0);
+}
+
+.login-btn:disabled {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    opacity: 0.85;
+}
+
+.login-btn .icon-right {
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.login-btn:hover .icon-right {
+    transform: translateX(4px);
+}
+
+.signup-text {
+    color: var(--secondary);
+    font-size: 0.95rem;
+    margin-top: 1.5rem;
+}
+
+.signup-text a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.signup-text a:hover {
+    text-decoration: underline;
+    color: var(--primary-dark);
+}
+
+.login-error {
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    border-left: 4px solid var(--danger);
+    font-size: 0.9rem;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+    40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+/* Spinner color override */
+.login-btn .spinner-border {
+    border-color: #fff;
+    border-right-color: transparent;
+}
+
+@media (max-width: 576px) {
+    .login-card {
+        padding: 2rem 1.5rem;
+    }
+}
