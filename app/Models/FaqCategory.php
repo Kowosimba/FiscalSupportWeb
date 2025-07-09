@@ -8,14 +8,24 @@ use Illuminate\Support\Str;
 
 class FaqCategory extends Model
 {
-    protected $fillable = ['name', 'slug'];
+    use HasFactory;
 
-    // Use Eloquent model events to set slug automatically
+    protected $fillable = ['name', 'slug', 'order', 'is_active'];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'order' => 'integer'
+    ];
+
+    // Auto-generate slug
     protected static function booted()
     {
         static::creating(function ($category) {
             if (empty($category->slug)) {
                 $category->slug = Str::slug($category->name);
+            }
+            if (is_null($category->is_active)) {
+                $category->is_active = true;
             }
         });
 
@@ -26,8 +36,13 @@ class FaqCategory extends Model
         });
     }
 
+    public function faqs()
+    {
+        return $this->hasMany(Faq::class, 'category_id');
+    }
+
     public function activeFaqs()
     {
-        return $this->hasMany(Faq::class, 'category_id')->where('is_active', true);
+        return $this->hasMany(Faq::class, 'category_id')->where('is_active', true)->orderBy('order');
     }
 }

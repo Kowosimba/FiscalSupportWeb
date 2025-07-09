@@ -6,17 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class BlogComment extends Model
 {
-    protected $table = 'blog_comments';
-
     protected $fillable = [
-        'blog_id',
-        'user_id',
-        'name',
-        'email',
+        'blog_id', 
+        'user_id', 
+        'name', 
+        'email', 
         'content',
-        'approved'
     ];
 
+    /* Relationships */
     public function blog()
     {
         return $this->belongsTo(Blog::class);
@@ -26,15 +24,4 @@ class BlogComment extends Model
     {
         return $this->belongsTo(User::class);
     }
-
-    // app/Models/Blog.php
-    public function blogComments()
-    {
-        return $this->hasMany(BlogComment::class)->where('approved', true);
-    }
-
-    public function scopeApproved($query)
-{
-    return $query->where('approved', true);
-}
 }

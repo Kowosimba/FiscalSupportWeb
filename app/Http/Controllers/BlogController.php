@@ -7,46 +7,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class BlogController extends Controller
 {
-    // Admin Blog Methods
-    
-    /**
-     * Display a listing of the blog posts (admin)
-     */
-    public function index()
-{
-    $blogs = Blog::latest()
-        ->when(request('search'), function($query) {
-            $query->where('title', 'like', '%'.request('search').'%')
-                  ->orWhere('content', 'like', '%'.request('search').'%');
-        })
-        ->paginate(10);
-
-    // Count published posts (where published_at is not null and in the past)
-    $publishedCount = Blog::whereNotNull('published_at')
-                        ->where('published_at', '<=', now())
-                        ->count();
-
-    // Count draft posts (where published_at is null or in the future)
-    $draftCount = Blog::where(function($query) {
-                        $query->whereNull('published_at')
-                              ->orWhere('published_at', '>', now());
-                    })
-                    ->count();
-
-    return view('admin.Contents.blogposts', compact('blogs', 'publishedCount', 'draftCount'));
-}
-
-    /**
-     * Show the form for creating a new blog post
-     */
-    public function create()
-    {
-        return view('admin.Contents.blogform');
-    }
-
     /**
      * Store a newly created blog post
      */
@@ -54,28 +18,175 @@ class BlogController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:blogs,slug',
             'content' => 'required',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'author' => 'nullable|string|max:255',
             'category' => 'nullable|string|max:255',
-            'excerpt' => 'nullable|string',
+            'excerpt' => 'nullable|string|max:500',
             'published_at' => 'nullable|date',
+            'status' => 'required|in:draft,published',
         ]);
 
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('blogs', 'public');
+        try {
+            // Handle image upload
+            if ($request->hasFile('image')) {
+                $validated['image'] = $request->file('image')->store('blogs', 'public');
+            }
+
+            // Generate slug if empty
+            if (empty($validated['slug'])) {
+                $validated['slug'] = Str::slug($validated['title']);
+                
+                // Ensure slug is unique
+                $originalSlug = $validated['slug'];
+                $counter = 1;
+                while (Blog::where('slug', $validated['slug'])->exists()) {
+                    $validated['slug'] = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+
+            // Handle status and published_at
+            if ($validated['status'] === 'published') {
+                if (empty($validated['published_at'])) {
+                    $validated['published_at'] = now();
+                }
+            } else {
+                $validated['published_at'] = null;
+            }
+
+            // Set default author if not provided
+            if (empty($validated['author'])) {
+                $validated['author'] = Auth::user()?->name ?? 'Admin';
+            }
+
+            // Remove status from validated data as it's not a database field
+            unset($validated['status']);
+
+            $blog = Blog::create($validated);
+
+            return redirect()->route('admin.blogs.index')
+                ->with('success', 'Blog post created successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Blog creation failed: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'request_data' => $request->except(['image'])
+            ]);
+            
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to create blog post. Please try again.']);
         }
+    }
 
-        // Generate slug if empty
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['title']);
+    /**
+     * Update the specified blog post
+     */
+    public function update(Request $request, Blog $blog)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:blogs,slug,' . $blog->id,
+            'content' => 'required',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'author' => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:255',
+            'excerpt' => 'nullable|string|max:500',
+            'published_at' => 'nullable|date',
+            'status' => 'required|in:draft,published',
+            'remove_image' => 'boolean'
+        ]);
+
+        try {
+            // Handle image removal
+            if ($request->has('remove_image') && $request->remove_image) {
+                if ($blog->image) {
+                    Storage::disk('public')->delete($blog->image);
+                    $validated['image'] = null;
+                }
+            }
+
+            // Handle new image upload
+            if ($request->hasFile('image')) {
+                // Delete old image if exists
+                if ($blog->image) {
+                    Storage::disk('public')->delete($blog->image);
+                }
+                $validated['image'] = $request->file('image')->store('blogs', 'public');
+            }
+
+            // Generate slug if empty
+            if (empty($validated['slug'])) {
+                $validated['slug'] = Str::slug($validated['title']);
+                
+                // Ensure slug is unique (excluding current blog)
+                $originalSlug = $validated['slug'];
+                $counter = 1;
+                while (Blog::where('slug', $validated['slug'])->where('id', '!=', $blog->id)->exists()) {
+                    $validated['slug'] = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+
+            // Handle status and published_at
+            if ($validated['status'] === 'published') {
+                if (empty($validated['published_at'])) {
+                    $validated['published_at'] = now();
+                }
+            } else {
+                $validated['published_at'] = null;
+            }
+
+            // Remove status from validated data as it's not a database field
+            unset($validated['status']);
+            unset($validated['remove_image']);
+
+            $blog->update($validated);
+
+            return redirect()->route('admin.blogs.index')
+                ->with('success', 'Blog post updated successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Blog update failed: ' . $e->getMessage(), [
+                'blog_id' => $blog->id,
+                'user_id' => Auth::id(),
+                'request_data' => $request->except(['image'])
+            ]);
+            
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to update blog post. Please try again.']);
         }
+    }
 
-        Blog::create($validated);
+    /**
+     * Display a listing of the blog posts (admin)
+     */
+    public function index()
+    {
+        $blogs = Blog::latest()
+            ->when(request('search'), function($query) {
+                $search = request('search');
+                $query->where('title', 'like', '%'.$search.'%')
+                      ->orWhere('content', 'like', '%'.$search.'%')
+                      ->orWhere('author', 'like', '%'.$search.'%');
+            })
+            ->paginate(10);
 
-        return redirect()->route('blogs.index')
-            ->with('success', 'Blog post created successfully.');
+        $publishedCount = Blog::published()->count();
+        $draftCount = Blog::drafts()->count();
+
+        return view('admin.Contents.blogposts', compact('blogs', 'publishedCount', 'draftCount'));
+    }
+
+    /**
+     * Show the form for creating a new blog post
+     */
+    public function create()
+    {
+        return view('admin.Contents.blogform');
     }
 
     /**
@@ -87,38 +198,11 @@ class BlogController extends Controller
     }
 
     /**
-     * Update the specified blog post
+     * Display the specified blog post (admin)
      */
-    public function update(Request $request, Blog $blog)
+    public function show(Blog $blog)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'author' => 'nullable|string|max:255',
-            'category' => 'nullable|string|max:255',
-            'excerpt' => 'nullable|string',
-            'published_at' => 'nullable|date',
-        ]);
-
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            // Delete old image if exists
-            if ($blog->image) {
-                Storage::disk('public')->delete($blog->image);
-            }
-            $validated['image'] = $request->file('image')->store('blogs', 'public');
-        }
-
-        // Generate slug if empty
-        if (empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['title']);
-        }
-
-        $blog->update($validated);
-
-        return redirect()->route('blogs.index')
-            ->with('success', 'Blog post updated successfully.');
+        return view('admin.Contents.blogshow', compact('blog'));
     }
 
     /**
@@ -126,97 +210,74 @@ class BlogController extends Controller
      */
     public function destroy(Blog $blog)
     {
-        // Delete associated image
-        if ($blog->image) {
-            Storage::disk('public')->delete($blog->image);
+        try {
+            // Delete associated image
+            if ($blog->image) {
+                Storage::disk('public')->delete($blog->image);
+            }
+
+            $blog->delete();
+
+            return redirect()->route('admin.blogs.index')
+                ->with('success', 'Blog post deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Blog deletion failed: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to delete blog post. Please try again.']);
         }
-
-        $blog->delete();
-
-        return redirect()->route('blogs.index')
-            ->with('success', 'Blog post deleted successfully.');
     }
 
-    // Frontend Blog Methods
-    
-    /**
-     * Display a listing of the blog posts (frontend)
-     */
-   public function frontIndex()
-{
-    $blogs = Blog::published()
-        ->when(request('search'), function($query) {
-            $query->where('title', 'like', '%'.request('search').'%')
-                  ->orWhere('content', 'like', '%'.request('search').'%');
-        })
-        ->orderBy('published_at', 'desc')
-        ->paginate(6);
-
-    // Debugging - uncomment to check data
-     //dd($blogs);
-
-    return view('home.blog', compact('blogs'));
-}
-
-    /**
-     * Display the specified blog post (frontend)
-     */
-public function frontShow($slug)
-{
-    try {
-        // Find the blog post
-        $blog = Blog::published()
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        // Get recent blogs excluding current one
-        $recentBlogs = Blog::published()
-            ->where('id', '!=', $blog->id)
+    // Frontend methods remain the same...
+    public function frontIndex()
+    {
+        $blogs = Blog::published()
+            ->when(request('search'), function($query) {
+                $search = request('search');
+                $query->where('title', 'like', '%'.$search.'%')
+                      ->orWhere('content', 'like', '%'.$search.'%')
+                      ->orWhere('excerpt', 'like', '%'.$search.'%');
+            })
             ->orderBy('published_at', 'desc')
-            ->take(5)
-            ->get();
+            ->paginate(6);
 
-        // Get related blogs by category
-        $relatedBlogs = [];
-        if ($blog->category) {
-            $relatedBlogs = Blog::published()
-                ->where('category', $blog->category)
+        return view('home.blog', compact('blogs'));
+    }
+
+    public function frontShow($slug)
+    {
+        try {
+            $blog = Blog::published()
+                ->with(['blogComments'])
+                ->where('slug', $slug)
+                ->firstOrFail();
+
+            $recentBlogs = Blog::published()
                 ->where('id', '!=', $blog->id)
                 ->orderBy('published_at', 'desc')
-                ->take(3)
+                ->take(5)
                 ->get();
+
+            $relatedBlogs = collect();
+            if ($blog->category) {
+                $relatedBlogs = Blog::published()
+                    ->where('category', $blog->category)
+                    ->where('id', '!=', $blog->id)
+                    ->take(3)
+                    ->get();
+            }
+
+            $categories = Blog::published()
+                ->whereNotNull('category')
+                ->select('category')
+                ->distinct()
+                ->pluck('category');
+
+            return view('Home.blogdetails', compact('blog', 'recentBlogs', 'relatedBlogs', 'categories'));
+
+        } catch (\Exception $e) {
+            abort(404, 'Blog post not found');
         }
-
-        // Get all unique categories for the sidebar
-        $categories = Blog::published()
-            ->whereNotNull('category')
-            ->select('category')
-            ->distinct()
-            ->pluck('category');
-
-        // Log for debugging
-        Log::info('Blog details accessed', [
-            'slug' => $slug,
-            'blog_id' => $blog->id,
-            'title' => $blog->title
-        ]);
-
-        return view('Home.blogdetails', compact('blog', 'recentBlogs', 'relatedBlogs', 'categories'));
-
-    } catch (\Exception $e) {
-        Log::error('Error loading blog details', [
-            'slug' => $slug,
-            'error' => $e->getMessage()
-        ]);
-        
-        abort(404, 'Blog post not found');
     }
-}
 
-
-    /**
-     * Get blogs by category (frontend)
-     */
     public function byCategory($category)
     {
         $blogs = Blog::published()
@@ -227,13 +288,14 @@ public function frontShow($slug)
         return view('Home.blog', compact('blogs', 'category'));
     }
 
-    /**
-     * Search blogs (frontend)
-     */
     public function search(Request $request)
     {
         $query = $request->get('q');
         
+        if (empty($query)) {
+            return redirect()->route('blog.index');
+        }
+
         $blogs = Blog::published()
             ->where(function($q) use ($query) {
                 $q->where('title', 'like', '%'.$query.'%')
@@ -245,10 +307,4 @@ public function frontShow($slug)
 
         return view('Home.blog', compact('blogs', 'query'));
     }
-
-    public function show(Blog $blog)
-{
-    return view('admin.Contents.blogshow', compact('blog'));
 }
-}
-

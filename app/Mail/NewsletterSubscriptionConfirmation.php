@@ -21,6 +21,8 @@ class NewsletterSubscriptionConfirmation extends Mailable
     public function build()
     {
         return $this->subject('Newsletter Subscription Confirmation')
-                   ->markdown('emails.newsletter-subscription-confirmation');
+                   ->markdown('emails.newsletter-subscription-confirmation')
+                   ->attach(public_path('assets/img/logo/logo-v2.png'));
     }
+
 }

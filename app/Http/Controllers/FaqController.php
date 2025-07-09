@@ -35,29 +35,46 @@ class FaqController extends Controller
     $categories = FaqCategory::all(); // Fetch categories for dropdown
     return view('admin.contents.faqsform', compact('categories'));
 }
-
 public function store(Request $request)
 {
     $request->validate([
-        
         'question' => 'required|string|max:255',
         'answer' => 'required|string',
-        'faq_category_id' => 'required|exists:faq_categories,id',
+        'faq_category_id' => 'nullable|exists:faq_categories,id',
+        'new_category_name' => 'nullable|string|max:255',
         'order' => 'nullable|integer',
         'is_active' => 'required|boolean',
     ]);
 
+    // Determine which category to use
+    $categoryId = $request->faq_category_id;
+    
+    // If new category name is provided, create it
+    if (!$categoryId && $request->new_category_name) {
+        $category = FaqCategory::create([
+            'name' => $request->new_category_name,
+            'order' => FaqCategory::max('order') + 1,
+            'is_active' => true
+        ]);
+        $categoryId = $category->id;
+    }
+
+    // Validate that we have a category
+    if (!$categoryId) {
+        return back()->withErrors(['category' => 'Please select an existing category or create a new one.']);
+    }
+
     Faq::create([
         'question' => $request->question,
         'answer' => $request->answer,
-        'faq_category_id' => $request->faq_category_id,
+        'category_id' => $categoryId,
         'order' => $request->order ?? 0,
         'is_active' => $request->is_active,
-        'category_id' => $request->faq_category_id,
     ]);
 
     return redirect()->route('admin.faqs.index')->with('success', 'FAQ created successfully!');
 }
+
 
 
 

@@ -5,69 +5,63 @@
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center py-3 mb-4 border-bottom">
         <h1 class="h2">Services Management</h1>
     </div>
-
     <div class="row">
+        {{-- Service Form --}}
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    {{ $editService ? 'Edit Service' : 'Add New Service' }}
+            <div class="content-card mb-4">
+                <div class="content-card-header">
+                    <h5 class="card-title">
+                        <i class="fa fa-cogs me-2"></i>
+                        {{ $editService ? 'Edit Service' : 'Add New Service' }}
+                    </h5>
                 </div>
-                <div class="card-body">
+                <div class="content-card-body">
                     <form method="POST" enctype="multipart/form-data" action="{{ $editService ? route('admin.services.update', $editService) : route('admin.services.store') }}">
                         @csrf
                         @if($editService) @method('PUT') @endif
 
-                        <!-- Basic Information Section -->
+                        {{-- Basic Info --}}
                         <div class="mb-4">
-                            <h5 class="mb-3">Basic Information</h5>
-                            
-                            <div class="mb-3">
+                            <h6 class="section-title mb-3"><i class="fa fa-info-circle me-2"></i>Basic Information</h6>
+                            <div class="form-group">
                                 <label for="title" class="form-label">Service Title *</label>
-                                <input type="text" class="form-control" id="title" name="title" required 
+                                <input type="text" class="form-control form-control-enhanced" id="title" name="title" required 
                                     value="{{ old('title', $editService->title ?? '') }}">
                                 @error('title')
                                     <div class="text-danger">{{ $message }}</div>
                                 @enderror
                             </div>
-
-                            <div class="mb-3">
+                            <div class="form-group">
                                 <label for="slug" class="form-label">URL Slug</label>
-                                <input type="text" class="form-control" id="slug" name="slug" 
+                                <input type="text" class="form-control form-control-enhanced" id="slug" name="slug" 
                                     value="{{ old('slug', $editService->slug ?? '') }}">
-                                <div class="form-text">Leave blank to auto-generate from title</div>
+                                <small class="form-help">Leave blank to auto-generate from title</small>
                                 @error('slug')
                                     <div class="text-danger">{{ $message }}</div>
                                 @enderror
                             </div>
-
-                            <div class="mb-3">
+                            <div class="form-group">
                                 <label for="description" class="form-label">Short Description *</label>
-                                <textarea class="form-control" id="description" name="description" rows="3" required>{{ 
-                                    old('description', $editService->description ?? '')
-                                }}</textarea>
+                                <textarea class="form-control form-control-enhanced" id="description" name="description" rows="3" required>{{ old('description', $editService->description ?? '') }}</textarea>
                                 @error('description')
                                     <div class="text-danger">{{ $message }}</div>
                                 @enderror
                             </div>
-
-                            <div class="mb-3">
+                            <div class="form-group">
                                 <label for="content" class="form-label">Detailed Content</label>
-                                <textarea class="form-control rich-text-editor" id="content" name="content" rows="5">{{ 
-                                    old('content', $editService->content ?? '')
-                                }}</textarea>
+                                <textarea class="form-control form-control-enhanced rich-text-editor" id="content" name="content" rows="5">{{ old('content', $editService->content ?? '') }}</textarea>
                                 @error('content')
                                     <div class="text-danger">{{ $message }}</div>
                                 @enderror
                             </div>
                         </div>
 
-                        <!-- Media Section -->
+                        {{-- Media --}}
                         <div class="mb-4">
-                            <h5 class="mb-3">Media</h5>
-                            
-                            <div class="mb-3">
+                            <h6 class="section-title mb-3"><i class="fa fa-image me-2"></i>Media</h6>
+                            <div class="form-group">
                                 <label for="image" class="form-label">Service Image</label>
-                                <input type="file" class="form-control" id="image" name="image">
+                                <input type="file" class="form-control form-control-enhanced" id="image" name="image">
                                 @if($editService && $editService->image)
                                     <div class="mt-2">
                                         <img src="{{ asset('storage/' . $editService->image) }}" alt="Current Image" style="max-height: 100px;" class="img-thumbnail">
@@ -81,67 +75,29 @@
                                     <div class="text-danger">{{ $message }}</div>
                                 @enderror
                             </div>
-
-                            <div class="mb-3">
+                            <div class="form-group">
                                 <label for="icon" class="form-label">Service Icon (Font Awesome class)</label>
-                                <input type="text" class="form-control" id="icon" name="icon" 
+                                <input type="text" class="form-control form-control-enhanced" id="icon" name="icon" 
                                     value="{{ old('icon', $editService->icon ?? '') }}"
                                     placeholder="fas fa-icon-name">
-                                <div class="form-text">Example: fas fa-chart-line</div>
+                                <small class="form-help">Example: fas fa-chart-line</small>
                                 @error('icon')
                                     <div class="text-danger">{{ $message }}</div>
                                 @enderror
                             </div>
                         </div>
 
-                        <!-- Process Steps Section -->
+                        {{-- Settings --}}
                         <div class="mb-4">
-                            <h5 class="mb-3">Process Steps</h5>
-                            
-                            <div id="process-steps-container">
-                                @php
-                                    $processSteps = $editService ? json_decode($editService->process_steps, true) : old('process_steps', []);
-                                @endphp
-                                
-                                @if(!empty($processSteps))
-                                    @foreach($processSteps as $index => $step)
-                                        <div class="process-step mb-3 p-3 border rounded">
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <h6>Step {{ $loop->iteration }}</h6>
-                                                <button type="button" class="btn btn-sm btn-danger remove-step">Remove</button>
-                                            </div>
-                                            <div class="mb-2">
-                                                <label class="form-label">Title</label>
-                                                <input type="text" class="form-control" name="process_steps[{{ $index }}][title]" 
-                                                    value="{{ $step['title'] ?? '' }}" required>
-                                            </div>
-                                            <div>
-                                                <label class="form-label">Description</label>
-                                                <textarea class="form-control" name="process_steps[{{ $index }}][description]" 
-                                                    rows="2" required>{{ $step['description'] ?? '' }}</textarea>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                @endif
-                            </div>
-                            <button type="button" id="add-process-step" class="btn btn-sm btn-secondary mt-2">
-                                <i class="fas fa-plus"></i> Add Process Step
-                            </button>
-                        </div>
-
-                        <!-- Settings Section -->
-                        <div class="mb-4">
-                            <h5 class="mb-3">Settings</h5>
-                            
-                            <div class="mb-3 form-check form-switch">
+                            <h6 class="section-title mb-3"><i class="fa fa-sliders-h me-2"></i>Settings</h6>
+                            <div class="form-check form-switch mb-3">
                                 <input type="checkbox" class="form-check-input" id="is_featured" name="is_featured" 
                                     {{ old('is_featured', $editService->is_featured ?? false) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="is_featured">Featured Service</label>
                             </div>
-
-                            <div class="mb-3">
+                            <div class="form-group">
                                 <label for="sort_order" class="form-label">Sort Order</label>
-                                <input type="number" class="form-control" id="sort_order" name="sort_order" 
+                                <input type="number" class="form-control form-control-enhanced" id="sort_order" name="sort_order" 
                                     value="{{ old('sort_order', $editService->sort_order ?? 0) }}">
                                 @error('sort_order')
                                     <div class="text-danger">{{ $message }}</div>
@@ -149,34 +105,31 @@
                             </div>
                         </div>
 
-                        <!-- SEO Section -->
+                        {{-- SEO --}}
                         <div class="mb-4">
-                            <h5 class="mb-3">SEO Settings</h5>
-                            
-                            <div class="mb-3">
+                            <h6 class="section-title mb-3"><i class="fa fa-search me-2"></i>SEO Settings</h6>
+                            <div class="form-group">
                                 <label for="meta_title" class="form-label">Meta Title</label>
-                                <input type="text" class="form-control" id="meta_title" name="meta_title" 
+                                <input type="text" class="form-control form-control-enhanced" id="meta_title" name="meta_title" 
                                     value="{{ old('meta_title', $editService->meta_title ?? '') }}"
                                     maxlength="60">
-                                <div class="form-text">Recommended: 50-60 characters</div>
+                                <small class="form-help">Recommended: 50-60 characters</small>
                                 @error('meta_title')
                                     <div class="text-danger">{{ $message }}</div>
                                 @enderror
                             </div>
-
-                            <div class="mb-3">
+                            <div class="form-group">
                                 <label for="meta_description" class="form-label">Meta Description</label>
-                                <textarea class="form-control" id="meta_description" name="meta_description" 
+                                <textarea class="form-control form-control-enhanced" id="meta_description" name="meta_description" 
                                     rows="3">{{ old('meta_description', $editService->meta_description ?? '') }}</textarea>
-                                <div class="form-text">Recommended: 150-160 characters</div>
+                                <small class="form-help">Recommended: 150-160 characters</small>
                                 @error('meta_description')
                                     <div class="text-danger">{{ $message }}</div>
                                 @enderror
                             </div>
-
-                            <div class="mb-3">
+                            <div class="form-group">
                                 <label for="meta_keywords" class="form-label">Meta Keywords</label>
-                                <input type="text" class="form-control" id="meta_keywords" name="meta_keywords" 
+                                <input type="text" class="form-control form-control-enhanced" id="meta_keywords" name="meta_keywords" 
                                     value="{{ old('meta_keywords', $editService->meta_keywords ?? '') }}"
                                     placeholder="keyword1, keyword2, keyword3">
                                 @error('meta_keywords')
@@ -185,15 +138,14 @@
                             </div>
                         </div>
 
-                        <!-- Submit Section -->
-                        <div class="d-flex justify-content-between">
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-save"></i> {{ $editService ? 'Update Service' : 'Add Service' }}
+                        {{-- Submit --}}
+                        <div class="form-actions d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary btn-enhanced">
+                                <i class="fa fa-save me-2"></i> {{ $editService ? 'Update Service' : 'Add Service' }}
                             </button>
-
                             @if($editService)
-                                <a href="{{ route('admin.services.index') }}" class="btn btn-secondary">
-                                    <i class="fas fa-times"></i> Cancel
+                                <a href="{{ route('admin.services.index') }}" class="btn btn-secondary btn-enhanced">
+                                    <i class="fa fa-times me-2"></i> Cancel
                                 </a>
                             @endif
                         </div>
@@ -201,55 +153,47 @@
                 </div>
             </div>
 
-            <!-- Resources Section -->
+            {{-- Resources Section --}}
             @if($editService)
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    Service Resources
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h5 class="card-title"><i class="fa fa-paperclip me-2"></i>Service Resources</h5>
                 </div>
-                <div class="card-body">
-
+                <div class="content-card-body">
+                    {{-- Alerts --}}
                     @if ($errors->any())
-    <div class="alert alert-danger">
-        <ul class="mb-0">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div class="alert alert-danger">{{ session('error') }}</div>
+                    @endif
+                    @if(session('success'))
+                        <div class="alert alert-success">{{ session('success') }}</div>
+                    @endif
 
-@if(session('error'))
-    <div class="alert alert-danger">
-        {{ session('error') }}
-    </div>
-@endif
-
-@if(session('success'))
-    <div class="alert alert-success">
-        {{ session('success') }}
-    </div>
-@endif
-                    <form method="POST" action="{{ route('admin.services.resources.store', $editService) }}" 
-                          enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('admin.services.resources.store', $editService) }}" enctype="multipart/form-data">
                         @csrf
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label for="resource_title" class="form-label">Resource Title *</label>
-                            <input type="text" class="form-control" id="resource_title" name="title" required>
+                            <input type="text" class="form-control form-control-enhanced" id="resource_title" name="title" required>
                         </div>
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label for="resource_file" class="form-label">File *</label>
-                            <input type="file" class="form-control" id="resource_file" name="file" required>
-                            <div class="form-text">PDF, Word, Excel, PowerPoint or Text files (max 10MB)</div>
+                            <input type="file" class="form-control form-control-enhanced" id="resource_file" name="file" required>
+                            <small class="form-help">PDF, Word, Excel, PowerPoint or Text files (max 10MB)</small>
                         </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Add Resource
+                        <button type="submit" class="btn btn-success btn-enhanced">
+                            <i class="fa fa-plus me-2"></i> Add Resource
                         </button>
                     </form>
-
                     <hr>
-
-                    <h5 class="mt-4">Current Resources</h5>
+                    <h6 class="section-title mt-4 mb-3"><i class="fa fa-folder-open me-2"></i>Current Resources</h6>
                     @if($editService->resources->isEmpty())
                         <div class="alert alert-info">No resources added yet.</div>
                     @else
@@ -261,16 +205,14 @@
                                         <div class="text-muted">{{ strtoupper($resource->file_type) }} • {{ $resource->file_size }}</div>
                                     </div>
                                     <div class="btn-group">
-                                        <a href="{{ Storage::disk('public')->url($resource->file_path) }}" 
-                                            class="btn btn-sm btn-success me-1" download>
-                                            <i class="fas fa-download"></i>
+                                        <a href="{{ Storage::disk('public')->url($resource->file_path) }}" class="btn btn-sm btn-success me-1" download>
+                                            <i class="fa fa-download"></i>
                                         </a>
                                         <form action="{{ route('admin.services.resources.destroy', ['service' => $editService->id, 'resource' => $resource->id]) }}" method="POST" style="display: inline;">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" 
-                                                onclick="return confirm('Delete this resource?')">
-                                                <i class="fas fa-trash"></i>
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this resource?')">
+                                                <i class="fa fa-trash"></i>
                                             </button>
                                         </form>
                                     </div>
@@ -283,18 +225,19 @@
             @endif
         </div>
 
+        {{-- Services List --}}
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    Services List
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h5 class="card-title"><i class="fa fa-list me-2"></i>Services List</h5>
                 </div>
-                <div class="card-body">
+                <div class="content-card-body">
                     @if($services->isEmpty())
                         <div class="alert alert-info">No services found.</div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-dark">
+                            <table class="enhanced-table">
+                                <thead>
                                     <tr>
                                         <th>Title</th>
                                         <th>Featured</th>
@@ -308,24 +251,22 @@
                                             <td>{{ $service->title }}</td>
                                             <td>
                                                 @if($service->is_featured)
-                                                    <span class="badge bg-success">Yes</span>
+                                                    <span class="badge status-badge status-active">Yes</span>
                                                 @else
-                                                    <span class="badge bg-secondary">No</span>
+                                                    <span class="badge status-badge status-inactive">No</span>
                                                 @endif
                                             </td>
                                             <td>{{ $service->sort_order }}</td>
                                             <td>
-                                                <div class="btn-group">
-                                                    <a href="{{ route('admin.services.index', ['edit' => $service->id]) }}" 
-                                                        class="btn btn-sm btn-primary">
-                                                        <i class="fas fa-edit"></i>
+                                                <div class="action-buttons">
+                                                    <a href="{{ route('admin.services.index', ['edit' => $service->id]) }}" class="action-btn edit-btn" title="Edit">
+                                                        <i class="fa fa-edit"></i>
                                                     </a>
-                                                    <form action="{{ route('admin.services.destroy', $service) }}" method="POST">
+                                                    <form action="{{ route('admin.services.destroy', $service) }}" method="POST" class="d-inline">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-danger" 
-                                                                onclick="return confirm('Are you sure you want to delete this service?')">
-                                                            <i class="fas fa-trash"></i>
+                                                        <button type="submit" class="action-btn delete-btn" onclick="return confirm('Are you sure you want to delete this service?')">
+                                                            <i class="fa fa-trash"></i>
                                                         </button>
                                                     </form>
                                                 </div>
@@ -341,18 +282,47 @@
         </div>
     </div>
 </div>
-@endsection
 
-@push('styles')
 <style>
-    .rich-text-editor {
-        min-height: 200px;
-    }
-    .process-step {
-        background-color: #f8f9fa;
+    .dashboard-nav-wrapper { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); padding: 0.5rem; margin-bottom: 2rem;}
+    .panel-nav { border: none; gap: 0.5rem; }
+    .panel-nav .nav-link { border: none; padding: 0.75rem 1.5rem; border-radius: 8px; color: var(--light-text); font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; }
+    .panel-nav .nav-link:hover { background: var(--hover-bg); color: var(--medium-text);}
+    .panel-nav .nav-link.active { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); color: var(--white); box-shadow: var(--shadow-hover);}
+    .content-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border-color);}
+    .content-card-header { padding: 1.5rem 2rem; background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%); border-bottom: 1px solid var(--border-color);}
+    .content-card-header .card-title { font-size: 1.15rem; font-weight: 600; color: var(--primary-green);}
+    .content-card-body { padding: 2rem;}
+    .form-label { font-weight: 600; color: var(--dark-text);}
+    .form-control-enhanced { border: 2px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.95rem; transition: all 0.3s ease; background: var(--white);}
+    .form-control-enhanced:focus { border-color: var(--primary-green); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1); outline: none;}
+    .section-title { color: var(--primary-green-dark); font-weight: 600; display: flex; align-items: center;}
+    .form-help { color: var(--light-text); font-size: 0.8rem;}
+    .btn-enhanced { padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; border: none; display: flex; align-items: center; text-decoration: none;}
+    .btn-primary.btn-enhanced { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); color: var(--white);}
+    .btn-primary.btn-enhanced:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover);}
+    .btn-secondary.btn-enhanced { background: var(--hover-bg); color: var(--medium-text); border: 2px solid var(--border-color);}
+    .btn-secondary.btn-enhanced:hover { background: var(--medium-text); color: var(--white);}
+    .action-buttons { display: flex; gap: 0.5rem;}
+    .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; transition: all 0.2s ease; text-decoration: none; border: none; cursor: pointer;}
+    .edit-btn { background: var(--light-green); color: var(--primary-green-dark);}
+    .edit-btn:hover { background: var(--primary-green-dark); color: var(--white);}
+    .delete-btn { background: #FEF2F2; color: #DC2626;}
+    .delete-btn:hover { background: #DC2626; color: var(--white);}
+    .status-badge { display: inline-flex; align-items: center; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;}
+    .status-active { background: var(--ultra-light-green); color: var(--primary-green); border: 1px solid var(--secondary-green);}
+    .status-inactive { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;}
+    .enhanced-table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 0;}
+    .enhanced-table thead th { background: var(--ultra-light-green); color: var(--primary-green); font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem 1.5rem; border-bottom: 2px solid var(--light-green);}
+    .enhanced-table tbody tr { transition: all 0.2s ease; border-bottom: 1px solid var(--border-color);}
+    .enhanced-table tbody tr:last-child { border-bottom: none;}
+    .enhanced-table tbody tr:hover { background: var(--ultra-light-green);}
+    .enhanced-table tbody td { padding: 1rem 1.5rem; vertical-align: middle;}
+    @media (max-width: 768px) {
+        .content-card-header, .content-card-body { padding: 1rem;}
     }
 </style>
-@endpush
+@endsection
 
 @push('scripts')
 <script>
@@ -367,106 +337,5 @@
                 .replace(/-+$/, '');
         }
     });
-
-    // Process steps management
-    document.getElementById('add-process-step').addEventListener('click', function() {
-        const container = document.getElementById('process-steps-container');
-        const stepCount = container.querySelectorAll('.process-step').length;
-        
-        const stepDiv = document.createElement('div');
-        stepDiv.className = 'process-step mb-3 p-3 border rounded';
-        stepDiv.innerHTML = `
-            <div class="d-flex justify-content-between mb-2">
-                <h6>Step ${stepCount + 1}</h6>
-                <button type="button" class="btn btn-sm btn-danger remove-step">Remove</button>
-            </div>
-            <div class="mb-2">
-                <label class="form-label">Title</label>
-                <input type="text" class="form-control" name="process_steps[${stepCount}][title]" required>
-            </div>
-            <div>
-                <label class="form-label">Description</label>
-                <textarea class="form-control" name="process_steps[${stepCount}][description]" rows="2" required></textarea>
-            </div>
-        `;
-        
-        container.appendChild(stepDiv);
-    });
-
-    // Remove process step
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('remove-step')) {
-            e.target.closest('.process-step').remove();
-            
-            // Reindex remaining steps
-            const container = document.getElementById('process-steps-container');
-            const steps = container.querySelectorAll('.process-step');
-            
-            steps.forEach((step, index) => {
-                step.querySelector('h6').textContent = `Step ${index + 1}`;
-                
-                // Update input names
-                const inputs = step.querySelectorAll('input, textarea');
-                inputs.forEach(input => {
-                    const name = input.name.replace(/\[\d+\]/, `[${index}]`);
-                    input.name = name;
-                });
-            });
-        }
-    });
-
-    // Initialize rich text editor
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize CKEditor or other rich text editor here
-        // Example: CKEDITOR.replace('content');
-    });
-
-    // Process steps management
-document.getElementById('add-process-step').addEventListener('click', function() {
-    const container = document.getElementById('process-steps-container');
-    const stepCount = container.querySelectorAll('.process-step').length;
-    
-    const stepDiv = document.createElement('div');
-    stepDiv.className = 'process-step mb-3 p-3 border rounded';
-    stepDiv.innerHTML = `
-        <div class="d-flex justify-content-between mb-2">
-            <h6>Step ${stepCount + 1}</h6>
-            <button type="button" class="btn btn-sm btn-danger remove-step">Remove</button>
-        </div>
-        <div class="mb-2">
-            <label class="form-label">Title *</label>
-            <input type="text" class="form-control" name="process_steps[${stepCount}][title]" required>
-        </div>
-        <div>
-            <label class="form-label">Description *</label>
-            <textarea class="form-control" name="process_steps[${stepCount}][description]" rows="2" required></textarea>
-        </div>
-    `;
-    
-    container.appendChild(stepDiv);
-});
-
-// Remove process step
-document.addEventListener('click', function(e) {
-    if (e.target && e.target.classList.contains('remove-step')) {
-        e.preventDefault();
-        e.target.closest('.process-step').remove();
-        
-        // Reindex remaining steps
-        const container = document.getElementById('process-steps-container');
-        const steps = container.querySelectorAll('.process-step');
-        
-        steps.forEach((step, index) => {
-            step.querySelector('h6').textContent = `Step ${index + 1}`;
-            
-            // Update input names
-            const inputs = step.querySelectorAll('input, textarea');
-            inputs.forEach(input => {
-                const name = input.name.replace(/process_steps\[\d+\]/, `process_steps[${index}]`);
-                input.name = name;
-            });
-        });
-    }
-});
 </script>
 @endpush

@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use App\Notifications\CustomerTicketResolvedNotification;
+use App\Notifications\CustomerTicketCreatedNotification;
 
 class SupportTicketController extends Controller
 {
@@ -45,6 +48,9 @@ class SupportTicketController extends Controller
                 'priority' => $request->input('priority', 'low'), // Default to low if not provided
             ]);
 
+            // Notify after ticket is created
+            $ticket->notify(new CustomerTicketCreatedNotification($ticket));
+
             return redirect()->back()
                 ->with('message', 'Your ticket has been submitted successfully! Ticket ID: ' . $ticket->id);
 
@@ -58,6 +64,7 @@ class SupportTicketController extends Controller
                 ->withInput()
                 ->with('error', 'Failed to submit ticket. Please try again.');
         }
+        
     }
 
     /**
@@ -69,10 +76,51 @@ class SupportTicketController extends Controller
         return $file->storeAs('attachments', $filename, 'public');
     }
 
-    // In SupportTicketController (add this method)
+
 public function index(Request $request)
 {
-    // Get ticket status counts
+    // Define current and previous week ranges
+    $now = Carbon::now();
+
+    // Current week: start of week to now
+    $currentWeekStart = $now->copy()->startOfWeek();
+    $currentWeekEnd = $now;
+
+    // Previous week: start of previous week to end of previous week
+    $previousWeekStart = $now->copy()->subWeek()->startOfWeek();
+    $previousWeekEnd = $now->copy()->subWeek()->endOfWeek();
+
+    // Get counts for current and previous week
+    $currentCounts = $this->getStatusCountsByDateRange($currentWeekStart, $currentWeekEnd) ?? (object)[
+        'pending' => 0,
+        'in_progress' => 0,
+        'resolved' => 0,
+        'unassigned' => 0
+    ];
+
+    $previousCounts = $this->getStatusCountsByDateRange($previousWeekStart, $previousWeekEnd) ?? (object)[
+        'pending' => 0,
+        'in_progress' => 0,
+        'resolved' => 0,
+        'unassigned' => 0
+    ];
+
+    // Calculate percentage changes with safer division
+    $percentageChanges = [];
+
+    foreach (['pending', 'in_progress', 'resolved', 'unassigned'] as $status) {
+        $current = $currentCounts->$status ?? 0;
+        $previous = $previousCounts->$status ?? 0;
+
+        if ($previous == 0) {
+            // If previous was 0, any current value is +100% (or 0% if current is also 0)
+            $percentageChanges[$status] = $current > 0 ? 100 : 0;
+        } else {
+            $percentageChanges[$status] = round((($current - $previous) / $previous * 100));
+        }
+    }
+
+    // Rest of your index method remains the same...
     $statusCounts = Ticket::selectRaw('
         COUNT(*) as total,
         SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending,
@@ -81,26 +129,18 @@ public function index(Request $request)
         SUM(CASE WHEN assigned_to IS NULL THEN 1 ELSE 0 END) as unassigned
     ')->first();
 
-    // Build query for tickets with optional filters
+    // Existing ticket query and filters
     $query = Ticket::query()->with('assignedTechnician');
 
-    // Optional filtering by status
     if ($request->filled('status')) {
         $query->where('status', $request->status);
     }
-
-    // Optional filtering by priority
     if ($request->filled('priority')) {
         $query->where('priority', $request->priority);
     }
-
-    // Optional filtering by assigned technician (user ID)
     if ($request->filled('assigned_to')) {
-    $query->where('assigned_to', $request->assigned_to);
-}
-
-
-    // Optional search by subject, company_name, or email
+        $query->where('assigned_to', $request->assigned_to);
+    }
     if ($request->filled('search')) {
         $searchTerm = $request->search;
         $query->where(function ($q) use ($searchTerm) {
@@ -109,15 +149,14 @@ public function index(Request $request)
               ->orWhere('email', 'like', "%{$searchTerm}%");
         });
     }
+
     $technicians = User::whereIn('id', Ticket::pluck('assigned_to')->unique()->filter())->get();
+    $tickets = $query->latest()->paginate(10);
 
-
-    // Get latest 10 tickets without pagination (to match original behavior)
-    $tickets = $query->latest()->take(10)->get();
-
-    // Pass data to the admin dashboard view
-    return view('admin.index', compact('statusCounts', 'tickets'));
+    $priorities = ['low', 'medium', 'high'];
+    return view('admin.index', compact('statusCounts', 'percentageChanges', 'tickets', 'technicians', 'priorities'));
 }
+
 
 public function allTickets(Request $request)
 {
@@ -156,7 +195,12 @@ public function allTickets(Request $request)
 public function show(Ticket $ticket)
 {
     $ticket->load(['comments.user', 'assigned_to_user']);
-    return view('admin.ticketshow', compact('ticket'));
+
+     // Fetch all users with the role 'technician'
+    $technicians = User::where('role', 'technician')->get();
+
+    return view('admin.ticketshow', compact('ticket', 'technicians'));
+
 }
 
 
@@ -295,6 +339,7 @@ public function unassignedTickets(Request $request)
 }
 
 
+
 public function adminStore(Request $request)
 {
     $validated = $request->validate([
@@ -318,6 +363,11 @@ public function adminStore(Request $request)
 
     $ticket = \App\Models\Ticket::create($validated);
 
+    if ($ticket->assigned_to) {
+        $technician = User::find($ticket->assigned_to);
+        $technician->notify(new \App\Notifications\TicketAssignedNotification($ticket));
+    }
+
     // If AJAX, return JSON
     if ($request->ajax()) {
         return response()->json([
@@ -338,20 +388,26 @@ public function create()
 }
 public function assignTechnician(Request $request, Ticket $ticket)
 {
-    // Authorization: only allow if user is admin or manager
     $this->authorize('assign tickets');
 
     $request->validate([
         'assigned_to' => 'required|exists:users,id',
     ]);
 
+    $previousTechnician = $ticket->assigned_to;
     $ticket->assigned_to = $request->assigned_to;
     $ticket->save();
+
+    // Only notify if the technician changed
+    if ($previousTechnician != $ticket->assigned_to) {
+        $technician = User::find($ticket->assigned_to);
+        $technician->notify(new \App\Notifications\TicketAssignedNotification($ticket));
+    }
 
     return redirect()->route('admin.tickets.unassigned')->with('success', 'Ticket assigned successfully!');
 }
 
-public function myTickets()
+public function myTickets(Request $request)
 {
     $userId = optional(Auth::user())->id;
 
@@ -359,12 +415,29 @@ public function myTickets()
         return redirect()->route('login')->with('error', 'You must be logged in to view your tickets.');
     }
 
-    $tickets = Ticket::where('assigned_to', $userId)
-        ->latest()
-        ->paginate(10);
+    $query = Ticket::where('assigned_to', $userId);
 
-    return view('admin.my-tickets', compact('tickets'));
+    // Add filtering by priority
+    if ($request->filled('priority')) {
+        $query->where('priority', $request->priority);
+    }
+
+    // Add search by subject
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('subject', 'like', "%$search%");
+        });
+    }
+
+    $tickets = $query->latest()->paginate(10)->withQueryString();
+
+    // Priorities for filter dropdown
+    $priorities = ['low', 'medium', 'high'];
+
+    return view('admin.my-tickets', compact('tickets', 'priorities'));
 }
+
 
 public function updatePriority(Request $request, $id)
 {
@@ -399,23 +472,71 @@ public function addComment(Request $request, Ticket $ticket)
 }
 
 public function updateStatusPriority(Request $request, Ticket $ticket)
-    {
-        // Only allow the assigned technician to update
-        if (optional(Auth::user())->id !== $ticket->assigned_to) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $validated = $request->validate([
-            'priority' => 'required|in:low,medium,high',
-            'status' => 'required|in:pending,in_progress,resolved',
-        ]);
-
-        $ticket->update($validated);
-
-        return back()->with('success', 'Ticket updated successfully.');
+{
+    // Only allow the assigned technician to update
+    if (optional(Auth::user())->id !== $ticket->assigned_to) {
+        abort(403, 'Unauthorized action.');
     }
 
+    $validated = $request->validate([
+        'priority' => 'required|in:low,medium,high',
+        'status' => 'required|in:pending,in_progress,resolved',
+    ]);
 
+    $currentStatus = $ticket->status;
+    $newStatus = $validated['status'];
+
+    // Enforce allowed transitions
+    $allowedTransitions = [
+        'pending' => ['in_progress'],
+        'in_progress' => ['resolved'],
+        'resolved' => ['in_progress'], // Only technician can reopen, not to 'pending'
+    ];
+
+if ($newStatus === 'resolved') {
+    // Notify the user who created the ticket
+    $user = User::where('email', $ticket->email)->first();
+    if ($user) {
+        $user->notify(new \App\Notifications\CustomerTicketResolvedNotification($ticket));
+    }
+}
+
+
+    if (!in_array($newStatus, $allowedTransitions[$currentStatus] ?? [])) {
+        return back()->with('error', 'Invalid status transition!');
+    }
+
+    $ticket->update($validated);
+
+    // SweetAlert2 success message (see Blade below)
+    return back()->with('success', 'Ticket updated successfully.');
+}
+
+
+    protected function getStatusCountsByDateRange($startDate, $endDate)
+    {
+        return Ticket::whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = "in_progress" THEN 1 ELSE 0 END) as in_progress,
+                SUM(CASE WHEN status = "resolved" THEN 1 ELSE 0 END) as resolved,
+                SUM(CASE WHEN assigned_to IS NULL THEN 1 ELSE 0 END) as unassigned
+            ')
+            ->first();
+    }
+public function reopen(Ticket $ticket)
+{
+    if ($ticket->status !== 'resolved') {
+        return back()->with('error', 'Only resolved tickets can be reopened.');
+    }
+    $ticket->status = 'in_progress';
+    $ticket->save();
+
+   
+}
 
 }
+
+
 

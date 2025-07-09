@@ -1,251 +1,232 @@
 @extends('layouts.contents')
 
 @section('content')
-<div class="d-flex flex-column flex-fill overflow-auto bg-light min-vh-100">
-    <!-- Header -->
-    <header class="bg-white border-bottom sticky-top shadow-sm">
-        <div class="container-fluid px-3 px-sm-4 py-3">
-            <div class="row align-items-center">
-                <div class="col-12 col-sm-6 col-md-8 mb-3 mb-sm-0">
-                    <h1 class="h2 fw-bold text-dark mb-1">
-                        <i class="bi bi-newspaper me-2"></i>Blog Management
+
+    <div class="blog-management-container">
+        {{-- Page Header --}}
+        <div class="page-header-card mb-4">
+            <div class="page-header-content">
+                <div class="header-text">
+                    <h1 class="page-title">
+                        <i class="fa fa-newspaper me-2"></i>
+                        Blog Management
                     </h1>
-                    <p class="text-muted small mb-0">
-                        <i class="bi bi-info-circle me-1"></i>Manage your blog posts and content
+                    <p class="page-subtitle">
+                        <i class="fa fa-info-circle me-2"></i>
+                        Manage your blog posts and content
                     </p>
                 </div>
                 
                 <!-- Search and Actions -->
-                <div class="col-12 col-sm-6 col-md-4">
-                    <div class="d-flex gap-2">
-                        <form method="GET" action="{{ route('blogs.index') }}" class="position-relative flex-fill">
-                            <div class="position-absolute top-50 start-0 translate-middle-y ms-3">
-                                <i class="bi bi-search text-muted"></i>
-                            </div>
+                <div class="header-actions">
+                    <form method="GET" action="{{ route('admin.blogs.index') }}" class="search-form">
+                        <div class="search-wrapper">
+                            <i class="fa fa-search search-icon"></i>
                             <input type="text" name="search" value="{{ request('search') }}"
                                 placeholder="Search posts..." 
-                                class="form-control form-control-sm ps-5">
-                        </form>
-                        
-                        <a href="{{ route('blogs.create') }}" 
-                           class="btn btn-success btn-sm d-flex align-items-center gap-1 text-nowrap">
-                            <i class="bi bi-plus-lg"></i>
-                            New Post
-                        </a>
-                    </div>
+                                class="form-control search-input">
+                        </div>
+                    </form>
+                    
+                    <a href="{{ route('admin.blogs.create') }}" 
+                       class="btn btn-primary btn-enhanced">
+                        <i class="fa fa-plus me-2"></i>
+                        New Post
+                    </a>
                 </div>
             </div>
         </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="container-fluid px-3 px-sm-4 py-4">
-        <!-- Stats Cards -->
-        <div class="row g-3 g-sm-4 mb-4">
-            <div class="col-12 col-md-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted small fw-medium mb-1">
-                                    <i class="bi bi-file-text me-1"></i>Total Posts
-                                </p>
-                                <h3 class="fw-bold mb-0">{{ $blogs->total() }}</h3>
-                            </div>
-                            <div class="bg-success bg-opacity-10 p-3 rounded-3">
-                                <i class="bi bi-journal-text text-success fs-5"></i>
-                            </div>
-                        </div>
+        {{-- Stats Cards --}}
+        <div class="stats-grid mb-4">
+            <div class="stat-card">
+                <div class="stat-card-body">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);">
+                        <i class="fa fa-file-text"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">{{ $blogs->total() }}</h3>
+                        <p class="stat-label">Total Posts</p>
                     </div>
                 </div>
             </div>
             
-            <div class="col-12 col-md-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted small fw-medium mb-1">
-                                    <i class="bi bi-eye me-1"></i>Published
-                                </p>
-                                <h3 class="fw-bold mb-0 text-success">{{ $publishedCount }}</h3>
-                            </div>
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-3">
-                                <i class="bi bi-check-circle text-primary fs-5"></i>
-                            </div>
-                        </div>
+            <div class="stat-card">
+                <div class="stat-card-body">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-green-dark) 0%, #0F3D0F 100%);">
+                        <i class="fa fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">{{ $publishedCount }}</h3>
+                        <p class="stat-label">Published</p>
                     </div>
                 </div>
             </div>
             
-            <div class="col-12 col-md-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted small fw-medium mb-1">
-                                    <i class="bi bi-pencil me-1"></i>Drafts
-                                </p>
-                                <h3 class="fw-bold mb-0 text-warning">{{ $draftCount }}</h3>
-                            </div>
-                            <div class="bg-warning bg-opacity-10 p-3 rounded-3">
-                                <i class="bi bi-file-earmark-text text-warning fs-5"></i>
-                            </div>
-                        </div>
+            <div class="stat-card">
+                <div class="stat-card-body">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
+                        <i class="fa fa-edit"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">{{ $draftCount }}</h3>
+                        <p class="stat-label">Drafts</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Blog Posts Table -->
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-table me-2"></i>Blog Posts
+        {{-- Blog Posts Table --}}
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="card-title">
+                    <i class="fa fa-table me-2"></i>
+                    Blog Posts
                 </h5>
             </div>
             
-            <div class="card-body p-0">
+            <div class="content-card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                    <table class="enhanced-table">
+                        <thead>
                             <tr>
-                                <th class="border-0 text-muted small fw-medium text-uppercase">
-                                    <i class="bi bi-file-earmark-text me-1"></i>Post
+                                <th>
+                                    <i class="fa fa-file-text me-2"></i>Post
                                 </th>
-                                <th class="border-0 text-muted small fw-medium text-uppercase">
-                                    <i class="bi bi-person me-1"></i>Author
+                                <th>
+                                    <i class="fa fa-user me-2"></i>Author
                                 </th>
-                                <th class="border-0 text-muted small fw-medium text-uppercase">
-                                    <i class="bi bi-tag me-1"></i>Category
+                                <th>
+                                    <i class="fa fa-tag me-2"></i>Category
                                 </th>
-                                <th class="border-0 text-muted small fw-medium text-uppercase">
-                                    <i class="bi bi-circle-fill me-1"></i>Status
+                                <th>
+                                    <i class="fa fa-circle me-2"></i>Status
                                 </th>
-                                <th class="border-0 text-muted small fw-medium text-uppercase">
-                                    <i class="bi bi-calendar me-1"></i>Published
+                                <th>
+                                    <i class="fa fa-calendar me-2"></i>Published
                                 </th>
-                                <th class="border-0 text-muted small fw-medium text-uppercase">
-                                    <i class="bi bi-gear me-1"></i>Actions
+                                <th>
+                                    <i class="fa fa-cog me-2"></i>Actions
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($blogs as $blog)
                             <tr>
-                                <td class="py-3">
-                                    <div class="d-flex align-items-center gap-3">
+                                <td>
+                                    <div class="post-info">
                                         <!-- Image Preview Button -->
                                         @if($blog->image_url)
                                         <button onclick="showImageModal('{{ $blog->image_url }}', '{{ $blog->title }}')" 
-                                                class="btn btn-outline-success btn-sm p-2 d-flex align-items-center justify-content-center" 
-                                                style="width: 40px; height: 40px;">
-                                            <i class="bi bi-image"></i>
+                                                class="image-preview-btn" 
+                                                title="View Image">
+                                            <i class="fa fa-image"></i>
                                         </button>
                                         @else
-                                        <div class="bg-light border rounded d-flex align-items-center justify-content-center" 
-                                             style="width: 40px; height: 40px;">
-                                            <i class="bi bi-image text-muted"></i>
+                                        <div class="image-placeholder">
+                                            <i class="fa fa-image"></i>
                                         </div>
                                         @endif
                                         
-                                        <div class="flex-fill">
-                                            <div class="fw-medium text-dark text-truncate">
-                                                <a href="{{ route('blog.details', $blog->slug) }}" class="text-decoration-none" target="_blank">
+                                        <div class="post-details">
+                                            <div class="post-title">
+                                                <a href="{{ route('blog.details', $blog->slug) }}" 
+                                                   class="post-link" 
+                                                   target="_blank">
                                                     {{ $blog->title }}
                                                 </a>
                                             </div>
-                                            <div class="text-muted small font-monospace">
-                                                <i class="bi bi-link-45deg"></i> /{{ $blog->slug }}
+                                            <div class="post-slug">
+                                                <i class="fa fa-link me-1"></i>/{{ $blog->slug }}
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="py-3">
-                                    <div class="text-dark">
-                                        <i class="bi bi-person me-1"></i>{{ $blog->author ?? 'Unknown' }}
+                                <td>
+                                    <div class="author-info">
+                                        <i class="fa fa-user me-2"></i>{{ $blog->author ?? 'Unknown' }}
                                     </div>
                                 </td>
-                                <td class="py-3">
+                                <td>
                                     @if($blog->category)
-                                    <span class="badge bg-success bg-opacity-10 text-success">
-                                        <i class="bi bi-tag me-1"></i>{{ $blog->category }}
+                                    <span class="category-badge category-filled">
+                                        <i class="fa fa-tag me-1"></i>{{ $blog->category }}
                                     </span>
                                     @else
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">
-                                        <i class="bi bi-tag me-1"></i>Uncategorized
+                                    <span class="category-badge category-empty">
+                                        <i class="fa fa-tag me-1"></i>Uncategorized
                                     </span>
                                     @endif
                                 </td>
-                                <td class="py-3">
+                                <td>
                                     @if($blog->is_published)
-                                        <span class="badge bg-success d-flex align-items-center gap-1 w-fit">
-                                            <i class="bi bi-check-circle me-1"></i>
+                                        <span class="status-badge status-published">
+                                            <i class="fa fa-check-circle me-1"></i>
                                             Published
                                         </span>
                                     @elseif($blog->published_at && $blog->published_at->isFuture())
-                                        <span class="badge bg-info d-flex align-items-center gap-1 w-fit">
-                                            <i class="bi bi-clock me-1"></i>
+                                        <span class="status-badge status-scheduled">
+                                            <i class="fa fa-clock me-1"></i>
                                             Scheduled
                                         </span>
                                     @else
-                                        <span class="badge bg-warning d-flex align-items-center gap-1 w-fit">
-                                            <i class="bi bi-pencil me-1"></i>
+                                        <span class="status-badge status-draft">
+                                            <i class="fa fa-edit me-1"></i>
                                             Draft
                                         </span>
                                     @endif
                                 </td>
-                                <td class="py-3 text-muted small">
-                                    @if($blog->published_at)
-                                        <i class="bi bi-calendar me-1"></i>{{ $blog->formatted_published_at }}
-                                    @else
-                                        <span class="text-muted">Not set</span>
-                                    @endif
+                                <td>
+                                    <div class="publish-date">
+                                        @if($blog->published_at)
+                                            <i class="fa fa-calendar me-1"></i>{{ $blog->formatted_published_at }}
+                                        @else
+                                            <span class="text-muted">Not set</span>
+                                        @endif
+                                    </div>
                                 </td>
-                                <td class="py-3">
-                                    <div class="d-flex gap-2">
-                                        <a href="{{ route('blogs.edit', $blog->id) }}" 
-                                           class="btn btn-link btn-sm text-primary text-decoration-none p-1 d-flex align-items-center gap-1"
-                                           title="Edit">
-                                            <i class="bi bi-pencil-square"></i>
-                                            <span class="d-none d-md-inline">Edit</span>
-                                        </a>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="{{ route('admin.blogs.edit', $blog) }}" 
+                                            class="action-btn edit-btn"
+                                            title="Edit">
+                                                <i class="fa fa-edit"></i>
+                                            </a>
+
                                         <a href="{{ route('blog.details', $blog->slug) }}" 
                                            target="_blank"
-                                           class="btn btn-link btn-sm text-info text-decoration-none p-1 d-flex align-items-center gap-1"
+                                           class="action-btn view-btn"
                                            title="Preview">
-                                            <i class="bi bi-eye"></i>
-                                            <span class="d-none d-md-inline">View</span>
+                                            <i class="fa fa-eye"></i>
                                         </a>
-                                        <form action="{{ route('blogs.destroy', $blog->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" 
-                                                    onclick="return confirm('Are you sure you want to delete this blog post?')"
-                                                    class="btn btn-link btn-sm text-danger text-decoration-none p-1 d-flex align-items-center gap-1"
-                                                    title="Delete">
-                                                <i class="bi bi-trash"></i>
-                                                <span class="d-none d-md-inline">Delete</span>
-                                            </button>
-                                        </form>
+                                        <form action="{{ route('admin.blogs.destroy', $blog) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" 
+                                                        onclick="return confirm('Are you sure you want to delete this blog post?')"
+                                                        class="action-btn delete-btn"
+                                                        title="Delete">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+
                                     </div>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                                             style="width: 64px; height: 64px;">
-                                            <i class="bi bi-file-text text-muted fs-3"></i>
+                                <td colspan="6" class="empty-state">
+                                    <div class="empty-content">
+                                        <div class="empty-icon">
+                                            <i class="fa fa-file-text"></i>
                                         </div>
-                                        <h5 class="text-dark mb-2">No blog posts found</h5>
-                                        <p class="text-muted mb-4 text-center" style="max-width: 400px;">
+                                        <h5 class="empty-title">No blog posts found</h5>
+                                        <p class="empty-description">
                                             Get started by creating your first blog post and share your thoughts with the world.
                                         </p>
-                                        <a href="{{ route('blogs.create') }}" 
-                                           class="btn btn-success d-flex align-items-center gap-2">
-                                            <i class="bi bi-plus-lg"></i>
+                                        <a href="{{ route('admin.blogs.create') }}" 
+                                           class="btn btn-primary btn-enhanced">
+                                            <i class="fa fa-plus me-2"></i>
                                             Create Blog Post
                                         </a>
                                     </div>
@@ -259,112 +240,603 @@
             
             <!-- Pagination -->
             @if($blogs->hasPages())
-            <div class="card-footer bg-light">
-                <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3">
-                    <div class="text-muted small">
-                        <i class="bi bi-list-ol me-1"></i>
-                        Showing <span class="fw-medium">{{ $blogs->firstItem() }}</span> to 
-                        <span class="fw-medium">{{ $blogs->lastItem() }}</span> of 
-                        <span class="fw-medium">{{ $blogs->total() }}</span> results
-                    </div>
-                    <div class="d-flex">
-                        {{ $blogs->links() }}
-                    </div>
+            <div class="pagination-footer">
+                <div class="pagination-info">
+                    <i class="fa fa-list me-1"></i>
+                    Showing <span class="fw-medium">{{ $blogs->firstItem() }}</span> to 
+                    <span class="fw-medium">{{ $blogs->lastItem() }}</span> of 
+                    <span class="fw-medium">{{ $blogs->total() }}</span> results
+                </div>
+                <div class="pagination-links">
+                    {{ $blogs->links() }}
                 </div>
             </div>
             @endif
         </div>
-    </main>
-</div>
+    </div>
 
-<!-- Image Modal -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title text-truncate" id="imageModalLabel">
-                    <i class="bi bi-image me-2"></i>Featured Image
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="modalImage" src="" alt="" class="img-fluid rounded">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle me-1"></i>Close
-                </button>
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel">
+                        <i class="fa fa-image me-2"></i>Featured Image
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="" class="img-fluid rounded">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fa fa-times me-1"></i>Close
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-function showImageModal(imageUrl, title) {
-    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-    const modalImage = document.getElementById('modalImage');
-    const modalTitle = document.getElementById('imageModalLabel');
-    
-    modalImage.src = imageUrl;
-    modalImage.alt = title;
-    modalTitle.textContent = title;
-    modal.show();
-}
-</script>
+    <style>
+        /* Dashboard Navigation - Matching other pages */
+        .dashboard-nav-wrapper {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 0.5rem;
+            margin-bottom: 2rem;
+        }
 
-<style>
-/* Custom styles for better appearance */
-.w-fit {
-    width: fit-content !important;
-}
+        .panel-nav {
+            border: none;
+            gap: 0.5rem;
+        }
 
-.gap-1 {
-    gap: 0.25rem !important;
-}
+        .panel-nav .nav-link {
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            color: var(--light-text);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
 
-.gap-2 {
-    gap: 0.5rem !important;
-}
+        .panel-nav .nav-link:hover {
+            background: var(--hover-bg);
+            color: var(--medium-text);
+        }
 
-.gap-3 {
-    gap: 1rem !important;
-}
+        .panel-nav .nav-link.active {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
+            color: var(--white);
+            box-shadow: var(--shadow-hover);
+        }
 
-/* Ensure consistent button sizing */
-.btn-sm {
-    font-size: 0.875rem;
-}
+        /* Blog Management Container */
+        .blog-management-container {
+            padding: 0;
+        }
 
-/* Custom badge styling */
-.badge {
-    font-weight: 500;
-}
+        /* Page Header */
+        .page-header-card {
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
 
-/* Table hover effect */
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.025);
-}
+        .page-header-content {
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
 
-/* Responsive improvements */
-@media (max-width: 576px) {
-    .table-responsive {
-        font-size: 0.875rem;
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--primary-green-dark);
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .page-subtitle {
+            color: var(--light-text);
+            margin: 0.5rem 0 0 0;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-form {
+            position: relative;
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--light-text);
+            z-index: 2;
+        }
+
+        .search-input {
+            padding-left: 2.5rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            width: 250px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+            outline: none;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-card-body {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stat-icon i {
+            font-size: 1.25rem;
+            color: var(--white);
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin: 0;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: var(--light-text);
+            font-size: 0.85rem;
+            margin: 0.25rem 0;
+            font-weight: 500;
+        }
+
+        /* Content Cards */
+        .content-card {
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .content-card-header {
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .content-card-header .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-green);
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .content-card-body {
+            padding: 0;
+        }
+
+        /* Enhanced Table */
+        .enhanced-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 0;
+        }
+
+        .enhanced-table thead th {
+            background: var(--ultra-light-green);
+            color: var(--primary-green);
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.5rem;
+            border-bottom: 2px solid var(--light-green);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .enhanced-table tbody tr {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .enhanced-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .enhanced-table tbody tr:hover {
+            background: var(--ultra-light-green);
+        }
+
+        .enhanced-table tbody td {
+            padding: 1rem 1.5rem;
+            vertical-align: middle;
+        }
+
+        /* Post Info */
+        .post-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .image-preview-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--primary-green);
+            background: var(--light-green);
+            color: var(--primary-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-preview-btn:hover {
+            background: var(--primary-green);
+            color: var(--white);
+        }
+
+        .image-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            background: var(--hover-bg);
+            color: var(--light-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .post-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .post-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .post-link {
+            color: var(--dark-text);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .post-link:hover {
+            color: var(--primary-green);
+        }
+
+        .post-slug {
+            color: var(--light-text);
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
+        .author-info {
+            color: var(--medium-text);
+            font-weight: 500;
+        }
+
+        /* Badges */
+        .category-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .category-filled {
+            background: var(--light-green);
+            color: var(--primary-green);
+            border: 1px solid var(--secondary-green);
+        }
+
+        .category-empty {
+            background: var(--hover-bg);
+            color: var(--light-text);
+            border: 1px solid var(--border-color);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            width: fit-content;
+        }
+
+        .status-published {
+            background: var(--ultra-light-green);
+            color: var(--primary-green);
+            border: 1px solid var(--secondary-green);
+        }
+
+        .status-scheduled {
+            background: #EFF6FF;
+            color: #3B82F6;
+            border: 1px solid #BFDBFE;
+        }
+
+        .status-draft {
+            background: #FFFBEB;
+            color: #D97706;
+            border: 1px solid #fde68a;
+        }
+
+        .publish-date {
+            color: var(--light-text);
+            font-size: 0.875rem;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .edit-btn {
+            background: var(--light-green);
+            color: var(--primary-green-dark);
+        }
+
+        .edit-btn:hover {
+            background: var(--primary-green-dark);
+            color: var(--white);
+            transform: translateY(-1px);
+        }
+
+        .view-btn {
+            background: #EFF6FF;
+            color: #3B82F6;
+        }
+
+        .view-btn:hover {
+            background: #3B82F6;
+            color: var(--white);
+            transform: translateY(-1px);
+        }
+
+        .delete-btn {
+            background: #FEF2F2;
+            color: #DC2626;
+        }
+
+        .delete-btn:hover {
+            background: #DC2626;
+            color: var(--white);
+            transform: translateY(-1px);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-content {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--hover-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+
+        .empty-icon i {
+            font-size: 2rem;
+            color: var(--light-text);
+        }
+
+        .empty-title {
+            color: var(--dark-text);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-description {
+            color: var(--light-text);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Enhanced Buttons */
+        .btn-enhanced {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .btn-primary.btn-enhanced {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
+            color: var(--white);
+        }
+
+        .btn-primary.btn-enhanced:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Pagination */
+        .pagination-footer {
+            padding: 1rem 2rem;
+            background: var(--ultra-light-green);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pagination-info {
+            color: var(--light-text);
+            font-size: 0.875rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .page-header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content-card-header {
+                padding: 1rem;
+            }
+
+            .enhanced-table th,
+            .enhanced-table td {
+                padding: 0.75rem 1rem;
+            }
+
+            .pagination-footer {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .post-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .action-buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+
+    <script>
+    function showImageModal(imageUrl, title) {
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        const modalImage = document.getElementById('modalImage');
+        const modalTitle = document.getElementById('imageModalLabel');
+        
+        modalImage.src = imageUrl;
+        modalImage.alt = title;
+        modalTitle.innerHTML = '<i class="fa fa-image me-2"></i>' + title;
+        modal.show();
     }
-    
-    .btn-sm {
-        font-size: 0.8rem;
-        padding: 0.25rem 0.5rem;
-    }
-    
-    .card-header h5 {
-        font-size: 1rem;
-    }
-}
-
-/* Add some spacing to icons in table headers */
-th i {
-    margin-right: 0.25rem;
-}
-</style>
-
+    </script>
 @endsection

@@ -24,34 +24,57 @@ class NewsletterCampaignController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $data = $request->validate([
             'subject' => 'required|string|max:255',
             'content' => 'required|string',
         ]);
 
-        $campaign = NewsletterCampaign::create($request->only(['subject', 'content']));
+        NewsletterCampaign::create($data);
 
-        return redirect()->route('admin.newsletters.index')->with('success', 'Campaign created successfully');
+        return redirect()->route('admin.newsletters.index')->with('success', 'Campaign saved as draft!');
     }
 
-    public function send(NewsletterCampaign $campaign)
-{
-    $subscribers = NewsletterSubscriber::where('is_active', true)->get();
-    
-    foreach ($subscribers as $subscriber) {
-        Mail::to($subscriber->email)
-            ->send(new NewsletterEmail($campaign, $subscriber));
-    }
-
-    $campaign->update([
-        'sent_at' => now(),
-        'sent_count' => $subscribers->count()
-    ]);
-
-    return back()->with('success', 'Newsletter sent to '.$subscribers->count().' subscribers');
-}
-    public function show(NewsletterCampaign $campaign)
+    /**
+     * Route Model Binding: $newsletter (NOT $campaign)
+     * This matches the {newsletter} parameter in your resource route.
+     */
+    public function edit(NewsletterCampaign $newsletter)
     {
-        return view('admin.mails.show-campaign', compact('campaign'));
+        // Pass as $campaign for blade compatibility
+        return view('admin.mails.create-campaign', ['campaign' => $newsletter]);
+    }
+
+    public function update(Request $request, NewsletterCampaign $newsletter)
+    {
+        $data = $request->validate([
+            'subject' => 'required|string|max:255',
+            'content' => 'required|string',
+        ]);
+
+        $newsletter->update($data);
+
+        return redirect()->route('admin.newsletters.index')->with('success', 'Campaign updated!');
+    }
+
+    public function show(NewsletterCampaign $newsletter)
+    {
+        return view('admin.mails.show-campaign', ['campaign' => $newsletter]);
+    }
+
+    public function send(NewsletterCampaign $newsletter)
+    {
+        $subscribers = NewsletterSubscriber::where('is_active', true)->get();
+
+        foreach ($subscribers as $subscriber) {
+            Mail::to($subscriber->email)
+                ->send(new NewsletterEmail($newsletter, $subscriber));
+        }
+
+        $newsletter->update([
+            'sent_at' => now(),
+            'sent_count' => $subscribers->count()
+        ]);
+
+        return back()->with('success', 'Newsletter sent to ' . $subscribers->count() . ' subscribers');
     }
 }

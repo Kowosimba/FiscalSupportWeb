@@ -433,8 +433,8 @@
                 <div class="contact-widget">
                     <h3 class="widget-title contact-title">Need Help?</h3>
                     <p class="contact-text">Our experts are ready to assist you with any questions about this service.</p>
-                    <a href="tel:+1234567890" class="contact-phone">
-                        <i class="fas fa-phone-alt me-2"></i> +1 (234) 567-890
+                    <a href="tel:+2638677187169" class="contact-phone">
+                        <i class="fas fa-phone-alt me-2"></i> +2638677187169
                     </a>
                     <a href="{{ route('contact') }}" class="contact-btn">
                         <i class="fas fa-envelope me-2"></i> Contact Us

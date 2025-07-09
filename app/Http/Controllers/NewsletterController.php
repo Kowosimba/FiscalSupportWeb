@@ -5,27 +5,33 @@ namespace App\Http\Controllers;
 use App\Models\NewsletterSubscriber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use App\Mail\NewsletterSubscriptionConfirmation;
 use App\Mail\NewsletterUnsubscribed;
 
 class NewsletterController extends Controller
 {
     public function subscribe(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email|unique:newsletter_subscribers,email'
-        ]);
+{
+    $request->validate([
+        'email' => 'required|email|unique:newsletter_subscribers,email'
+    ]);
 
-        $subscriber = NewsletterSubscriber::create([
-            'email' => $request->email,
-            'is_active' => true
-        ]);
+    $token = Str::uuid()->toString();
 
-        // Send confirmation email
-        Mail::to($subscriber->email)->send(new NewsletterSubscriptionConfirmation($subscriber));
+    $subscriber = NewsletterSubscriber::create([
+        'email' => $request->email,
+        'is_active' => true,
+        'unsubscribe_token' => $token,
+    ]);
 
-        return back()->with('success', 'Thank you for subscribing to our newsletter!');
-    }
+    $unsubscribeUrl = url('/unsubscribe/' . $token);
+
+    Mail::to($subscriber->email)->queue(new NewsletterSubscriptionConfirmation($subscriber));
+
+    return back()->with('success', 'Thank you for subscribing to our newsletter!');
+}
+
 
     public function unsubscribe($token)
     {

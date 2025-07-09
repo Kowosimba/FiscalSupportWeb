@@ -1,105 +1,200 @@
 @extends('layouts.tickets')
 
 @section('ticket-content')
-<h3>Open Tickets</h3>
-
-<div class="card mb-4">
-    <div class="card-body pb-0">
-        <form method="GET" action="{{ route('admin.tickets.open') }}" class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label for="priority" class="form-label">Priority</label>
-                <select name="priority" id="priority" class="form-select">
-                    <option value="">All</option>
-                    @foreach($priorities as $priority)
-                        <option value="{{ $priority }}" {{ request('priority') == $priority ? 'selected' : '' }}>
-                            {{ ucfirst($priority) }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="technician" class="form-label">Technician</label>
-                <select name="technician" id="technician" class="form-select">
-                    <option value="">All</option>
-                    @foreach($technicians as $tech)
-                        <option value="{{ $tech->name }}" {{ request('technician') == $tech->name ? 'selected' : '' }}>
-                            {{ $tech->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="search" class="form-label">Search</label>
-                <input type="text" name="search" id="search" value="{{ request('search') }}" class="form-control" placeholder="Subject, company, email...">
-            </div>
-            <div class="col-md-3 d-flex align-items-center">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-filter me-1"></i> Filter
-                </button>
-                <a href="{{ route('admin.tickets.open') }}" class="btn btn-outline-secondary ms-2">
-                    Reset
-                </a>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>ID</th>
-                        <th>Subject</th>
-                        <th>Customer</th>
-                        <th>Priority</th>
-                        <th>Status</th>
-                        <th>Technician</th>
-                        <th>Last Update</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($tickets as $ticket)
-                        <tr>
-                            <td>#{{ $ticket->id }}</td>
-                            <td>{{ $ticket->subject }}</td>
-                            <td>{{ $ticket->company_name }}</td>
-                            <td>
-                                <span class="badge 
-                                    @if($ticket->priority === 'high') bg-danger
-                                    @elseif($ticket->priority === 'medium') bg-warning text-dark
-                                    @else bg-secondary @endif">
-                                    {{ ucfirst($ticket->priority ?? 'low') }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="badge status-open">
-                                    {{ ucfirst($ticket->status) }}
-                                </span>
-                            </td>
-                            <td>
-                                {{ $ticket->assignedTechnician->name ?? 'Unassigned' }}
-                            </td>
-                            <td>{{ $ticket->updated_at->diffForHumans() }}</td>
-                            <td>
-                                <a href="{{ route('tickets.show', $ticket->id) }}" class="btn btn-outline-primary btn-sm" title="View">
-                                    <i class="fa fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="text-center text-muted">No open tickets found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    {{-- Page Header --}}
+    <div class="page-header mb-3">
+        <div class="header-content">
+            <h3 class="page-title">
+                <i class="fa fa-folder-open me-2"></i>
+                Open Tickets
+            </h3>
+            <p class="page-subtitle">Track and manage all currently open tickets</p>
         </div>
-        <div class="p-3">
-            {{ $tickets->links() }}
+        <div class="header-stats">
+            <div class="stat-pill">
+                <i class="fa fa-ticket-alt"></i>
+                <span>{{ $tickets->total() ?? 0 }} Total</span>
+            </div>
         </div>
     </div>
-</div>
+
+    {{-- Enhanced Filter Card --}}
+    <div class="filter-card mb-3">
+        <div class="filter-header">
+            <h5 class="filter-title">
+                <i class="fa fa-sliders-h me-2"></i>
+                Filter & Search
+            </h5>
+        </div>
+        <div class="filter-body">
+            <form method="GET" action="{{ route('admin.tickets.open') }}" class="filter-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="priority" class="form-label">Priority Level</label>
+                        <div class="select-wrapper">
+                            <select name="priority" id="priority" class="enhanced-select">
+                                <option value="">All Priorities</option>
+                                @foreach($priorities as $priority)
+                                    <option value="{{ $priority }}" {{ request('priority') == $priority ? 'selected' : '' }}>
+                                        {{ ucfirst($priority) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <i class="fa fa-chevron-down select-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="technician" class="form-label">Assigned Technician</label>
+                        <div class="select-wrapper">
+                            <select name="technician" id="technician" class="enhanced-select">
+                                <option value="">All Technicians</option>
+                                @foreach($technicians as $tech)
+                                    <option value="{{ $tech->name }}" {{ request('technician') == $tech->name ? 'selected' : '' }}>
+                                        {{ $tech->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <i class="fa fa-chevron-down select-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="search" class="form-label">Search Query</label>
+                        <div class="search-wrapper">
+                            <i class="fa fa-search search-icon"></i>
+                            <input type="text"
+                                   name="search"
+                                   id="search"
+                                   value="{{ request('search') }}"
+                                   class="enhanced-input"
+                                   placeholder="Search by subject, company, or email...">
+                        </div>
+                    </div>
+                    <div class="form-group form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-filter me-2"></i>
+                            Apply Filters
+                        </button>
+                        <a href="{{ route('admin.tickets.open') }}" class="btn btn-outline">
+                            <i class="fa fa-times me-2"></i>
+                            Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Enhanced Tickets Table --}}
+    <div class="tickets-table-card">
+        <div class="table-header">
+            <div class="table-title">
+                <i class="fa fa-list me-2"></i>
+                Open Tickets List
+            </div>
+            @if($tickets->count() > 0)
+                <div class="table-meta">
+                    Showing {{ $tickets->firstItem() }} to {{ $tickets->lastItem() }} of {{ $tickets->total() }} results
+                </div>
+            @endif
+        </div>
+        <div class="table-container">
+            <div class="table-responsive">
+                <table class="enhanced-tickets-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Subject</th>
+                            <th>Customer</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Technician</th>
+                            <th>Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($tickets as $ticket)
+                            <tr class="ticket-row">
+                                <td>
+                                    <span class="ticket-id-badge">#{{ $ticket->id }}</span>
+                                </td>
+                                <td>
+                                    <div class="ticket-subject">
+                                        {{ $ticket->subject }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="customer-info">
+                                        <i class="fa fa-building me-1"></i>
+                                        {{ $ticket->company_name }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="priority-badge priority-{{ $ticket->priority ?? 'low' }}">
+                                        @if($ticket->priority === 'high')
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                        @elseif($ticket->priority === 'medium')
+                                            <i class="fa fa-minus-circle me-1"></i>
+                                        @else
+                                            <i class="fa fa-circle me-1"></i>
+                                        @endif
+                                        {{ ucfirst($ticket->priority ?? 'low') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-open">
+                                        <i class="fa fa-folder-open me-1"></i>
+                                        {{ ucfirst($ticket->status) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="technician-info">
+                                        @if($ticket->assignedTechnician)
+                                            <i class="fa fa-user me-1"></i>
+                                            {{ $ticket->assignedTechnician->name }}
+                                        @else
+                                            <span class="unassigned-badge">
+                                                <i class="fa fa-user-times me-1"></i>
+                                                Unassigned
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="update-time">
+                                        <i class="fa fa-clock me-1"></i>
+                                        {{ $ticket->updated_at->diffForHumans() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="{{ route('tickets.show', $ticket->id) }}"
+                                           class="action-btn view-btn"
+                                           title="View Ticket Details">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    <div class="empty-content">
+                                        <i class="fa fa-folder-open"></i>
+                                        <h4>No Open Tickets</h4>
+                                        <p>There are no open tickets matching your criteria.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if($tickets->hasPages())
+            <div class="pagination-wrapper">
+                {{ $tickets->links() }}
+            </div>
+        @endif
+    </div>
 @endsection

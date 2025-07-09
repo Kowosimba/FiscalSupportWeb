@@ -10,7 +10,8 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory;
+    use Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -59,6 +60,10 @@ class User extends Authenticatable
         return $this->role === $role;
     }
 
+    public function routeNotificationForMail()
+{
+    return $this->email; // Or use a different field if you have notification_email
+}
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -67,5 +72,7 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Ticket::class);
     }
+
+    
 }
 

@@ -127,6 +127,16 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'channels' => [
+    'queue' => [
+        'driver' => 'single',
+        'path' => storage_path('logs/queue.log'),
+        'level' => 'debug',
     ],
+],
+
+    ],
+
+    
 
 ];

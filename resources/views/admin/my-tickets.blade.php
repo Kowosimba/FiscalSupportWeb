@@ -1,50 +1,173 @@
 @extends('layouts.tickets')
 
 @section('ticket-content')
-<div class="container">
-    <h3 class="mb-4">Tickets Assigned to Me</h3>
-    <table class="table table-hover align-middle">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Subject</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Last Updated</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($tickets as $ticket)
-                <tr>
-                    <td>#{{ $ticket->id }}</td>
-                    <td>{{ $ticket->subject }}</td>
-                    <td>
-                        <span class="badge-priority badge-{{ $ticket->priority }}">
-                            <i class="fas fa-flag"></i>
-                            {{ ucfirst($ticket->priority) }}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="badge-custom badge-{{ str_replace([' ', '_'], '-', strtolower($ticket->status)) }}">
-                            <span class="status-dot dot-{{ str_replace([' ', '_'], '-', strtolower($ticket->status)) }}"></span>
-                            {{ ucfirst($ticket->status) }}
-                        </span>
-                    </td>
-                    <td>{{ $ticket->updated_at->diffForHumans() }}</td>
-                    <td>
-                        <a href="{{ route('tickets.show', $ticket->id) }}" class="btn btn-sm btn-outline-primary" title="View">
-                            <i class="fa fa-eye"></i>
+    {{-- Page Header --}}
+    <div class="page-header mb-3">
+        <div class="header-content">
+            <h3 class="page-title">
+                <i class="fa fa-user-check me-2"></i>
+                Tickets Assigned to Me
+            </h3>
+            <p class="page-subtitle">View and manage tickets that are assigned to you</p>
+        </div>
+        <div class="header-stats">
+            <div class="stat-pill">
+                <i class="fa fa-ticket-alt"></i>
+                <span>{{ $tickets->total() ?? 0 }} Total</span>
+            </div>
+        </div>
+    </div>
+
+    {{-- Filter Card --}}
+    <div class="filter-card mb-3">
+        <div class="filter-header">
+            <h5 class="filter-title">
+                <i class="fa fa-sliders-h me-2"></i>
+                Filter & Search
+            </h5>
+        </div>
+        <div class="filter-body">
+            <form method="GET" action="{{ route('tickets.mine') }}" class="filter-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="priority" class="form-label">Priority Level</label>
+                        <div class="select-wrapper">
+                            <select name="priority" id="priority" class="enhanced-select">
+                                <option value="">All Priorities</option>
+                                @foreach($priorities as $priority)
+                                    <option value="{{ $priority }}" {{ request('priority') == $priority ? 'selected' : '' }}>
+                                        {{ ucfirst($priority) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <i class="fa fa-chevron-down select-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="search" class="form-label">Search Query</label>
+                        <div class="search-wrapper">
+                            <i class="fa fa-search search-icon"></i>
+                            <input type="text"
+                                   name="search"
+                                   id="search"
+                                   value="{{ request('search') }}"
+                                   class="enhanced-input"
+                                   placeholder="Search by subject...">
+                        </div>
+                    </div>
+                    <div class="form-group form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-filter me-2"></i>
+                            Apply Filters
+                        </button>
+                        <a href="{{ route('tickets.mine') }}" class="btn btn-outline">
+                            <i class="fa fa-times me-2"></i>
+                            Reset
                         </a>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="6" class="text-center text-muted">No tickets assigned to you.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-    {{ $tickets->links() }}
-</div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Tickets Table --}}
+    <div class="tickets-table-card">
+        <div class="table-header">
+            <div class="table-title">
+                <i class="fa fa-list me-2"></i>
+                Assigned Tickets List
+            </div>
+            @if($tickets->count() > 0)
+                <div class="table-meta">
+                    Showing {{ $tickets->firstItem() }} to {{ $tickets->lastItem() }} of {{ $tickets->total() }} results
+                </div>
+            @endif
+        </div>
+        <div class="table-container">
+            <div class="table-responsive">
+                <table class="enhanced-tickets-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Subject</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($tickets as $ticket)
+                            <tr class="ticket-row">
+                                <td>
+                                    <span class="ticket-id-badge">#{{ $ticket->id }}</span>
+                                </td>
+                                <td>
+                                    <div class="ticket-subject">
+                                        {{ $ticket->subject }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="priority-badge priority-{{ $ticket->priority ?? 'low' }}">
+                                        @if($ticket->priority === 'high')
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                        @elseif($ticket->priority === 'medium')
+                                            <i class="fa fa-minus-circle me-1"></i>
+                                        @else
+                                            <i class="fa fa-circle me-1"></i>
+                                        @endif
+                                        {{ ucfirst($ticket->priority ?? 'low') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ str_replace([' ', '_'], '-', strtolower($ticket->status)) }}">
+                                        @if($ticket->status === 'open')
+                                            <i class="fa fa-folder-open me-1"></i>
+                                        @elseif($ticket->status === 'resolved')
+                                            <i class="fa fa-check-circle me-1"></i>
+                                        @elseif($ticket->status === 'pending')
+                                            <i class="fa fa-hourglass-half me-1"></i>
+                                        @else
+                                            <i class="fa fa-circle me-1"></i>
+                                        @endif
+                                        {{ ucfirst($ticket->status) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="update-time">
+                                        <i class="fa fa-clock me-1"></i>
+                                        {{ $ticket->updated_at->diffForHumans() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="{{ route('tickets.show', $ticket->id) }}"
+                                           class="action-btn view-btn"
+                                           title="View Ticket Details">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <div class="empty-content">
+                                        <i class="fa fa-user-check"></i>
+                                        <h4>No Tickets Assigned to You</h4>
+                                        <p>There are currently no tickets assigned to you.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if($tickets->hasPages())
+            <div class="pagination-wrapper">
+                {{ $tickets->links() }}
+            </div>
+        @endif
+    </div>
 @endsection
