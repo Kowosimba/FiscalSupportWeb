@@ -193,7 +193,7 @@ public function scopeOrdered($query)
 
     public function getHumanPublishedDateAttribute()
     {
-        return $this->published_at?->diffForHumans();
+        return $this->published_at ? Carbon::parse($this->published_at)->diffForHumans() : null;
     }
 
     public function getWordCountAttribute()
