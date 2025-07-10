@@ -8,13 +8,10 @@ use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
+       /**
+     * Where to redirect users after login / when they try to hit a guest route.
      */
-    public function register(): void
-    {
-        //
-    }
+    public const HOME = 'admin.index'; // Use the route name instead of path
 
     /**
      * Bootstrap any application services.

@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/NewsletterController.php
 
 namespace App\Http\Controllers;
 
@@ -8,44 +9,88 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Mail\NewsletterSubscriptionConfirmation;
 use App\Mail\NewsletterUnsubscribed;
+use Illuminate\Support\Facades\Log;
 
 class NewsletterController extends Controller
 {
     public function subscribe(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email|unique:newsletter_subscribers,email'
-    ]);
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email|max:255'
+            ]);
 
-    $token = Str::uuid()->toString();
+            // Check if email already exists
+            $existingSubscriber = NewsletterSubscriber::where('email', $request->email)->first();
+            
+            if ($existingSubscriber) {
+                if ($existingSubscriber->is_active) {
+                    return back()->with('info', 'This email is already subscribed to our newsletter.');
+                } else {
+                    // Reactivate subscription
+                    $existingSubscriber->update([
+                        'is_active' => true,
+                        'subscribed_at' => now()
+                    ]);
+                    
+                    Mail::to($existingSubscriber->email)->queue(new NewsletterSubscriptionConfirmation($existingSubscriber));
+                    
+                    return back()->with('success', 'Welcome back! Your subscription has been reactivated.');
+                }
+            }
 
-    $subscriber = NewsletterSubscriber::create([
-        'email' => $request->email,
-        'is_active' => true,
-        'unsubscribe_token' => $token,
-    ]);
+            // Create new subscription
+            $token = Str::uuid()->toString();
 
-    $unsubscribeUrl = url('/unsubscribe/' . $token);
+            $subscriber = NewsletterSubscriber::create([
+                'email' => $request->email,
+                'is_active' => true,
+                'unsubscribe_token' => $token,
+                'subscribed_at' => now(),
+            ]);
 
-    Mail::to($subscriber->email)->queue(new NewsletterSubscriptionConfirmation($subscriber));
+            // Send confirmation email
+            Mail::to($subscriber->email)->queue(new NewsletterSubscriptionConfirmation($subscriber));
 
-    return back()->with('success', 'Thank you for subscribing to our newsletter!');
-}
+            Log::info('New newsletter subscription', ['email' => $subscriber->email]);
 
+            return back()->with('success', 'Thank you for subscribing! Please check your email for confirmation.');
+
+        } catch (\Exception $e) {
+            Log::error('Newsletter subscription failed', [
+                'email' => $request->email ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Something went wrong. Please try again later.');
+        }
+    }
 
     public function unsubscribe($token)
     {
-        $subscriber = NewsletterSubscriber::where('unsubscribe_token', $token)->firstOrFail();
+        try {
+            $subscriber = NewsletterSubscriber::where('unsubscribe_token', $token)->firstOrFail();
 
-        if ($subscriber->is_active) {
-            $subscriber->update(['is_active' => false]);
-            
-            // Send confirmation of unsubscription
-            Mail::to($subscriber->email)->send(new NewsletterUnsubscribed($subscriber));
-            
-            return view('newsletter.unsubscribed')->with('email', $subscriber->email);
+            if ($subscriber->is_active) {
+                $subscriber->update(['is_active' => false]);
+                
+                // Send confirmation of unsubscription
+                Mail::to($subscriber->email)->send(new NewsletterUnsubscribed($subscriber));
+                
+                Log::info('Newsletter unsubscription', ['email' => $subscriber->email]);
+                
+                return view('newsletter.unsubscribed')->with('email', $subscriber->email);
+            }
+
+            return view('newsletter.already-unsubscribed')->with('email', $subscriber->email);
+
+        } catch (\Exception $e) {
+            Log::error('Newsletter unsubscription failed', [
+                'token' => $token,
+                'error' => $e->getMessage()
+            ]);
+
+            abort(404, 'Invalid unsubscribe link.');
         }
-
-        return view('newsletter.already-unsubscribed')->with('email', $subscriber->email);
     }
 }

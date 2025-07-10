@@ -25,16 +25,18 @@
         </div>
         
         @if (session('success'))
-            <div class="alert alert-success" role="alert">
-                {{ session('success') }}    
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
         
         @if ($errors->any())
-            <div class="alert alert-danger">
+            <div class="alert alert-danger alert-dismissible fade show">
                 @foreach ($errors->all() as $error)
                     <div>{{ $error }}</div>
                 @endforeach
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
         
@@ -43,19 +45,36 @@
             
             <div class="mb-4">
                 <label for="userEmail" class="visually-hidden">Email address</label>
-                <input type="email" class="form-control" id="userEmail" name="email" 
-                       placeholder="Email address" required autocomplete="username"
+                <input type="email" 
+                       class="form-control @error('email') is-invalid @enderror" 
+                       id="userEmail" 
+                       name="email" 
+                       placeholder="Email address" 
+                       required 
+                       autocomplete="username"
                        value="{{ old('email') }}">
+                @error('email')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
             
             <div class="mb-3">
                 <label for="userPassword" class="visually-hidden">Password</label>
                 <div class="password-field">
-                    <input type="password" class="form-control" id="userPassword" 
-                           name="password" placeholder="Password" required 
+                    <input type="password" 
+                           class="form-control @error('password') is-invalid @enderror" 
+                           id="userPassword" 
+                           name="password" 
+                           placeholder="Password" 
+                           required 
                            autocomplete="current-password">
+                    <button type="button" class="password-toggle" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="toggleIcon"></i>
+                    </button>
                 </div>
-                <div class="password-strength"></div>
+                @error('password')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
             
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -63,16 +82,16 @@
                     <input class="form-check-input" type="checkbox" id="rememberSession" name="remember">
                     <label class="form-check-label" for="rememberSession">Remember me</label>
                 </div>
-                <a href="" class="forgot-link">Forgot password?</a>
+                <a href="#" class="forgot-link">Forgot password?</a>
             </div>
             
-            <button type="submit" class="btn btn-primary login-btn">
-                Sign In
+            <button type="submit" class="btn btn-primary login-btn w-100">
+                <span class="btn-text">Sign In</span>
                 <i class="fas fa-arrow-right ms-2 icon-right"></i>
             </button>
             
-            <div class="signup-text text-center">
-                Don't have an account? <a href="{{ route('register') }}">Sign up now</a>
+            <div class="signup-text text-center mt-3">
+                Don't have an account? <a href="{{ route('show.register') }}">Sign up now</a>
             </div>
         </form>
     </div>
@@ -80,5 +99,22 @@
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
+    
+    <script>
+        function togglePassword() {
+            const passwordField = document.getElementById('userPassword');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+    </script>
 </body>
 </html>

@@ -30,6 +30,105 @@
 
     @stack('styles')
     
+    <!-- Enhanced Create Ticket Button Styles -->
+    <style>
+        /* Enhanced Support Ticket Button */
+        .support-ticket-trigger {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: linear-gradient(135deg, #06621c, #0f8447);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(10, 73, 24, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            user-select: none;
+            backdrop-filter: blur(10px);
+            min-width: auto;
+        }
+
+        .support-ticket-trigger:hover {
+            background: linear-gradient(135deg, #45a216, #16582f);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(224, 6, 6, 0.4);
+            color: white;
+        }
+
+        .support-ticket-trigger:active {
+            transform: translateY(0);
+        }
+
+        .support-ticket-trigger i {
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .support-ticket-trigger:hover i {
+            transform: rotate(15deg) scale(1.1);
+        }
+
+        /* Make button draggable */
+        .support-ticket-trigger.dragging {
+            opacity: 0.8;
+            cursor: grabbing;
+        }
+
+        /* Responsive adjustments for button */
+        @media (max-width: 768px) {
+            .support-ticket-trigger {
+                bottom: 20px;
+                right: 20px;
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+            
+            .support-ticket-trigger i {
+                font-size: 14px;
+            }
+        }
+
+        /* Ensure button stays above other elements */
+        .support-ticket-trigger {
+            z-index: 9999;
+        }
+
+        /* Compact mobile version */
+@media (max-width: 768px) {
+    .support-ticket-trigger span {
+        display: none; /* Hide text on mobile */
+    }
+    
+    .support-ticket-trigger {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        padding: 0;
+        justify-content: center;
+        bottom: 20px !important;
+        right: 20px !important;
+        z-index: 99999 !important;
+        display: flex !important;
+        visibility: visible !important;
+    }
+    
+    .support-ticket-trigger i {
+        font-size: 18px !important;
+        margin: 0;
+    }
+}
+
+    </style>
+    
     <!-- Session message handling -->
     @if (session('message'))
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -40,7 +139,7 @@
                 text: '{{ session('message') }}',
                 icon: 'success',
                 confirmButtonText: 'OK',
-                timer: 5000,  // Increased from 3000 to 5000 for better readability
+                timer: 5000,
                 timerProgressBar: true,
                 didOpen: () => {
                     const preloader = document.getElementById('preloader');
@@ -104,6 +203,12 @@
     <!-- Scroll to top button -->
     <button class="scroll__top scroll-to-target" data-target="html" aria-label="Scroll to top">
         <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Enhanced Create Ticket Button with Paper Airplane Icon -->
+    <button id="openSupportTicket" class="support-ticket-trigger" aria-label="Create support ticket">
+        <i class="fas fa-paper-plane"></i>
+        <span>Create Ticket</span>
     </button>
 
     <!-- Support Ticket Modal -->
@@ -223,11 +328,6 @@
         </div>
     </div>
 
-    <!-- Create Ticket Button -->
-    <button id="openSupportTicket" class="support-ticket-trigger" aria-label="Create support ticket">
-        <i class="fas fa-ticket-alt"></i> Create Ticket
-    </button>
-
     <!-- Header Section -->
     <header>
         <div id="header-fixed-height"></div>
@@ -267,14 +367,25 @@
                                         </a>
                                     </li>
 
-                                    <!-- Login Link -->
+                                    <!-- Login Link with exact spacing -->
                                     <li class="header-login" style="margin-left: 20px; display: flex; align-items: center;">
-                                        <span style="border-left: 1px solid var(--tg-heading-color); height: 20px; margin-right: 15px;"></span>
-                                        <a href="{{ route('show.login') }}" class="login-link" style="color: var(--tg-heading-color); font-weight: 500; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                                            <i class="fas fa-sign-in-alt"></i>
-                                            <span>Login</span>
-                                        </a>
-                                    </li>
+                                         <span style="border-left: 1px solid var(--tg-heading-color); height: 20px; margin-right: 15px;"></span>
+                                
+                                @auth
+                                    <!-- Show Dashboard link for authenticated users -->
+                                    <a href="{{ route('admin.index') }}" class="login-link" style="color: var(--tg-heading-color); font-weight: 500; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                        <span>Dashboard</span>
+                                    </a>
+                                @else
+                                    <!-- Show Login link for guests -->
+                                    <a href="{{ route('show.login') }}" class="login-link" style="color: var(--tg-heading-color); font-weight: 500; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        <span>Login</span>
+                                    </a>
+                                @endauth
+                            </li>
+
                                 </ul>
                             </li>
                         </ul>
@@ -283,7 +394,7 @@
             </div>
         </div>
         
-        <!-- Main Navigation -->
+        <!-- Main Navigation with exact spacing -->
         <div id="sticky-header" class="tg-header__area tg-header__area-five">
             <div class="container">
                 <div class="row">
@@ -325,16 +436,11 @@
         <div class="tgmobile__menu">
             <nav class="tgmobile__menu-box">
                 <div class="close-btn"><i class="fas fa-times"></i></div>
-                <div class="nav-logo">
-                    <a href="{{ route('home') }}">
-                        <img src="{{ asset('assets/img/logo/logo-v2.png') }}" alt="Logo" width="150" height="70" loading="lazy">
-                    </a>
-                </div>
                 <div class="tgmobile__menu-outer"></div>
                 <div class="tgmobile__menu-bottom">
                     <div class="contact-info">
                         <ul class="list-wrap">
-                            <li>Mail: <a href="mailto:sales2@fiscalsupportservices.com">sales@fiscalsupportservices.com</a></li>
+                            <li>Mail: <a href="mailto:sales@fiscalsupportservices.com">sales@fiscalsupportservices.com</a></li>
                             <li>Phone: <a href="tel:+263292270666">+263292270666</a></li>
                         </ul>
                     </div>
@@ -468,7 +574,7 @@
     <script src="{{ asset('assets/js/isotope.pkgd.min.js') }}" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 
-    <!-- Custom JavaScript -->
+    <!-- Enhanced JavaScript with Draggable Functionality -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Cache DOM elements
@@ -485,10 +591,119 @@
             const customSelectTrigger = document.getElementById('customSelectTrigger');
             const hiddenSelect = document.getElementById('service');
 
-            // Form validation flag
-            let isFormValid = false;
+            // Draggable functionality for support button
+            let isDragging = false;
+            let startX, startY, initialX, initialY;
+            let hasMoved = false;
 
-            // Modal toggle functions
+            openBtn.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                hasMoved = false;
+                startX = e.clientX;
+                startY = e.clientY;
+                
+                const rect = openBtn.getBoundingClientRect();
+                initialX = rect.left;
+                initialY = rect.top;
+                
+                openBtn.classList.add('dragging');
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    hasMoved = true;
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+                    
+                    const newX = initialX + deltaX;
+                    const newY = initialY + deltaY;
+                    
+                    // Constrain to viewport
+                    const maxX = window.innerWidth - openBtn.offsetWidth;
+                    const maxY = window.innerHeight - openBtn.offsetHeight;
+                    
+                    const constrainedX = Math.max(0, Math.min(newX, maxX));
+                    const constrainedY = Math.max(0, Math.min(newY, maxY));
+                    
+                    openBtn.style.left = constrainedX + 'px';
+                    openBtn.style.top = constrainedY + 'px';
+                    openBtn.style.right = 'auto';
+                    openBtn.style.bottom = 'auto';
+                }
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    openBtn.classList.remove('dragging');
+                    
+                    // If button wasn't moved significantly, treat as click
+                    setTimeout(() => {
+                        if (!hasMoved) {
+                            openModal();
+                        }
+                        hasMoved = false;
+                    }, 10);
+                }
+            });
+
+            // Touch events for mobile
+            openBtn.addEventListener('touchstart', function(e) {
+                isDragging = true;
+                hasMoved = false;
+                const touch = e.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+                
+                const rect = openBtn.getBoundingClientRect();
+                initialX = rect.left;
+                initialY = rect.top;
+                
+                openBtn.classList.add('dragging');
+                e.preventDefault();
+            });
+
+            document.addEventListener('touchmove', function(e) {
+                if (isDragging) {
+                    hasMoved = true;
+                    const touch = e.touches[0];
+                    const deltaX = touch.clientX - startX;
+                    const deltaY = touch.clientY - startY;
+                    
+                    const newX = initialX + deltaX;
+                    const newY = initialY + deltaY;
+                    
+                    const maxX = window.innerWidth - openBtn.offsetWidth;
+                    const maxY = window.innerHeight - openBtn.offsetHeight;
+                    
+                    const constrainedX = Math.max(0, Math.min(newX, maxX));
+                    const constrainedY = Math.max(0, Math.min(newY, maxY));
+                    
+                    openBtn.style.left = constrainedX + 'px';
+                    openBtn.style.top = constrainedY + 'px';
+                    openBtn.style.right = 'auto';
+                    openBtn.style.bottom = 'auto';
+                    
+                    e.preventDefault();
+                }
+            });
+
+            document.addEventListener('touchend', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    openBtn.classList.remove('dragging');
+                    
+                    setTimeout(() => {
+                        if (!hasMoved) {
+                            openModal();
+                        }
+                        hasMoved = false;
+                    }, 10);
+                }
+            });
+
+            // Modal functionality
             function openModal() {
                 modal.style.display = 'block';
                 body.style.overflow = 'hidden';
@@ -502,7 +717,6 @@
             }
 
             // Event listeners
-            openBtn.addEventListener('click', openModal);
             closeBtn.addEventListener('click', closeModal);
             overlay.addEventListener('click', closeModal);
 
@@ -514,9 +728,11 @@
             });
 
             // Custom select functionality
-            customSelectTrigger.addEventListener('click', function() {
-                customSelect.classList.toggle('opened');
-            });
+            if (customSelectTrigger) {
+                customSelectTrigger.addEventListener('click', function() {
+                    customSelect.classList.toggle('opened');
+                });
+            }
 
             // Handle option selection
             document.querySelectorAll('.custom-option').forEach(option => {
@@ -567,71 +783,11 @@
             // Form submission handling
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    // Validate form before submission
-                    if (!validateForm()) {
-                        e.preventDefault();
-                        return;
-                    }
-                    
                     // Show loading state
                     submitBtn.disabled = true;
                     submitBtn.querySelector('.btn-text').textContent = 'Submitting...';
                     submitBtn.querySelector('.spinner-border').classList.remove('d-none');
                 });
-            }
-
-            // Form validation
-            function validateForm() {
-                isFormValid = true;
-                
-                // Reset previous errors
-                document.querySelectorAll('.is-invalid').forEach(el => {
-                    el.classList.remove('is-invalid');
-                });
-                
-                document.querySelectorAll('.invalid-feedback').forEach(el => {
-                    el.remove();
-                });
-
-                // Validate required fields
-                const requiredFields = form.querySelectorAll('[required]');
-                requiredFields.forEach(field => {
-                    if (!field.value.trim()) {
-                        markAsInvalid(field, 'This field is required');
-                        isFormValid = false;
-                    }
-                });
-
-                // Validate email format
-                const emailField = form.querySelector('#email');
-                if (emailField && !isValidEmail(emailField.value)) {
-                    markAsInvalid(emailField, 'Please enter a valid email address');
-                    isFormValid = false;
-                }
-
-                // Validate service selection
-                if (hiddenSelect.value === '') {
-                    markAsInvalid(hiddenSelect, 'Please select a service');
-                    isFormValid = false;
-                }
-
-                return isFormValid;
-            }
-
-            function markAsInvalid(field, message) {
-                field.classList.add('is-invalid');
-                
-                // Create error message element
-                const errorElement = document.createElement('div');
-                errorElement.className = 'invalid-feedback';
-                errorElement.textContent = message;
-                
-                // Insert after the field
-                field.parentNode.appendChild(errorElement);
-            }
-
-            function isValidEmail(email) {
-                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
             }
 
             // Initialize selected service if exists
@@ -653,14 +809,6 @@
                     submitBtn.querySelector('.btn-text').textContent = 'Submit Ticket';
                     submitBtn.querySelector('.spinner-border').classList.add('d-none');
                 }
-                
-                // Reset validation states
-                document.querySelectorAll('.is-invalid').forEach(el => {
-                    el.classList.remove('is-invalid');
-                });
-                document.querySelectorAll('.invalid-feedback').forEach(el => {
-                    el.remove();
-                });
             };
         });
     </script>

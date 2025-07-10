@@ -1,5 +1,5 @@
 {{-- resources/views/newsletter/unsubscribed.blade.php --}}
-@extends('layouts.app')
+@extends('layouts.emaillayout')
 
 @section('content')
 <div class="container">
