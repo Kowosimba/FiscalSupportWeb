@@ -6,40 +6,32 @@ use App\Models\Blog;
 use App\Models\BlogComment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Rules\RecaptchaRule; // Assuming RecaptchaRule is in App\Rules namespace
 
 class BlogCommentController extends Controller
 {
     public function store(Request $request, Blog $blog)
     {
-        $validationRules = [
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
             'content' => 'required|string|min:5|max:2000',
-        ];
+            // Added g-recaptcha-response validation here 
+        ]);
 
-        // Add name and email validation for guests
-        if (!Auth::check()) {
-            $validationRules['name'] = 'required|string|max:255';
-            $validationRules['email'] = 'required|email|max:255';
-        }
-
-        $validated = $request->validate($validationRules);
-
-        // Create comment data
-        $commentData = [
-            'content' => $validated['content'],
-            'blog_id' => $blog->id,
-        ];
+        $comment = new BlogComment($validated);
+        $comment->blog_id = $blog->id;
 
         if (Auth::check()) {
-            $commentData['user_id'] = Auth::id();
-            $commentData['name'] = Auth::user()->name;
-            $commentData['email'] = Auth::user()->email;
+            $comment->user_id = Auth::id();
+            $comment->approved = true; // Comments from authenticated users are auto-approved
         } else {
-            $commentData['name'] = $validated['name'];
-            $commentData['email'] = $validated['email'];
+            $comment->approved = false; // Comments from guests require manual approval
         }
 
-        BlogComment::create($commentData);
+        $comment->save();
 
-        return back()->with('success', 'Comment posted successfully!');
+        return back()->with('success', 'Comment submitted! ' .
+            (Auth::check() ? '' : 'It will appear after approval.'));
     }
 }

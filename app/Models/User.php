@@ -24,10 +24,6 @@ class User extends Authenticatable
         'password',
         'role', 
     ];
-    public function isAdmin()
-    {
-        return $this->role === 'admin';
-    }
     public function role()
         {
             return $this->role;
@@ -72,6 +68,31 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Ticket::class);
     }
+
+    public function assignedJobs()
+{
+    return $this->hasMany(CallLog::class, 'assigned_to');
+}
+
+public function approvedJobs()
+{
+    return $this->hasMany(CallLog::class, 'approved_by');
+}
+
+public function isTechnician()
+{
+    return $this->role === 'technician';
+}
+
+public function isAdmin()
+{
+    return $this->role === 'admin';
+}
+
+public function isAccounts()
+{
+    return $this->role === 'accounts';
+}
 
     
 }

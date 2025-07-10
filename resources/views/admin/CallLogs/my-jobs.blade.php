@@ -1,6 +1,6 @@
 @extends('layouts.calllogs')
 
-@section('title', 'Unassigned Job Cards')
+@section('title', 'My Job Cards')
 
 @section('content')
 
@@ -10,18 +10,16 @@
         <div class="page-header-content">
             <div class="header-text">
                 <h3 class="page-title">
-                    <i class="fa fa-user-slash me-2"></i>
-                    Unassigned Job Cards
+                    <i class="fa fa-user-circle me-2"></i>
+                    My Job Cards
                 </h3>
-                <p class="page-subtitle">Job cards waiting for engineer assignment</p>
+                <p class="page-subtitle">Job cards assigned to you</p>
             </div>
             <div class="page-actions">
-                @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                    <button class="btn btn-primary btn-enhanced" onclick="bulkAssign()" id="bulkAssignBtn" disabled>
-                        <i class="fa fa-users me-2"></i>
-                        Bulk Assign
-                    </button>
-                @endif
+                <button class="btn btn-outline-secondary btn-enhanced" onclick="refreshPage()">
+                    <i class="fa fa-sync-alt me-2"></i>
+                    Refresh
+                </button>
             </div>
         </div>
     </div>
@@ -30,15 +28,15 @@
     <div class="stats-grid mb-4">
         <div class="stat-card">
             <div class="stat-card-body">
-                <div class="stat-icon warning">
-                    <i class="fa fa-user-slash"></i>
+                <div class="stat-icon primary">
+                    <i class="fa fa-clipboard"></i>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number">{{ $callLogs->total() }}</div>
-                    <div class="stat-label">Unassigned</div>
+                    <div class="stat-number">{{ $stats['total'] ?? 0 }}</div>
+                    <div class="stat-label">Total Assigned</div>
                     <div class="stat-footer">
-                        <i class="fa fa-exclamation-triangle me-1"></i>
-                        Need assignment
+                        <i class="fa fa-user me-1"></i>
+                        Your jobs
                     </div>
                 </div>
             </div>
@@ -46,15 +44,15 @@
 
         <div class="stat-card">
             <div class="stat-card-body">
-                <div class="stat-icon danger">
-                    <i class="fa fa-fire"></i>
+                <div class="stat-icon warning">
+                    <i class="fa fa-clock"></i>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number">{{ $callLogs->where('type', 'emergency')->count() }}</div>
-                    <div class="stat-label">Emergency</div>
+                    <div class="stat-number">{{ $stats['assigned'] ?? 0 }}</div>
+                    <div class="stat-label">Assigned</div>
                     <div class="stat-footer">
                         <i class="fa fa-arrow-up me-1"></i>
-                        High priority
+                        Ready to start
                     </div>
                 </div>
             </div>
@@ -63,14 +61,14 @@
         <div class="stat-card">
             <div class="stat-card-body">
                 <div class="stat-icon info">
-                    <i class="fa fa-clock"></i>
+                    <i class="fa fa-cog"></i>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number">{{ $callLogs->where('date_booked', '<=', now()->subDays(1)->format('Y-m-d'))->count() }}</div>
-                    <div class="stat-label">Overdue</div>
+                    <div class="stat-number">{{ $stats['in_progress'] ?? 0 }}</div>
+                    <div class="stat-label">In Progress</div>
                     <div class="stat-footer">
-                        <i class="fa fa-exclamation-circle me-1"></i>
-                        >24 hours
+                        <i class="fa fa-play me-1"></i>
+                        Active work
                     </div>
                 </div>
             </div>
@@ -78,15 +76,15 @@
 
         <div class="stat-card">
             <div class="stat-card-body">
-                <div class="stat-icon primary">
-                    <i class="fa fa-users"></i>
+                <div class="stat-icon success">
+                    <i class="fa fa-check-circle"></i>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-number">4</div>
-                    <div class="stat-label">Available Engineers</div>
+                    <div class="stat-number">{{ $stats['complete'] ?? 0 }}</div>
+                    <div class="stat-label">Completed</div>
                     <div class="stat-footer">
-                        <i class="fa fa-user-check me-1"></i>
-                        Ready to assign
+                        <i class="fa fa-trophy me-1"></i>
+                        This month
                     </div>
                 </div>
             </div>
@@ -98,12 +96,24 @@
         <div class="content-card-header">
             <h5 class="card-title">
                 <i class="fa fa-filter me-2"></i>
-                Filter Unassigned Job Cards
+                Filter My Job Cards
             </h5>
         </div>
         <div class="content-card-body">
-            <form method="GET" action="{{ route('admin.call-logs.unassigned') }}">
+            <form method="GET" action="{{ route('admin.call-logs.my-jobs') }}">
                 <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-control form-control-enhanced" name="status">
+                                <option value="">All Status</option>
+                                <option value="assigned" {{ request('status') == 'assigned' ? 'selected' : '' }}>Assigned</option>
+                                <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                                <option value="complete" {{ request('status') == 'complete' ? 'selected' : '' }}>Complete</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="col-md-3">
                         <div class="form-group">
                             <label class="form-label">Job Type</label>
@@ -125,21 +135,8 @@
                             <select class="form-control form-control-enhanced" name="date_range">
                                 <option value="">All Dates</option>
                                 <option value="today" {{ request('date_range') == 'today' ? 'selected' : '' }}>Today</option>
-                                <option value="yesterday" {{ request('date_range') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
                                 <option value="this_week" {{ request('date_range') == 'this_week' ? 'selected' : '' }}>This Week</option>
-                                <option value="overdue" {{ request('date_range') == 'overdue' ? 'selected' : '' }}>Overdue (>24h)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label class="form-label">Amount Range</label>
-                            <select class="form-control form-control-enhanced" name="amount_range">
-                                <option value="">All Amounts</option>
-                                <option value="low" {{ request('amount_range') == 'low' ? 'selected' : '' }}>Under $100</option>
-                                <option value="medium" {{ request('amount_range') == 'medium' ? 'selected' : '' }}>$100 - $500</option>
-                                <option value="high" {{ request('amount_range') == 'high' ? 'selected' : '' }}>Over $500</option>
+                                <option value="this_month" {{ request('date_range') == 'this_month' ? 'selected' : '' }}>This Month</option>
                             </select>
                         </div>
                     </div>
@@ -151,7 +148,7 @@
                                 <button type="submit" class="btn btn-primary btn-enhanced">
                                     <i class="fa fa-search me-1"></i>Filter
                                 </button>
-                                <a href="{{ route('admin.call-logs.unassigned') }}" class="btn btn-outline-secondary btn-enhanced">
+                                <a href="{{ route('admin.call-logs.my-jobs') }}" class="btn btn-outline-secondary btn-enhanced">
                                     <i class="fa fa-times me-1"></i>Clear
                                 </a>
                             </div>
@@ -165,20 +162,12 @@
     <!-- Job Cards Table -->
     <div class="content-card">
         <div class="content-card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="header-content">
-                    <h5 class="card-title">
-                        <i class="fa fa-user-slash me-2"></i>
-                        Unassigned Job Cards
-                    </h5>
-                    <p class="card-subtitle">{{ $callLogs->total() }} unassigned job cards</p>
-                </div>
-                @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                    <div class="form-check">
-                        <input type="checkbox" id="selectAll" class="form-check-input">
-                        <label class="form-check-label" for="selectAll">Select All</label>
-                    </div>
-                @endif
+            <div class="header-content">
+                <h5 class="card-title">
+                    <i class="fa fa-list me-2"></i>
+                    My Assigned Job Cards
+                </h5>
+                <p class="card-subtitle">{{ $callLogs->total() }} job cards found</p>
             </div>
         </div>
         
@@ -187,17 +176,13 @@
                 <table class="enhanced-table">
                     <thead>
                         <tr>
-                            @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                                <th width="50">
-                                    <input type="checkbox" id="selectAllHeader" class="form-check-input">
-                                </th>
-                            @endif
                             <th><i class="fa fa-hashtag me-1"></i>Job Card</th>
                             <th><i class="fa fa-building me-1"></i>Company</th>
                             <th><i class="fa fa-exclamation-circle me-1"></i>Fault Description</th>
                             <th><i class="fa fa-cogs me-1"></i>Type</th>
+                            <th><i class="fa fa-check-circle me-1"></i>Status</th>
                             <th><i class="fa fa-calendar me-1"></i>Date Booked</th>
-                            <th><i class="fa fa-clock me-1"></i>Age</th>
+                            <th><i class="fa fa-clock me-1"></i>Duration</th>
                             <th><i class="fa fa-dollar-sign me-1"></i>Amount</th>
                             <th><i class="fa fa-cog me-1"></i>Actions</th>
                         </tr>
@@ -205,11 +190,6 @@
                     <tbody>
                         @forelse($callLogs as $jobCard)
                             <tr class="job-row">
-                                @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                                    <td>
-                                        <input type="checkbox" class="form-check-input jobcard-checkbox" value="{{ $jobCard->id }}">
-                                    </td>
-                                @endif
                                 <td>
                                     <span class="job-card-number">{{ $jobCard->job_card }}</span>
                                     @if($jobCard->zimra_ref)
@@ -232,15 +212,32 @@
                                     @include('admin.calllogs.partials.type-badge', ['type' => $jobCard->type])
                                 </td>
                                 <td>
+                                    @include('admin.calllogs.partials.status-badge', ['status' => $jobCard->status])
+                                </td>
+                                <td>
                                     <div class="job-date">
                                         <i class="fa fa-calendar me-1"></i>
                                         {{ \Carbon\Carbon::parse($jobCard->date_booked)->format('M j, Y') }}
+                                        @if($jobCard->date_resolved)
+                                            <br>
+                                            <small class="text-success">
+                                                <i class="fa fa-check me-1"></i>
+                                                Resolved: {{ \Carbon\Carbon::parse($jobCard->date_resolved)->format('M j') }}
+                                            </small>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="job-age {{ \Carbon\Carbon::parse($jobCard->date_booked)->diffInHours() > 24 ? 'text-danger' : '' }}">
-                                        <i class="fa fa-clock me-1"></i>
-                                        {{ \Carbon\Carbon::parse($jobCard->date_booked)->diffForHumans() }}
+                                    <div class="job-duration">
+                                        @if($jobCard->billed_hours)
+                                            <i class="fa fa-clock me-1"></i>
+                                            {{ $jobCard->billed_hours }}h
+                                        @elseif($jobCard->time_start && $jobCard->time_finish)
+                                            <i class="fa fa-clock me-1"></i>
+                                            {{ $jobCard->time_start }} - {{ $jobCard->time_finish }}
+                                        @else
+                                            <span class="text-muted">Not set</span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>
@@ -253,9 +250,16 @@
                                         <a href="{{ route('admin.call-logs.show', $jobCard) }}" class="action-btn view-btn" title="View Details">
                                             <i class="fa fa-eye"></i>
                                         </a>
-                                        @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                                            <button class="action-btn assign-btn" onclick="assignJobCard({{ $jobCard->id }})" title="Assign Engineer">
-                                                <i class="fa fa-user-plus"></i>
+                                        <a href="{{ route('admin.call-logs.edit', $jobCard) }}" class="action-btn edit-btn" title="Edit">
+                                            <i class="fa fa-edit"></i>
+                                        </a>
+                                        @if($jobCard->status === 'assigned')
+                                            <button class="action-btn" style="background: #EFF6FF; color: #3B82F6;" onclick="updateStatus({{ $jobCard->id }}, 'in_progress')" title="Start Work">
+                                                <i class="fa fa-play"></i>
+                                            </button>
+                                        @elseif($jobCard->status === 'in_progress')
+                                            <button class="action-btn" style="background: var(--ultra-light-green); color: var(--primary-green);" onclick="updateStatus({{ $jobCard->id }}, 'complete')" title="Complete Job">
+                                                <i class="fa fa-check"></i>
                                             </button>
                                         @endif
                                     </div>
@@ -263,12 +267,12 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ in_array(auth()->user()->role, ['admin', 'accounts']) ? '9' : '8' }}">
+                                <td colspan="9">
                                     <div class="empty-state">
                                         <div class="empty-content">
-                                            <i class="fa fa-check-circle"></i>
-                                            <h5 class="empty-title">All job cards assigned</h5>
-                                            <p class="empty-description">Great! All job cards have been assigned to engineers.</p>
+                                            <i class="fa fa-clipboard"></i>
+                                            <h5 class="empty-title">No job cards assigned</h5>
+                                            <p class="empty-description">You don't have any job cards assigned to you at the moment.</p>
                                         </div>
                                     </div>
                                 </td>
@@ -287,76 +291,6 @@
     </div>
 </div>
 
-<!-- Assignment Modal -->
-@if(in_array(auth()->user()->role, ['admin', 'accounts']))
-<div class="modal fade" id="assignJobCardModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Assign Job to Engineer</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="assignJobCardForm">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="engineer" class="form-label">Select Engineer</label>
-                        <select class="form-control form-control-enhanced" id="engineer" name="engineer" required>
-                            <option value="">Choose engineer...</option>
-                            <option value="Benson">Benson</option>
-                            <option value="Malvine">Malvine</option>
-                            <option value="Mukai">Mukai</option>
-                            <option value="Tapera">Tapera</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="assignment_notes" class="form-label">Assignment Notes (Optional)</label>
-                        <textarea class="form-control form-control-enhanced" id="assignment_notes" name="assignment_notes" rows="3" placeholder="Any specific instructions or notes for the engineer..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-enhanced" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-enhanced">Assign Job</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Bulk Assignment Modal -->
-<div class="modal fade" id="bulkAssignModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Bulk Assign Job Cards</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="bulkAssignForm">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="bulk_engineer" class="form-label">Select Engineer</label>
-                        <select class="form-control form-control-enhanced" id="bulk_engineer" name="engineer" required>
-                            <option value="">Choose engineer...</option>
-                            <option value="Benson">Benson</option>
-                            <option value="Malvine">Malvine</option>
-                            <option value="Mukai">Mukai</option>
-                            <option value="Tapera">Tapera</option>
-                        </select>
-                    </div>
-                    <div class="alert alert-info">
-                        <i class="fa fa-info-circle me-2"></i>
-                        <span id="selectedCount">0</span> job cards will be assigned to the selected engineer.
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-enhanced" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-enhanced">Assign Selected Jobs</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
-
 <style>
     .dashboard-nav-wrapper { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); padding: 0.5rem; margin-bottom: 2rem;}
     .panel-nav { border: none; gap: 0.5rem; }
@@ -374,17 +308,17 @@
     .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
     .stat-icon.primary { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); }
     .stat-icon.warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-    .stat-icon.danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
     .stat-icon.info { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+    .stat-icon.success { background: linear-gradient(135deg, var(--success-green) 0%, var(--primary-green) 100%); }
     .stat-icon i { font-size: 1.5rem; color: var(--white);}
     .stat-content { flex: 1;}
     .stat-number { font-size: 2rem; font-weight: 700; color: var(--dark-text); margin: 0; line-height: 1;}
     .stat-label { color: var(--light-text); font-size: 0.9rem; margin: 0.25rem 0; font-weight: 500;}
-    .stat-footer { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.25rem; color: var(--primary-green);}
+    .stat-footer { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; color: var(--primary-green);}
     .content-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border-color);}
     .content-card-header { padding: 1.5rem 2rem; background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%); border-bottom: 1px solid var(--border-color);}
     .content-card-header .card-title { font-size: 1.25rem; font-weight: 600; color: var(--primary-green); margin: 0;}
-    .card-subtitle { color: var(--light-text); font-size: 0.9rem; margin: 0.25rem 0 0 0;}
+    .content-card-header .card-subtitle { color: var(--light-text); font-size: 0.9rem; margin: 0.25rem 0 0 0;}
     .content-card-body { padding: 2rem;}
     .form-group { margin-bottom: 1.5rem;}
     .form-label { font-weight: 600; color: var(--dark-text); margin-bottom: 0.5rem; display: block;}
@@ -393,9 +327,6 @@
     .btn-enhanced { padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; border: none; display: flex; align-items: center; text-decoration: none;}
     .btn-primary.btn-enhanced { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); color: var(--white);}
     .btn-primary.btn-enhanced:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover);}
-    .btn-primary.btn-enhanced:disabled { opacity: 0.6; cursor: not-allowed; transform: none;}
-    .btn-secondary.btn-enhanced { background: var(--hover-bg); color: var(--medium-text); border: 2px solid var(--border-color);}
-    .btn-secondary.btn-enhanced:hover { background: var(--medium-text); color: var(--white);}
     .btn-outline-secondary.btn-enhanced { border: 2px solid var(--border-color); color: var(--medium-text); background: transparent;}
     .btn-outline-secondary.btn-enhanced:hover { background: var(--medium-text); color: var(--white);}
     .enhanced-table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 0;}
@@ -406,21 +337,18 @@
     .job-card-number { font-family: 'Monaco', 'Menlo', monospace; background: var(--light-green); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; color: var(--primary-green-dark); font-weight: 600; border: 1px solid var(--secondary-green);}
     .fault-description { font-weight: 500; color: var(--dark-text); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
     .company-info { color: var(--medium-text); font-weight: 500; display: flex; align-items: center;}
-    .job-date, .job-age { color: var(--light-text); font-size: 0.875rem; display: flex; align-items: center;}
+    .job-date, .job-duration { color: var(--light-text); font-size: 0.875rem; display: flex; align-items: center;}
     .amount-charged { font-weight: 600; color: var(--primary-green-dark);}
     .action-buttons { display: flex; gap: 0.5rem;}
     .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; transition: all 0.2s ease; text-decoration: none; border: none; cursor: pointer;}
     .view-btn { background: var(--light-green); color: var(--primary-green);}
     .view-btn:hover { background: var(--primary-green); color: var(--white); transform: translateY(-1px);}
-    .assign-btn { background: #F3E8FF; color: #8B5CF6;}
-    .assign-btn:hover { background: #8B5CF6; color: var(--white); transform: translateY(-1px);}
+    .edit-btn { background: #EFF6FF; color: #3B82F6;}
+    .edit-btn:hover { background: #3B82F6; color: var(--white); transform: translateY(-1px);}
     .empty-state { text-align: center; padding: 3rem 1.5rem;}
     .empty-content i { font-size: 2rem; color: var(--light-text); margin-bottom: 1rem;}
     .empty-title { color: var(--primary-green); font-weight: 600; margin-bottom: 0.5rem;}
     .empty-description { color: var(--light-text); margin: 0;}
-    .form-check-input { border: 2px solid var(--border-color); border-radius: 4px;}
-    .form-check-input:checked { background-color: var(--primary-green); border-color: var(--primary-green);}
-    .alert-info { background: var(--ultra-light-green); border: 1px solid var(--light-green); color: var(--primary-green-dark); border-radius: 8px; padding: 1rem;}
     @media (max-width: 768px) {
         .page-header-content { flex-direction: column; align-items: flex-start; gap: 1rem;}
         .stats-grid { grid-template-columns: 1fr;}
@@ -431,125 +359,37 @@
 
 @push('scripts')
 <script>
-    let currentJobCardId = null;
-    
-    @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-    const assignModal = new bootstrap.Modal(document.getElementById('assignJobCardModal'));
-    const bulkAssignModal = new bootstrap.Modal(document.getElementById('bulkAssignModal'));
-    
-    // Checkbox handling
-    document.getElementById('selectAll').addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('.jobcard-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
-        updateBulkAssignButton();
-    });
-    
-    document.getElementById('selectAllHeader').addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('.jobcard-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
-        document.getElementById('selectAll').checked = this.checked;
-        updateBulkAssignButton();
-    });
-    
-    document.querySelectorAll('.jobcard-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', updateBulkAssignButton);
-    });
-    
-    function updateBulkAssignButton() {
-        const selectedJobCards = document.querySelectorAll('.jobcard-checkbox:checked');
-        const bulkAssignBtn = document.getElementById('bulkAssignBtn');
-        
-        if (selectedJobCards.length > 0) {
-            bulkAssignBtn.disabled = false;
-            bulkAssignBtn.innerHTML = `<i class="fa fa-users me-2"></i> Bulk Assign (${selectedJobCards.length})`;
-        } else {
-            bulkAssignBtn.disabled = true;
-            bulkAssignBtn.innerHTML = '<i class="fa fa-users me-2"></i> Bulk Assign';
-        }
-        
-        document.getElementById('selectedCount').textContent = selectedJobCards.length;
-    }
-    
-    function assignJobCard(jobCardId) {
-        currentJobCardId = jobCardId;
-        assignModal.show();
-    }
-    
-    function bulkAssign() {
-        const selectedJobCards = document.querySelectorAll('.jobcard-checkbox:checked');
-        if (selectedJobCards.length === 0) {
-            alert('Please select at least one job card to assign.');
+    function updateStatus(jobCardId, newStatus) {
+        if (!confirm('Are you sure you want to update this job status?')) {
             return;
         }
-        bulkAssignModal.show();
-    }
-    
-    // Single assignment
-    document.getElementById('assignJobCardForm').addEventListener('submit', function(e) {
-        e.preventDefault();
         
-        const formData = new FormData(this);
-        
-        fetch(`{{ route('admin.call-logs.index') }}/${currentJobCardId}/assign`, {
-            method: 'POST',
+        fetch(`{{ route('admin.call-logs.index') }}/${jobCardId}/status`, {
+            method: 'PATCH',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: formData
+            body: JSON.stringify({ status: newStatus })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                assignModal.hide();
                 location.reload();
             } else {
-                alert('Error assigning job card');
+                alert('Error updating job status');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error assigning job card');
+            alert('Error updating job status');
         });
-    });
+    }
     
-    // Bulk assignment
-    document.getElementById('bulkAssignForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const selectedJobCards = Array.from(document.querySelectorAll('.jobcard-checkbox:checked')).map(cb => cb.value);
-        const engineer = document.getElementById('bulk_engineer').value;
-        
-        if (selectedJobCards.length === 0) {
-            alert('No job cards selected');
-            return;
-        }
-        
-        Promise.all(selectedJobCards.map(jobCardId => {
-            return fetch(`{{ route('admin.call-logs.index') }}/${jobCardId}/assign`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ engineer: engineer })
-            });
-        }))
-        .then(responses => {
-            bulkAssignModal.hide();
-            location.reload();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error during bulk assignment');
-        });
-    });
-    @endif
+    function refreshPage() {
+        location.reload();
+    }
 </script>
 @endpush
 @endsection

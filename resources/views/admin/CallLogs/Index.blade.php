@@ -1,356 +1,390 @@
 @extends('layouts.calllogs')
 
-@section('title', 'Job Management - Call Logs')
+@section('title', 'Job Cards Management - Dashboard')
 
 @section('content')
 
 <style>
-        /* Dashboard Navigation */
-        .dashboard-nav-wrapper {
-            background: var(--white);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            padding: 0.5rem;
-            margin-bottom: 2rem;
-        }
+    /* Dashboard Navigation */
+    .dashboard-nav-wrapper {
+        background: var(--white);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 0.5rem;
+        margin-bottom: 2rem;
+    }
 
-        .panel-nav {
-            border: none;
-            gap: 0.5rem;
-        }
+    .panel-nav {
+        border: none;
+        gap: 0.5rem;
+    }
 
-        .panel-nav .nav-link {
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            color: var(--light-text);
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-        }
+    .panel-nav .nav-link {
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        color: var(--light-text);
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+    }
 
-        .panel-nav .nav-link:hover {
-            background: var(--hover-bg);
-            color: var(--medium-text);
-        }
+    .panel-nav .nav-link:hover {
+        background: var(--hover-bg);
+        color: var(--medium-text);
+    }
 
-        .panel-nav .nav-link.active {
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
-            color: var(--white);
-            box-shadow: var(--shadow-hover);
-        }
+    .panel-nav .nav-link.active {
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
+        color: var(--white);
+        box-shadow: var(--shadow-hover);
+    }
 
-        /* Stats Grid */
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .stat-card-body {
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .stat-icon.primary { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); }
+    .stat-icon.warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .stat-icon.info { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+    .stat-icon.success { background: linear-gradient(135deg, var(--success-green) 0%, var(--primary-green) 100%); }
+    .stat-icon.danger { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
+
+    .stat-icon i {
+        font-size: 1.5rem;
+        color: var(--white);
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark-text);
+        margin: 0;
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: var(--light-text);
+        font-size: 0.9rem;
+        margin: 0.25rem 0;
+        font-weight: 500;
+    }
+
+    .stat-change {
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: var(--primary-green);
+    }
+
+    /* Job Cards Table */
+    .job-cards-card {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+
+    .job-cards-card-header {
+        padding: 1.5rem 2rem;
+        background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-content .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-green);
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .header-content .card-subtitle {
+        color: var(--light-text);
+        font-size: 0.9rem;
+        margin: 0.25rem 0 0 0;
+    }
+
+    .job-cards-card-header .btn-enhanced {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .job-cards-card-header .btn-enhanced:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .job-cards-card-body {
+        padding: 0;
+    }
+
+    /* Enhanced Table */
+    .enhanced-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 0;
+    }
+
+    .enhanced-table thead th {
+        background: var(--ultra-light-green);
+        color: var(--primary-green);
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.5rem;
+        border-bottom: 2px solid var(--light-green);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .enhanced-table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .enhanced-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .enhanced-table tbody tr:hover {
+        background: var(--ultra-light-green);
+    }
+
+    .enhanced-table tbody td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+    }
+
+    .job-card-number {
+        font-family: 'Monaco', 'Menlo', monospace;
+        background: var(--light-green);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        color: var(--primary-green-dark);
+        font-weight: 600;
+        border: 1px solid var(--secondary-green);
+    }
+
+    .company-name {
+        font-weight: 500;
+        color: var(--dark-text);
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .fault-description {
+        color: var(--medium-text);
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .engineer-name {
+        color: var(--medium-text);
+        font-weight: 500;
+    }
+
+    .job-date {
+        color: var(--light-text);
+        font-size: 0.875rem;
+    }
+
+    .amount-charged {
+        font-weight: 600;
+        color: var(--primary-green-dark);
+    }
+
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        margin-right: 0.25rem;
+    }
+
+    .view-btn {
+        background: var(--light-green);
+        color: var(--primary-green);
+    }
+
+    .view-btn:hover {
+        background: var(--primary-green);
+        color: var(--white);
+        transform: translateY(-1px);
+    }
+
+    .edit-btn {
+        background: #EFF6FF;
+        color: #3B82F6;
+    }
+
+    .edit-btn:hover {
+        background: #3B82F6;
+        color: var(--white);
+        transform: translateY(-1px);
+    }
+
+    .assign-btn {
+        background: #F3E8FF;
+        color: #8B5CF6;
+    }
+
+    .assign-btn:hover {
+        background: #8B5CF6;
+        color: var(--white);
+        transform: translateY(-1px);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+    }
+
+    .empty-content i {
+        font-size: 3rem;
+        color: var(--light-text);
+        margin-bottom: 1rem;
+    }
+
+    .empty-content h5 {
+        color: var(--primary-green);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-content p {
+        color: var(--light-text);
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    /* Page Header */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        background: var(--white);
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+
+    .page-header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--primary-green-dark);
+        margin: 0;
+    }
+
+    .page-header p {
+        color: var(--light-text);
+        margin: 0.25rem 0 0 0;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: 1fr;
             gap: 1rem;
-        }
-
-        .stat-card {
-            background: var(--white);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-hover);
         }
 
         .stat-card-body {
             padding: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
         }
 
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+        .job-cards-card-header {
+            padding: 1rem;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
         }
 
-        .stat-icon i {
-            font-size: 1.25rem;
-            color: var(--white);
-        }
-
-        .stat-content {
-            flex: 1;
-        }
-
-        .stat-number {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--dark-text);
-            margin: 0;
-            line-height: 1;
-        }
-
-        .stat-label {
-            color: var(--light-text);
-            font-size: 0.85rem;
-            margin: 0.25rem 0;
-            font-weight: 500;
-        }
-
-        .stat-change {
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .text-success {
-            color: var(--primary-green);
-        }
-
-        /* Tickets Card */
-        .tickets-card {
-            background: var(--white);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .tickets-card-header {
-            padding: 1.5rem 2rem;
-            background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-content .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--primary-green);
-            margin: 0;
-            display: flex;
-            align-items: center;
-        }
-
-        .header-content .card-subtitle {
-            color: var(--light-text);
-            font-size: 0.9rem;
-            margin: 0.25rem 0 0 0;
-        }
-
-        .tickets-card-header .btn {
-            padding: 0.4rem 0.8rem;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border: none;
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
-            color: var(--white);
-        }
-
-        .tickets-card-header .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .tickets-card-body {
-            padding: 0;
-        }
-
-        /* Enhanced Table */
         .enhanced-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin: 0;
-        }
-
-        .enhanced-table thead th {
-            background: var(--ultra-light-green);
-            color: var(--primary-green);
-            font-weight: 600;
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 1rem 1.5rem;
-            border-bottom: 2px solid var(--light-green);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .enhanced-table tbody tr {
-            transition: all 0.2s ease;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .enhanced-table tbody tr:last-child {
-            border-bottom: none;
-        }
-
-        .enhanced-table tbody tr:hover {
-            background: var(--ultra-light-green);
-        }
-
-        .enhanced-table tbody td {
-            padding: 1rem 1.5rem;
-            vertical-align: middle;
-        }
-
-        .ticket-id {
-            font-family: 'Monaco', 'Menlo', monospace;
-            background: var(--light-green);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            color: var(--primary-green-dark);
-            font-weight: 600;
-            border: 1px solid var(--secondary-green);
-        }
-
-        .ticket-subject {
-            font-weight: 500;
-            color: var(--dark-text);
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .customer-name {
-            color: var(--medium-text);
-            font-weight: 500;
-        }
-
-        .priority-badge, .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.375rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .priority-high {
-            background: #FEF2F2;
-            color: #DC2626;
-            border: 1px solid #fecaca;
-        }
-
-        .priority-medium {
-            background: #FFFBEB;
-            color: #D97706;
-            border: 1px solid #fde68a;
-        }
-
-        .priority-low {
-            background: var(--light-green);
-            color: var(--primary-green);
-            border: 1px solid var(--accent-green);
-        }
-
-        .status-in_progress {
-            background: var(--light-green);
-            color: var(--primary-green-dark);
-            border: 1px solid var(--accent-green);
-        }
-
-        .status-resolved {
-            background: var(--ultra-light-green);
-            color: var(--primary-green);
-            border: 1px solid var(--secondary-green);
-        }
-
-        .status-pending {
-            background: #FFFBEB;
-            color: #D97706;
-            border: 1px solid #fde68a;
-        }
-
-        .update-time {
-            color: var(--light-text);
             font-size: 0.875rem;
         }
 
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            text-decoration: none;
+        .enhanced-table th,
+        .enhanced-table td {
+            padding: 0.75rem 1rem;
         }
 
-        .view-btn {
-            background: var(--light-green);
-            color: var(--primary-green);
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
         }
-
-        .view-btn:hover {
-            background: var(--primary-green);
-            color: var(--white);
-            transform: translateY(-1px);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1.5rem;
-        }
-
-        .empty-content i {
-            font-size: 3rem;
-            color: var(--light-text);
-            margin-bottom: 1rem;
-        }
-
-        .empty-content p {
-            color: var(--light-text);
-            font-size: 1.1rem;
-            margin: 0;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .stat-card-body {
-                padding: 1rem;
-            }
-
-            .tickets-card-header {
-                padding: 1rem;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-
-            .enhanced-table {
-                font-size: 0.875rem;
-            }
-
-            .enhanced-table th,
-            .enhanced-table td {
-                padding: 0.75rem 1rem;
-            }
-        }
-    </style>
+    }
+</style>
 
 {{-- Dashboard Navigation Tabs --}}
 <div class="dashboard-nav-wrapper mb-4">
@@ -371,7 +405,7 @@
         </li>
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.call-logs.*') ? 'active' : '' }}" 
-               href="{{ route('calls.dashboard') }}">
+               href="{{ route('admin.call-logs.index') }}">
                 <i class="fa fa-phone me-2"></i>
                 Call Logs
             </a>
@@ -388,79 +422,96 @@
 
 <div class="container-fluid">
     <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="page-header">
         <div>
-            <h1 class="h3 mb-0 text-gray-800">Job Management System</h1>
-            <p class="mb-0 text-muted">Manage and track all service requests</p>
+            <h1>Job Cards Management</h1>
+            <p>Manage and track all IT support job cards and services</p>
         </div>
-        @can('create', App\Models\Job::class)
-            <a href="{{ route('jobs.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add New Job
+        @if(in_array(auth()->user()->role, ['admin', 'accounts']))
+            <a href="{{ route('admin.call-logs.create') }}" class="btn btn-primary btn-enhanced">
+                <i class="fa fa-plus me-2"></i>
+                Create New Job Card
             </a>
-        @endcan
+        @endif
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Jobs</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['total'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-                        </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-card-body">
+                <div class="stat-icon primary">
+                    <i class="fa fa-clipboard"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ $stats['total_jobs'] ?? 0 }}</div>
+                    <div class="stat-label">Total Jobs</div>
+                    <div class="stat-change">
+                        <i class="fa fa-arrow-up"></i>
+                        +12% from last month
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['pending'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clock fa-2x text-gray-300"></i>
-                        </div>
+        <div class="stat-card">
+            <div class="stat-card-body">
+                <div class="stat-icon warning">
+                    <i class="fa fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ $stats['pending_jobs'] ?? 0 }}</div>
+                    <div class="stat-label">Pending Jobs</div>
+                    <div class="stat-change">
+                        <i class="fa fa-arrow-down"></i>
+                        -5% from last month
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">In Progress</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['in_progress'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-tools fa-2x text-gray-300"></i>
-                        </div>
+        <div class="stat-card">
+            <div class="stat-card-body">
+                <div class="stat-icon info">
+                    <i class="fa fa-cog"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ $stats['in_progress_jobs'] ?? 0 }}</div>
+                    <div class="stat-label">In Progress</div>
+                    <div class="stat-change">
+                        <i class="fa fa-arrow-up"></i>
+                        +8% from last month
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Completed</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['completed'] }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
-                        </div>
+        <div class="stat-card">
+            <div class="stat-card-body">
+                <div class="stat-icon success">
+                    <i class="fa fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ $stats['completed_jobs'] ?? 0 }}</div>
+                    <div class="stat-label">Completed</div>
+                    <div class="stat-change">
+                        <i class="fa fa-arrow-up"></i>
+                        +15% from last month
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-body">
+                <div class="stat-icon danger">
+                    <i class="fa fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number">{{ $stats['emergency_jobs'] ?? 0 }}</div>
+                    <div class="stat-label">Emergency</div>
+                    <div class="stat-change">
+                        <i class="fa fa-arrow-up"></i>
+                        +3% from last month
                     </div>
                 </div>
             </div>
@@ -470,139 +521,148 @@
     <!-- Filters Section -->
     @include('admin.calllogs.partials.filters')
 
-    <!-- Jobs Table -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Jobs List</h6>
-            <div class="btn-group" role="group">
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshTable()">
-                    <i class="fas fa-sync-alt"></i> Refresh
+    <!-- Job Cards Table -->
+    <div class="job-cards-card">
+        <div class="job-cards-card-header">
+            <div class="header-content">
+                <h5 class="card-title">
+                    <i class="fa fa-list me-2"></i>
+                    Job Cards
+                </h5>
+                <p class="card-subtitle">Recent IT support jobs and services</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-enhanced" onclick="refreshTable()">
+                    <i class="fa fa-sync-alt"></i>
+                    Refresh
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportJobs()">
-                    <i class="fas fa-download"></i> Export
-                </button>
+                @if(auth()->user()->role === 'admin')
+                    <button type="button" class="btn btn-enhanced" onclick="exportJobCards()">
+                        <i class="fa fa-download"></i>
+                        Export
+                    </button>
+                @endif
             </div>
         </div>
-        <div class="card-body">
+        <div class="job-cards-card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="jobsTable">
-                    <thead class="thead-light">
+                <table class="enhanced-table" id="jobCardsTable">
+                    <thead>
                         <tr>
-                            <th>Job Card</th>
-                            <th>Customer</th>
-                            <th>Fault Description</th>
-                            <th>Priority</th>
-                            <th>Status</th>
-                            <th>Assigned To</th>
-                            <th>Date Booked</th>
-                            <th>Amount</th>
-                            <th>Actions</th>
+                            <th><i class="fa fa-hashtag me-1"></i>Job Card</th>
+                            <th><i class="fa fa-building me-1"></i>Company</th>
+                            <th><i class="fa fa-exclamation-circle me-1"></i>Fault Description</th>
+                            <th><i class="fa fa-cogs me-1"></i>Type</th>
+                            <th><i class="fa fa-check-circle me-1"></i>Status</th>
+                            <th><i class="fa fa-user-tie me-1"></i>Engineer</th>
+                            <th><i class="fa fa-calendar me-1"></i>Date Booked</th>
+                            <th><i class="fa fa-dollar-sign me-1"></i>Amount</th>
+                            <th><i class="fa fa-cog me-1"></i>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($jobs as $job)
+                        @forelse($callLogs as $jobCard)
                             <tr>
                                 <td>
-                                    <strong>{{ $job->job_card }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ $job->zimra_ref ?? 'N/A' }}</small>
+                                    <span class="job-card-number">{{ $jobCard->job_card }}</span>
+                                    @if($jobCard->zimra_ref)
+                                        <br>
+                                        <small class="text-muted">ZIMRA: {{ $jobCard->zimra_ref }}</small>
+                                    @endif
                                 </td>
                                 <td>
-                                    <div>
-                                        <strong>{{ $job->customer_name }}</strong>
-                                        <br>
-                                        <small class="text-muted">{{ $job->customer_email }}</small>
+                                    <div class="company-name" title="{{ $jobCard->company_name }}">
+                                        {{ $jobCard->company_name }}
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="job-description">
-                                        {{ Str::limit($job->fault_description, 50) }}
-                                        @if(strlen($job->fault_description) > 50)
-                                            <a href="#" class="text-primary" onclick="showFullDescription('{{ $job->id }}')">
-                                                Read more
-                                            </a>
+                                    <div class="fault-description" title="{{ $jobCard->fault_description }}">
+                                        {{ Str::limit($jobCard->fault_description, 50) ?: 'No description' }}
+                                    </div>
+                                </td>
+                                <td>
+                                    @include('admin.calllogs.partials.type-badge', ['type' => $jobCard->type])
+                                </td>
+                                <td>
+                                    @include('admin.calllogs.partials.status-badge', ['status' => $jobCard->status])
+                                </td>
+                                <td>
+                                    @if($jobCard->engineer)
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2">
+                                                <div class="avatar-initial rounded-circle bg-light-primary">
+                                                    {{ substr($jobCard->engineer, 0, 1) }}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <strong class="engineer-name">{{ $jobCard->engineer }}</strong>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">Unassigned</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div class="job-date">
+                                        {{ \Carbon\Carbon::parse($jobCard->date_booked)->format('M j, Y') }}
+                                        @if($jobCard->date_resolved)
+                                            <br>
+                                            <small class="text-success">Resolved: {{ \Carbon\Carbon::parse($jobCard->date_resolved)->format('M j') }}</small>
                                         @endif
                                     </div>
                                 </td>
                                 <td>
-                                    @include('admin.calllogs.partials.priority-badge', ['priority' => $job->priority])
-                                </td>
-                                <td>
-                                    @include('admin.calllogs.partials.status-badge', ['status' => $job->status])
-                                </td>
-                                <td>
-                                    @if($job->assignedTo)
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-sm me-2">
-                                                <div class="avatar-initial rounded-circle bg-light-primary">
-                                                    {{ substr($job->assignedTo->name, 0, 1) }}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <strong>{{ $job->assignedTo->name }}</strong>
-                                                <br>
-                                                <small class="text-muted">{{ $job->assignedTo->email }}</small>
-                                            </div>
-                                        </div>
-                                    @else
-                                        <span class="text-muted">Not assigned</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div>
-                                        {{ $job->date_booked->format('M j, Y') }}
-                                        <br>
-                                        <small class="text-muted">{{ $job->date_booked->format('H:i') }}</small>
+                                    <div class="amount-charged">
+                                        USD ${{ number_format($jobCard->amount_charged, 2) }}
                                     </div>
-                                </td>
-                                <td>
-                                    <strong>${{ number_format($job->amount_charged, 2) }}</strong>
-                                    @if($job->billed_hours)
+                                    @if($jobCard->billed_hours)
                                         <br>
-                                        <small class="text-muted">{{ $job->billed_hours }}h</small>
+                                        <small class="text-muted">{{ $jobCard->billed_hours }}h</small>
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{{ route('jobs.show', $job) }}" class="btn btn-sm btn-outline-info" title="View Details">
-                                            <i class="fas fa-eye"></i>
+                                    <div class="d-flex">
+                                        <a href="{{ route('admin.call-logs.show', $jobCard) }}" class="action-btn view-btn" title="View Details">
+                                            <i class="fa fa-eye"></i>
                                         </a>
                                         
-                                        @can('update', $job)
-                                            <a href="{{ route('jobs.edit', $job) }}" class="btn btn-sm btn-outline-warning" title="Edit">
-                                                <i class="fas fa-edit"></i>
+                                        @if((auth()->user()->role === 'engineer' && $jobCard->engineer === auth()->user()->name) || in_array(auth()->user()->role, ['admin', 'accounts']))
+                                            <a href="{{ route('admin.call-logs.edit', $jobCard) }}" class="action-btn edit-btn" title="Edit">
+                                                <i class="fa fa-edit"></i>
                                             </a>
-                                        @endcan
+                                        @endif
                                         
-                                        @can('assign', $job)
-                                            @if(!$job->assigned_to && $job->status === 'pending')
-                                                <button class="btn btn-sm btn-outline-success" onclick="assignJob({{ $job->id }})" title="Assign">
-                                                    <i class="fas fa-user-plus"></i>
-                                                </button>
-                                            @endif
-                                        @endcan
+                                        @if(in_array(auth()->user()->role, ['admin', 'accounts']) && !$jobCard->engineer && $jobCard->status !== 'complete')
+                                            <button class="action-btn assign-btn" onclick="assignJobCard({{ $jobCard->id }})" title="Assign Engineer">
+                                                <i class="fa fa-user-plus"></i>
+                                            </button>
+                                        @endif
                                         
-                                        @can('updateStatus', $job)
-                                            @if($job->status === 'assigned')
-                                                <button class="btn btn-sm btn-success" onclick="updateStatus({{ $job->id }}, 'in_progress')" title="Start">
-                                                    <i class="fas fa-play"></i>
-                                                </button>
-                                            @elseif($job->status === 'in_progress')
-                                                <button class="btn btn-sm btn-primary" onclick="updateStatus({{ $job->id }}, 'completed')" title="Complete">
-                                                    <i class="fas fa-check"></i>
-                                                </button>
-                                            @endif
-                                        @endcan
+                                        @if($jobCard->status === 'assigned' && $jobCard->engineer === auth()->user()->name)
+                                            <button class="action-btn" style="background: #EFF6FF; color: #3B82F6;" onclick="updateStatus({{ $jobCard->id }}, 'in_progress')" title="Start Work">
+                                                <i class="fa fa-play"></i>
+                                            </button>
+                                        @elseif($jobCard->status === 'in_progress' && $jobCard->engineer === auth()->user()->name)
+                                            <button class="action-btn" style="background: var(--ultra-light-green); color: var(--primary-green);" onclick="updateStatus({{ $jobCard->id }}, 'complete')" title="Complete Job">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-4">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                        <h5 class="text-muted">No jobs found</h5>
-                                        <p class="text-muted">Try adjusting your filters or create a new job</p>
+                                <td colspan="9" class="empty-state">
+                                    <div class="empty-content">
+                                        <i class="fa fa-clipboard"></i>
+                                        <h5>No job cards found</h5>
+                                        <p>Try adjusting your filters or create a new job card</p>
+                                        @if(in_array(auth()->user()->role, ['admin', 'accounts']))
+                                            <a href="{{ route('admin.call-logs.create') }}" class="btn btn-primary btn-enhanced mt-2">
+                                                <i class="fa fa-plus me-2"></i>
+                                                Create First Job Card
+                                            </a>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -612,41 +672,42 @@
             </div>
             
             <!-- Pagination -->
-            <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="d-flex justify-content-between align-items-center mt-4 px-3 pb-3">
                 <div class="text-muted">
-                    Showing {{ $jobs->firstItem() ?? 0 }} to {{ $jobs->lastItem() ?? 0 }} of {{ $jobs->total() }} results
+                    Showing {{ $callLogs->firstItem() ?? 0 }} to {{ $callLogs->lastItem() ?? 0 }} of {{ $callLogs->total() }} results
                 </div>
-                {{ $jobs->links() }}
+                {{ $callLogs->links() }}
             </div>
         </div>
     </div>
 </div>
 
 <!-- Assignment Modal -->
-<div class="modal fade" id="assignJobModal" tabindex="-1" role="dialog">
+<div class="modal fade" id="assignJobCardModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Assign Job to Technician</h5>
+                <h5 class="modal-title">Assign Job to Engineer</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
-            <form id="assignJobForm">
+            <form id="assignJobCardForm">
                 @csrf
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="assigned_to">Select Technician</label>
-                        <select class="form-control" id="assigned_to" name="assigned_to" required>
-                            <option value="">Choose technician...</option>
-                            @foreach($technicians as $technician)
-                                <option value="{{ $technician->id }}">{{ $technician->name }} ({{ $technician->email }})</option>
-                            @endforeach
+                        <label for="engineer">Select Engineer</label>
+                        <select class="form-control" id="engineer" name="engineer" required>
+                            <option value="">Choose engineer...</option>
+                            <option value="Benson">Benson</option>
+                            <option value="Malvine">Malvine</option>
+                            <option value="Mukai">Mukai</option>
+                            <option value="Tapera">Tapera</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="assignment_notes">Assignment Notes (Optional)</label>
-                        <textarea class="form-control" id="assignment_notes" name="assignment_notes" rows="3" placeholder="Any specific instructions or notes for the technician..."></textarea>
+                        <textarea class="form-control" id="assignment_notes" name="assignment_notes" rows="3" placeholder="Any specific instructions or notes for the engineer..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -660,11 +721,6 @@
 
 @push('styles')
 <style>
-    .job-description {
-        max-width: 200px;
-        word-wrap: break-word;
-    }
-    
     .avatar-sm {
         width: 32px;
         height: 32px;
@@ -677,44 +733,31 @@
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: #6366f1;
+        color: var(--primary-green);
     }
     
     .bg-light-primary {
-        background-color: rgba(99, 102, 241, 0.1);
-    }
-    
-    .card {
-        border: none;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    }
-    
-    .table th {
-        border-top: none;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        color: #5a5c69;
+        background-color: var(--ultra-light-green);
     }
 </style>
 @endpush
 
 @push('scripts')
 <script>
-    let currentJobId = null;
+    let currentJobCardId = null;
     
-    function assignJob(jobId) {
-        currentJobId = jobId;
-        $('#assignJobModal').modal('show');
+    function assignJobCard(jobCardId) {
+        currentJobCardId = jobCardId;
+        $('#assignJobCardModal').modal('show');
     }
     
-    function updateStatus(jobId, newStatus) {
+    function updateStatus(jobCardId, newStatus) {
         if (!confirm('Are you sure you want to update this job status?')) {
             return;
         }
         
         $.ajax({
-            url: `/jobs/${jobId}/status`,
+            url: `{{ route('admin.call-logs.index') }}/${jobCardId}/status`,
             method: 'PATCH',
             data: {
                 _token: '{{ csrf_token() }}',
@@ -724,37 +767,32 @@
                 location.reload();
             },
             error: function(xhr) {
-                alert('Error updating job status: ' + xhr.responseJSON.message);
+                alert('Error updating job status: ' + (xhr.responseJSON?.message || 'Unknown error'));
             }
         });
-    }
-    
-    function showFullDescription(jobId) {
-        // Implementation for showing full description in a modal
-        console.log('Show full description for job:', jobId);
     }
     
     function refreshTable() {
         location.reload();
     }
     
-    function exportJobs() {
-        window.location.href = '{{ route("jobs.index") }}?export=true';
+    function exportJobCards() {
+        window.location.href = '{{ route("admin.call-logs.export") }}?format=csv';
     }
     
-    $('#assignJobForm').on('submit', function(e) {
+    $('#assignJobCardForm').on('submit', function(e) {
         e.preventDefault();
         
         $.ajax({
-            url: `/jobs/${currentJobId}/assign`,
+            url: `{{ route('admin.call-logs.index') }}/${currentJobCardId}/assign`,
             method: 'POST',
             data: $(this).serialize(),
             success: function(response) {
-                $('#assignJobModal').modal('hide');
+                $('#assignJobCardModal').modal('hide');
                 location.reload();
             },
             error: function(xhr) {
-                alert('Error assigning job: ' + xhr.responseJSON.message);
+                alert('Error assigning job: ' + (xhr.responseJSON?.message || 'Unknown error'));
             }
         });
     });

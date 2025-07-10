@@ -3,8 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Calls Management - Dashboard</title>
-    <meta name="description" content="Modern Calls Management Dashboard">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Job Cards Management - Dashboard')</title>
+    <meta name="description" content="Modern Job Cards Management Dashboard">
 
     <!-- Bootstrap 5 & FontAwesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -70,6 +71,7 @@
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
             --shadow-hover: 0 20px 25px -5px rgba(6, 78, 59, 0.25), 0 8px 10px -6px rgba(6, 78, 59, 0.1);
+            --shadow: var(--shadow-lg);
         }
 
         * {
@@ -117,7 +119,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3e%3cpath d='M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z'/%3e%3c/svg%3e") center/cover;
+            mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3e%3cpath d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'/%3e%3c/svg%3e") center/cover;
         }
 
         /* Sidebar Improvements */
@@ -456,11 +458,12 @@
             box-shadow: var(--shadow-md);
         }
 
-        .stat-icon.green { background: linear-gradient(135deg, var(--primary-green), var(--primary-green-light)); }
-        .stat-icon.emerald { background: linear-gradient(135deg, var(--emerald-700), var(--emerald-600)); }
-        .stat-icon.yellow { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .stat-icon.primary { background: linear-gradient(135deg, var(--primary-green), var(--primary-green-light)); }
+        .stat-icon.success { background: linear-gradient(135deg, var(--success-green), var(--primary-green)); }
+        .stat-icon.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .stat-icon.info { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .stat-icon.danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
         .stat-icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
-        .stat-icon.orange { background: linear-gradient(135deg, #f97316, #ea580c); }
 
         .stat-content {
             flex: 1;
@@ -504,27 +507,60 @@
             gap: 0.375rem;
         }
 
-        .badge.status-open { 
-            background: rgba(59, 130, 246, 0.1); 
-            color: var(--info-blue);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-        }
-        .badge.status-resolved { 
-            background: rgba(34, 197, 94, 0.1); 
-            color: var(--success-green);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
-        .badge.status-pending { 
+        /* Status Badges */
+        .status-pending { 
             background: rgba(245, 158, 11, 0.1); 
             color: var(--warning-amber);
             border: 1px solid rgba(245, 158, 11, 0.2);
         }
-        .badge.status-unassigned { 
+        .status-assigned { 
+            background: rgba(59, 130, 246, 0.1); 
+            color: var(--info-blue);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .status-in_progress { 
+            background: rgba(6, 78, 59, 0.1); 
+            color: var(--primary-green);
+            border: 1px solid rgba(6, 78, 59, 0.2);
+        }
+        .status-complete { 
+            background: rgba(34, 197, 94, 0.1); 
+            color: var(--success-green);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .status-cancelled { 
+            background: rgba(239, 68, 68, 0.1); 
+            color: var(--danger-red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Type Badges */
+        .type-normal { 
+            background: rgba(6, 78, 59, 0.1); 
+            color: var(--primary-green);
+            border: 1px solid rgba(6, 78, 59, 0.2);
+        }
+        .type-maintenance { 
+            background: rgba(59, 130, 246, 0.1); 
+            color: var(--info-blue);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .type-repair { 
+            background: rgba(245, 158, 11, 0.1); 
+            color: var(--warning-amber);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+        .type-installation { 
             background: rgba(139, 92, 246, 0.1); 
             color: var(--purple);
             border: 1px solid rgba(139, 92, 246, 0.2);
         }
-        .badge.priority-high { 
+        .type-consultation { 
+            background: rgba(249, 115, 22, 0.1); 
+            color: var(--orange);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+        }
+        .type-emergency { 
             background: rgba(239, 68, 68, 0.1); 
             color: var(--danger-red);
             border: 1px solid rgba(239, 68, 68, 0.2);
@@ -607,8 +643,8 @@
             gap: 1rem;
         }
 
-        /* Calls Table Card */
-        .calls-card {
+        /* Job Cards Table Card */
+        .job-cards-card {
             background: var(--white);
             border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-lg);
@@ -616,7 +652,7 @@
             border: 1px solid var(--border-color);
         }
 
-        .calls-card-header {
+        .job-cards-card-header {
             background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
             padding: 1.5rem 2rem;
             border-bottom: 1px solid var(--border-color);
@@ -640,7 +676,7 @@
             margin: 0.25rem 0 0 0;
         }
 
-        .calls-card-header .btn {
+        .job-cards-card-header .btn {
             padding: 0.4rem 0.8rem;
             border-radius: 8px;
             font-weight: 500;
@@ -650,12 +686,12 @@
             color: var(--white);
         }
 
-        .calls-card-header .btn:hover {
+        .job-cards-card-header .btn:hover {
             transform: translateY(-1px);
             box-shadow: var(--shadow-hover);
         }
 
-        .calls-card-body {
+        .job-cards-card-body {
             padding: 0;
         }
 
@@ -699,7 +735,7 @@
             vertical-align: middle;
         }
 
-        .call-id {
+        .job-card-number {
             font-family: 'Monaco', 'Menlo', monospace;
             background: var(--light-green);
             padding: 0.25rem 0.5rem;
@@ -710,7 +746,7 @@
             border: 1px solid var(--secondary-green);
         }
 
-        .call-subject {
+        .fault-description {
             font-weight: 500;
             color: var(--dark-text);
             max-width: 250px;
@@ -719,61 +755,19 @@
             white-space: nowrap;
         }
 
-        .customer-name {
+        .company-name {
             color: var(--medium-text);
             font-weight: 500;
         }
 
-        .priority-badge, .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.375rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .priority-high {
-            background: #FEF2F2;
-            color: #DC2626;
-            border: 1px solid #fecaca;
-        }
-
-        .priority-medium {
-            background: #FFFBEB;
-            color: #D97706;
-            border: 1px solid #fde68a;
-        }
-
-        .priority-low {
-            background: var(--light-green);
-            color: var(--primary-green);
-            border: 1px solid var(--accent-green);
-        }
-
-        .status-in_progress {
-            background: var(--light-green);
-            color: var(--primary-green-dark);
-            border: 1px solid var(--accent-green);
-        }
-
-        .status-resolved {
-            background: var(--ultra-light-green);
-            color: var(--primary-green);
-            border: 1px solid var(--secondary-green);
-        }
-
-        .status-pending {
-            background: #FFFBEB;
-            color: #D97706;
-            border: 1px solid #fde68a;
-        }
-
-        .call-time {
+        .job-date {
             color: var(--light-text);
             font-size: 0.875rem;
+        }
+
+        .amount-charged {
+            font-weight: 600;
+            color: var(--primary-green-dark);
         }
 
         .action-btn {
@@ -785,6 +779,9 @@
             border-radius: 8px;
             transition: all 0.2s ease;
             text-decoration: none;
+            border: none;
+            cursor: pointer;
+            margin-right: 0.25rem;
         }
 
         .view-btn {
@@ -794,6 +791,28 @@
 
         .view-btn:hover {
             background: var(--primary-green);
+            color: var(--white);
+            transform: translateY(-1px);
+        }
+
+        .edit-btn {
+            background: #EFF6FF;
+            color: #3B82F6;
+        }
+
+        .edit-btn:hover {
+            background: #3B82F6;
+            color: var(--white);
+            transform: translateY(-1px);
+        }
+
+        .assign-btn {
+            background: #F3E8FF;
+            color: #8B5CF6;
+        }
+
+        .assign-btn:hover {
+            background: #8B5CF6;
             color: var(--white);
             transform: translateY(-1px);
         }
@@ -809,375 +828,15 @@
             margin-bottom: 1rem;
         }
 
+        .empty-content h5 {
+            color: var(--primary-green);
+            margin-bottom: 0.5rem;
+        }
+
         .empty-content p {
             color: var(--light-text);
             font-size: 1.1rem;
             margin: 0;
-        }
-
-        /* Filter Card */
-        .filter-card {
-            background: var(--white);
-            border-radius: 12px;
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .filter-header {
-            background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .filter-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--primary-green);
-            margin: 0;
-            display: flex;
-            align-items: center;
-        }
-
-        .filter-body {
-            padding: 1.25rem;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.25rem;
-            align-items: end;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-label {
-            font-weight: 600;
-            color: var(--primary-green);
-            margin-bottom: 0.5rem;
-            font-size: 0.8rem;
-        }
-
-        .select-wrapper {
-            position: relative;
-        }
-
-        .enhanced-select {
-            width: 100%;
-            padding: 0.625rem 2rem 0.625rem 0.75rem;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--white);
-            font-size: 0.8rem;
-            color: var(--dark-text);
-            transition: all 0.3s ease;
-            appearance: none;
-        }
-
-        .enhanced-select:focus {
-            border-color: var(--primary-green);
-            box-shadow: 0 0 0 3px rgba(6, 78, 59, 0.1);
-            outline: none;
-        }
-
-        .select-arrow {
-            position: absolute;
-            right: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary-green);
-            pointer-events: none;
-        }
-
-        .search-wrapper {
-            position: relative;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary-green);
-        }
-
-        .enhanced-input {
-            width: 100%;
-            padding: 0.625rem 0.75rem 0.625rem 2rem;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--white);
-            font-size: 0.8rem;
-            color: var(--dark-text);
-            transition: all 0.3s ease;
-        }
-
-        .enhanced-input:focus {
-            border-color: var(--primary-green);
-            box-shadow: 0 0 0 3px rgba(6, 78, 59, 0.1);
-            outline: none;
-        }
-
-        .enhanced-input::placeholder {
-            color: var(--light-text);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 0.75rem;
-            align-self: end;
-        }
-
-        .btn {
-            padding: 0.625rem 1.25rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-light) 100%);
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .btn-outline {
-            background: var(--white);
-            color: var(--primary-green);
-            border: 2px solid var(--primary-green);
-        }
-
-        .btn-outline:hover {
-            background: var(--light-green);
-            border-color: var(--primary-green-light);
-        }
-
-        /* Calls Table Card */
-        .calls-table-card {
-            background: var(--white);
-            border-radius: 12px;
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .table-header {
-            background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .table-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--primary-green);
-            display: flex;
-            align-items: center;
-        }
-
-        .table-meta {
-            color: var(--medium-text);
-            font-size: 0.8rem;
-        }
-
-        .table-container {
-            overflow: hidden;
-        }
-
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        .enhanced-calls-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            min-width: 800px;
-        }
-
-        .enhanced-calls-table thead th {
-            background: var(--ultra-light-green);
-            color: var(--primary-green);
-            font-weight: 600;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 0.875rem 1rem;
-            border-bottom: 2px solid var(--light-green);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .call-row {
-            transition: all 0.2s ease;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .call-row:hover {
-            background: var(--ultra-light-green);
-            transform: translateX(2px);
-        }
-
-        .enhanced-calls-table tbody td {
-            padding: 0.875rem 1rem;
-            vertical-align: middle;
-            font-size: 0.8rem;
-        }
-
-        .call-id-badge {
-            font-family: 'Monaco', 'Menlo', monospace;
-            background: linear-gradient(135deg, var(--light-green) 0%, var(--secondary-green) 100%);
-            color: var(--primary-green-dark);
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border: 1px solid var(--secondary-green);
-        }
-
-        .customer-info {
-            color: var(--medium-text);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-        }
-
-        .customer-info i {
-            color: var(--primary-green);
-        }
-
-        .technician-info {
-            color: var(--medium-text);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-        }
-
-        .technician-info i {
-            color: var(--primary-green);
-        }
-
-        .unassigned-badge {
-            color: #dc2626;
-            background: #fee2e2;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-        }
-
-        .call-duration {
-            color: var(--light-text);
-            font-size: 0.75rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .pagination-wrapper {
-            padding: 1.25rem 1.5rem;
-            background: var(--ultra-light-green);
-            border-top: 1px solid var(--border-color);
-        }
-
-        /* Call Details Modal */
-        .call-details-modal .modal-body {
-            padding: 2rem;
-        }
-
-        .call-details-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .call-details-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--dark-text);
-            margin: 0;
-        }
-
-        .call-details-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .call-details-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-        }
-
-        .call-details-section {
-            margin-bottom: 1.5rem;
-        }
-
-        .call-details-section-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--primary-green);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .call-details-info {
-            display: grid;
-            grid-template-columns: 120px 1fr;
-            gap: 1rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .call-details-label {
-            font-weight: 500;
-            color: var(--medium-text);
-        }
-
-        .call-details-value {
-            font-weight: 500;
-            color: var(--dark-text);
-        }
-
-        .call-details-notes {
-            background: var(--ultra-light-green);
-            border-radius: var(--border-radius);
-            padding: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .call-details-notes-content {
-            white-space: pre-line;
-            line-height: 1.6;
         }
 
         /* Mobile Responsiveness */
@@ -1303,34 +962,20 @@
                 padding: 1rem;
             }
 
-            .form-row {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .form-actions {
-                flex-direction: column;
-            }
-
-            .table-header {
+            .job-cards-card-header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 0.5rem;
+                gap: 1rem;
                 padding: 1rem;
             }
 
-            .enhanced-calls-table th,
-            .enhanced-calls-table td {
+            .enhanced-table th,
+            .enhanced-table td {
                 padding: 0.75rem 0.5rem;
             }
 
-            .call-subject {
+            .fault-description {
                 max-width: 150px;
-            }
-
-            .call-details-content {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
             }
         }
 
@@ -1339,21 +984,13 @@
                 padding: 0.75rem;
             }
 
-            .filter-body {
-                padding: 1rem;
-            }
-
-            .form-row {
-                gap: 0.75rem;
-            }
-
-            .enhanced-calls-table th,
-            .enhanced-calls-table td {
+            .enhanced-table th,
+            .enhanced-table td {
                 padding: 0.5rem 0.25rem;
                 font-size: 0.75rem;
             }
 
-            .call-subject {
+            .fault-description {
                 max-width: 120px;
             }
         }
@@ -1363,7 +1000,7 @@
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container-fluid">
             <div class="d-flex align-items-center">
-                <a class="navbar-brand" href="{{ route('jobs.index') }}">Calls Management</a>
+                <a class="navbar-brand" href="{{ route('admin.call-logs.index') }}">Job Cards Management</a>
                 <button class="btn" id="sidebarToggle" aria-label="Toggle sidebar">
                     <i class="fas fa-bars"></i>
                 </button>
@@ -1376,7 +1013,7 @@
                         <i class="fas fa-bell"></i>
                         @auth
                             @php
-                                $unreadCount = auth()->user()->unreadNotifications()->count();
+                                $unreadCount = 0; // Placeholder for notification count
                             @endphp
                             @if($unreadCount > 0)
                                 <span class="notification-badge">{{ $unreadCount }}</span>
@@ -1384,73 +1021,11 @@
                         @endauth
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end dropdown-notifications" aria-labelledby="notificationsDropdown">
-                        @auth
-                            @php
-                                $notifications = auth()->user()->unreadNotifications()
-                                    ->latest()
-                                    ->take(5)
-                                    ->get();
-                            @endphp
-                            
-                            @forelse($notifications as $notification)
-                                <li>
-                                    <div class="dropdown-item d-flex align-items-start py-2">
-                                        <div class="flex-shrink-0 me-2 text-primary">
-                                            <i class="fas fa-phone-alt fa-fw"></i>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <a href="{{ $notification->data['url'] ?? '#' }}" class="text-decoration-none text-dark">
-                                                    <div class="mb-1">
-                                                        {{ $notification->data['message'] ?? 'New call notification' }}
-                                                    </div>
-                                                    <small class="text-muted">
-                                                        {{ $notification->created_at->diffForHumans() }}
-                                                    </small>
-                                                </a>
-                                                @if(Route::has('notifications.read'))
-                                                <form action="{{ route('notifications.read', $notification->id) }}" method="POST" class="ms-2">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-sm btn-link p-0 text-muted" title="Mark as read">
-                                                        <i class="fas fa-check"></i>
-                                                    </button>
-                                                </form>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                </li>
-                                @if(!$loop->last)
-                                    <li><hr class="dropdown-divider my-1"></li>
-                                @endif
-                            @empty
-                                <li>
-                                    <div class="dropdown-item text-muted py-2">
-                                        No new notifications
-                                    </div>
-                                </li>
-                            @endforelse
-                            
-                            @if(Route::has('notifications.index') && $unreadCount > 0)
-                                <li><hr class="dropdown-divider my-1"></li>
-                                <li>
-                                    <div class="text-center py-1">
-                                        <a href="{{ route('notifications.index') }}" class="small">
-                                            View all notifications
-                                        </a>
-                                        @if(Route::has('notifications.read-all'))
-                                        <span class="mx-2">•</span>
-                                        <form action="{{ route('notifications.read-all') }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-link p-0 small">
-                                                Mark all as read
-                                            </button>
-                                        </form>
-                                        @endif
-                                    </div>
-                                </li>
-                            @endif
-                        @endauth
+                        <li>
+                            <div class="dropdown-item text-muted py-2">
+                                No new notifications
+                            </div>
+                        </li>
                     </ul>
                 </li>
 
@@ -1511,58 +1086,61 @@
     <aside class="sidebar" id="sidebar" aria-label="Main navigation">
         <ul class="nav flex-column sidebar-nav">
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('jobs.index') || request()->routeIs('calls.dashboard') ? 'active' : '' }}" href="{{ route('jobs.index') }}">
+                <a class="nav-link {{ request()->routeIs('admin.call-logs.index') || request()->routeIs('admin.call-logs.dashboard') ? 'active' : '' }}" href="{{ route('admin.call-logs.index') }}">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
             
-            <li class="nav-header">Call Management</li>
+            <li class="nav-header">Job Management</li>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('calls.my-calls') ? 'active' : '' }}" href="{{ route('calls.my-calls') }}">
+                <a class="nav-link {{ request()->routeIs('admin.call-logs.my-jobs') ? 'active' : '' }}" href="{{ route('admin.call-logs.my-jobs') }}">
                     <i class="fas fa-user-check"></i>
-                    <span>My Calls</span>
+                    <span>My Jobs</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('calls.in-progress') ? 'active' : '' }}" href="{{ route('calls.in-progress') }}">
+                <a class="nav-link {{ request()->routeIs('admin.call-logs.in-progress') ? 'active' : '' }}" href="{{ route('admin.call-logs.in-progress') }}">
                     <i class="fas fa-play-circle"></i>
                     <span>In Progress</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('calls.resolved') ? 'active' : '' }}" href="{{ route('calls.resolved') }}">
+                <a class="nav-link {{ request()->routeIs('admin.call-logs.completed') ? 'active' : '' }}" href="{{ route('admin.call-logs.completed') }}">
                     <i class="fas fa-check-circle"></i>
-                    <span>Resolved</span>
+                    <span>Completed</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('calls.pending') ? 'active' : '' }}" href="{{ route('calls.pending') }}">
+                <a class="nav-link {{ request()->routeIs('admin.call-logs.pending') ? 'active' : '' }}" href="{{ route('admin.call-logs.pending') }}">
                     <i class="fas fa-clock"></i>
                     <span>Pending</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('calls.unassigned') ? 'active' : '' }}" href="{{ route('calls.unassigned') }}">
+                <a class="nav-link {{ request()->routeIs('admin.call-logs.unassigned') ? 'active' : '' }}" href="{{ route('admin.call-logs.unassigned') }}">
                     <i class="fas fa-user-slash"></i>
                     <span>Unassigned</span>
                 </a>
             </li>
             
             <li class="nav-header">Administration</li>
+            @if(in_array(auth()->user()->role, ['admin', 'accounts']))
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('calls.create') ? 'active' : '' }}" href="{{ route('calls.create') }}">
+                <a class="nav-link {{ request()->routeIs('admin.call-logs.create') ? 'active' : '' }}" href="{{ route('admin.call-logs.create') }}">
                     <i class="fas fa-plus-circle"></i>
-                    <span>New Call</span>
+                    <span>New Job Card</span>
                 </a>
             </li>
+            @endif
+            @if(auth()->user()->role === 'admin')
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('calls.reports') ? 'active' : '' }}" href="{{ route('calls.reports') }}">
+                <a class="nav-link {{ request()->routeIs('admin.call-logs.reports') ? 'active' : '' }}" href="{{ route('admin.call-logs.reports') }}">
                     <i class="fas fa-chart-line"></i>
                     <span>Reports</span>
                 </a>
             </li>
-            
+            @endif
         </ul>
     </aside>
 
@@ -1601,101 +1179,380 @@
         @yield('content')
     </main>
 
-    <!-- Call Details Modal -->
-    <div class="modal fade" id="callDetailsModal" tabindex="-1" aria-labelledby="callDetailsModalLabel" aria-hidden="true">
+    <!-- Job Details Modal -->
+    <div class="modal fade" id="jobDetailsModal" tabindex="-1" aria-labelledby="jobDetailsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content call-details-modal">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="callDetailsModalLabel">Call Details</h5>
+                    <h5 class="modal-title" id="jobDetailsModalLabel">Job Card Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="call-details-header">
-                        <h3 class="call-details-title" id="callSubject">Loading...</h3>
-                        <div class="call-details-status">
-                            <span class="badge" id="callStatusBadge">Pending</span>
-                            <span class="badge" id="callPriorityBadge">Medium</span>
+                    <div class="job-details-header">
+                        <h3 class="job-details-title" id="jobDescription">Loading...</h3>
+                        <div class="job-details-status">
+                            <span class="badge" id="jobStatusBadge">Pending</span>
+                            <span class="badge" id="jobTypeBadge">Normal</span>
                         </div>
                     </div>
                     
-                    <div class="call-details-content">
+                    <div class="job-details-content">
                         <div>
-                            <div class="call-details-section">
-                                <h5 class="call-details-section-title">
-                                    <i class="fas fa-info-circle"></i> Call Information
+                            <div class="job-details-section">
+                                <h5 class="job-details-section-title">
+                                    <i class="fas fa-info-circle"></i> Job Information
                                 </h5>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Call ID:</span>
-                                    <span class="call-details-value" id="callId">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Job Card:</span>
+                                    <span class="job-details-value" id="jobCard">-</span>
                                 </div>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Date Logged:</span>
-                                    <span class="call-details-value" id="callDate">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Date Booked:</span>
+                                    <span class="job-details-value" id="dateBooked">-</span>
                                 </div>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Call Type:</span>
-                                    <span class="call-details-value" id="callType">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Job Type:</span>
+                                    <span class="job-details-value" id="jobType">-</span>
                                 </div>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Duration:</span>
-                                    <span class="call-details-value" id="callDuration">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Duration:</span>
+                                    <span class="job-details-value" id="jobDuration">-</span>
                                 </div>
                             </div>
                             
-                            <div class="call-details-section">
-                                <h5 class="call-details-section-title">
-                                    <i class="fas fa-user"></i> Customer Information
+                            <div class="job-details-section">
+                                <h5 class="job-details-section-title">
+                                    <i class="fas fa-building"></i> Company Information
                                 </h5>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Name:</span>
-                                    <span class="call-details-value" id="customerName">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Company:</span>
+                                    <span class="job-details-value" id="companyName">-</span>
                                 </div>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Phone:</span>
-                                    <span class="call-details-value" id="customerPhone">-</span>
-                                </div>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Email:</span>
-                                    <span class="call-details-value" id="customerEmail">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">ZIMRA Ref:</span>
+                                    <span class="job-details-value" id="zimraRef">-</span>
                                 </div>
                             </div>
                         </div>
                         
                         <div>
-                            <div class="call-details-section">
-                                <h5 class="call-details-section-title">
+                            <div class="job-details-section">
+                                <h5 class="job-details-section-title">
                                     <i class="fas fa-user-tie"></i> Assignment
                                 </h5>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Assigned To:</span>
-                                    <span class="call-details-value" id="assignedTo">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Engineer:</span>
+                                    <span class="job-details-value" id="assignedEngineer">-</span>
                                 </div>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Date Assigned:</span>
-                                    <span class="call-details-value" id="dateAssigned">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Approved By:</span>
+                                    <span class="job-details-value" id="approvedBy">-</span>
                                 </div>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Date Resolved:</span>
-                                    <span class="call-details-value" id="dateResolved">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Date Resolved:</span>
+                                    <span class="job-details-value" id="dateResolved">-</span>
                                 </div>
                             </div>
                             
-                            <div class="call-details-section">
-                                <h5 class="call-details-section-title">
+                            <div class="job-details-section">
+                                <h5 class="job-details-section-title">
                                     <i class="fas fa-file-invoice-dollar"></i> Billing
                                 </h5>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Billed Hours:</span>
-                                    <span class="call-details-value" id="billedHours">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Billed Hours:</span>
+                                    <span class="job-details-value" id="billedHours">-</span>
                                 </div>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">Amount Charged:</span>
-                                    <span class="call-details-value" id="amountCharged">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Amount Charged:</span>
+                                    <span class="job-details-value" id="amountCharged">-</span>
                                 </div>
-                                <div class="call-details-info">
-                                    <span class="call-details-label">ZIMRA Ref:</span>
-                                    <span class="call-details-value" id="zimraRef">-</span>
+                                <div class="job-details-info">
+                                    <span class="job-details-label">Time Range:</span>
+                                    <span class="job-details-value" id="timeRange">-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="job-details-notes">
+                        <h5 class="job-details-section-title">
+                            <i class="fas fa-sticky-note"></i> Engineer Comments
+                        </h5>
+                        <div class="job-details-notes-content" id="engineerComments">
+                            No comments available.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="editJobBtn">Edit Job</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Form -->
+    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+        @csrf
+    </form>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <script>
+        // Sidebar Toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const mainContent = document.getElementById('mainContent');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+            
+            // Check if elements exist
+            if (!sidebar || !sidebarToggle) return;
+            
+            // Load saved sidebar state
+            const sidebarState = localStorage.getItem('sidebarCollapsed');
+            if (sidebarState === 'true') {
+                sidebar.classList.add('collapsed');
+            }
+            
+            // Toggle sidebar
+            sidebarToggle.addEventListener('click', function() {
+                const isMobile = window.innerWidth <= 991.98;
+                
+                if (isMobile) {
+                    sidebar.classList.toggle('mobile-show');
+                    mobileOverlay.classList.toggle('show');
+                    document.body.style.overflow = sidebar.classList.contains('mobile-show') ? 'hidden' : '';
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                }
+            });
+            
+            // Close mobile sidebar when clicking overlay
+            if (mobileOverlay) {
+                mobileOverlay.addEventListener('click', function() {
+                    sidebar.classList.remove('mobile-show');
+                    mobileOverlay.classList.remove('show');
+                    document.body.style.overflow = '';
+                });
+            }
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                const isMobile = window.innerWidth <= 991.98;
+                
+                if (!isMobile) {
+                    sidebar.classList.remove('mobile-show');
+                    mobileOverlay.classList.remove('show');
+                    document.body.style.overflow = '';
+                }
+            });
+            
+            // Logout functionality
+            const logoutTrigger = document.getElementById('logoutTrigger');
+            if (logoutTrigger) {
+                logoutTrigger.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (confirm('Are you sure you want to logout?')) {
+                        document.getElementById('logout-form').submit();
+                    }
+                });
+            }
+            
+            // Auto-hide alerts after 5 seconds
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+            
+            // Job Details Modal functionality
+            const jobDetailsModal = document.getElementById('jobDetailsModal');
+            if (jobDetailsModal) {
+                // Function to load job details
+                window.loadJobDetails = function(jobId) {
+                    // Show loading state
+                    document.getElementById('jobDescription').textContent = 'Loading...';
+                    document.getElementById('jobCard').textContent = '-';
+                    document.getElementById('dateBooked').textContent = '-';
+                    document.getElementById('jobType').textContent = '-';
+                    document.getElementById('jobDuration').textContent = '-';
+                    document.getElementById('companyName').textContent = '-';
+                    document.getElementById('zimraRef').textContent = '-';
+                    document.getElementById('assignedEngineer').textContent = '-';
+                    document.getElementById('approvedBy').textContent = '-';
+                    document.getElementById('dateResolved').textContent = '-';
+                    document.getElementById('billedHours').textContent = '-';
+                    document.getElementById('amountCharged').textContent = '-';
+                    document.getElementById('timeRange').textContent = '-';
+                    document.getElementById('engineerComments').textContent = 'Loading...';
+                    
+                    // Fetch job details
+                    fetch(`/admin/call-logs/${jobId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const job = data.job;
+                                
+                                // Update modal content
+                                document.getElementById('jobDescription').textContent = job.fault_description || 'No description provided';
+                                document.getElementById('jobCard').textContent = job.job_card;
+                                document.getElementById('dateBooked').textContent = job.date_booked;
+                                document.getElementById('jobType').textContent = job.type;
+                                document.getElementById('jobDuration').textContent = job.billed_hours ? `${job.billed_hours} hours` : 'Not calculated';
+                                document.getElementById('companyName').textContent = job.company_name;
+                                document.getElementById('zimraRef').textContent = job.zimra_ref || 'N/A';
+                                document.getElementById('assignedEngineer').textContent = job.engineer || 'Unassigned';
+                                document.getElementById('approvedBy').textContent = job.approved_by || 'N/A';
+                                document.getElementById('dateResolved').textContent = job.date_resolved || 'Not resolved';
+                                document.getElementById('billedHours').textContent = job.billed_hours ? `${job.billed_hours} hours` : 'Not calculated';
+                                document.getElementById('amountCharged').textContent = job.amount_charged ? `USD $${parseFloat(job.amount_charged).toFixed(2)}` : 'Not set';
+                                document.getElementById('timeRange').textContent = (job.time_start && job.time_finish) ? `${job.time_start} - ${job.time_finish}` : 'Not set';
+                                document.getElementById('engineerComments').textContent = job.engineer_comments || 'No comments available.';
+                                
+                                // Update badges
+                                const statusBadge = document.getElementById('jobStatusBadge');
+                                const typeBadge = document.getElementById('jobTypeBadge');
+                                
+                                statusBadge.textContent = job.status;
+                                statusBadge.className = `badge status-${job.status}`;
+                                
+                                typeBadge.textContent = job.type;
+                                typeBadge.className = `badge type-${job.type}`;
+                                
+                                // Update edit button
+                                const editBtn = document.getElementById('editJobBtn');
+                                if (editBtn) {
+                                    editBtn.onclick = function() {
+                                        window.location.href = `/admin/call-logs/${jobId}/edit`;
+                                    };
+                                }
+                            } else {
+                                console.error('Error loading job details:', data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching job details:', error);
+                            document.getElementById('jobDescription').textContent = 'Error loading job details';
+                            document.getElementById('engineerComments').textContent = 'Error loading comments';
+                        });
+                };
+            }
+            
+            // Enhanced table interactions
+            const enhancedTables = document.querySelectorAll('.enhanced-table, .enhanced-job-cards-table');
+            enhancedTables.forEach(function(table) {
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(function(row) {
+                    row.addEventListener('click', function(e) {
+                        // Don't trigger if clicking on buttons or links
+                        if (e.target.closest('button, a, .action-btn')) {
+                            return;
+                        }
+                        
+                        // Get job ID from data attribute or row
+                        const jobId = row.dataset.jobId;
+                        if (jobId && window.loadJobDetails) {
+                            window.loadJobDetails(jobId);
+                            const modal = new bootstrap.Modal(document.getElementById('jobDetailsModal'));
+                            modal.show();
+                        }
+                    });
+                });
+            });
+            
+            // Form enhancements
+            const enhancedForms = document.querySelectorAll('form');
+            enhancedForms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        const originalText = submitBtn.innerHTML;
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                        
+                        // Re-enable after 5 seconds as fallback
+                        setTimeout(function() {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                        }, 5000);
+                    }
+                });
+            });
+            
+            // Tooltips initialization
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Popovers initialization
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            popoverTriggerList.map(function(popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + K for search
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    const searchInput = document.querySelector('input[type="search"], .enhanced-input[placeholder*="search"]');
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                }
+                
+                // Escape to close modals
+                if (e.key === 'Escape') {
+                    const openModals = document.querySelectorAll('.modal.show');
+                    openModals.forEach(function(modal) {
+                        const bsModal = bootstrap.Modal.getInstance(modal);
+                        if (bsModal) {
+                            bsModal.hide();
+                        }
+                    });
+                }
+            });
+            
+            // Initialize any additional components
+            console.log('Job Cards Management System initialized successfully');
+        });
+        
+        // Global utility functions
+        window.formatCurrency = function(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(amount);
+        };
+        
+        window.formatDate = function(date) {
+            return new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            }).format(new Date(date));
+        };
+        
+        window.formatDateTime = function(datetime) {
+            return new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(new Date(datetime));
+        };
+    </script>
+
+    @stack('styles')
+    @stack('scripts')
+
+</body>
+</html>

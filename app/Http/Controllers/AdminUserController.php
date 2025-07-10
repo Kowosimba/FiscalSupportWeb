@@ -24,6 +24,6 @@ class AdminUserController extends Controller
         $user->role = $request->role === 'user' ? null : $request->role; // null means plain user
         $user->save();
 
-        return redirect()->route('admin.users')->with('message', 'Role updated!');
+        return redirect()->route('admin.users.index')->with('message', 'Role updated!');
     }
 }

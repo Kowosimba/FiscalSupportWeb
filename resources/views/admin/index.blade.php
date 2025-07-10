@@ -20,7 +20,7 @@
         </li>
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.call-logs.*') ? 'active' : '' }}" 
-               href="{{ route('calls.dashboard') }}">
+               href="{{ route('admin.call-logs.index') }}">
                 <i class="fa fa-phone me-2"></i>
                 Call Logs
             </a>

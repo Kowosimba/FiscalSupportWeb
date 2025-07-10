@@ -28,7 +28,7 @@ class AuthController extends Controller
             $user = User::create($validated);
             
             Auth::login($user);
-            return redirect()->route('register')->with('success', 'Registration successful you can log in now!');
+            return redirect()->route('login')->with('success', 'Registration successful you can log in now!');
     }
 
 

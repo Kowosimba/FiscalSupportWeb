@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\{
     HomeController,
     MailController,
@@ -14,20 +15,19 @@ use App\Http\Controllers\{
     ServiceController,
     NewsletterController,
     NotificationController,
-    JobController,
+    CallLogController,
     CallReportController,
-    CallSettingsController
+    FaqCategoryController,
+    AdminCommentController,
 };
 
 use App\Http\Controllers\Admin\{
-    AdminCommentController,
     AdminBlogController,
     ServiceController as AdminServiceController,
     ServiceResourceController,
     NewsletterSubscriberController,
     NewsletterCampaignController,
     CustomerContactController,
-    FaqCategoryController
 };
 
 // =============================================================================
@@ -106,27 +106,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/{ticket}/comments', 'addComment')->name('addComment');
     });
 
-    // --- Job/Call Management ---
-    Route::resource('jobs', JobController::class);
-    Route::post('jobs/{job}/assign', [JobController::class, 'assign'])->name('jobs.assign');
-    Route::patch('jobs/{job}/status', [JobController::class, 'updateStatus'])->name('jobs.updateStatus');
-    Route::get('/jobs', [JobController::class, 'index'])->name('jobs.index');
-    
-    // Call-specific routes (aliases for jobs)
-    Route::get('/calls/dashboard', [JobController::class, 'index'])->name('calls.dashboard');
-    Route::get('/calls/my-calls', [JobController::class, 'myCalls'])->name('calls.my-calls');
-    Route::get('/calls/in-progress', [JobController::class, 'inProgress'])->name('calls.in-progress');
-    Route::get('/calls/resolved', [JobController::class, 'resolved'])->name('calls.resolved');
-    Route::get('/calls/pending', [JobController::class, 'pending'])->name('calls.pending');
-    Route::get('/calls/unassigned', [JobController::class, 'unassigned'])->name('calls.unassigned');
-    Route::get('/calls/create', [JobController::class, 'create'])->name('calls.create');
-    
-    // Reports routes
-    Route::get('/calls/reports', [CallReportController::class, 'index'])->name('calls.reports');
-    Route::get('/calls/reports/export', [CallReportController::class, 'export'])->name('calls.reports.export');
-    Route::post('/calls/reports/generate', [CallReportController::class, 'generate'])->name('calls.reports.generate');
-
-
     // --- Notifications ---
     Route::prefix('notifications')->name('notifications.')->controller(NotificationController::class)->group(function () {
         Route::get('/', 'index')->name('index');
@@ -136,18 +115,21 @@ Route::middleware('auth')->group(function () {
 });
 
 // =============================================================================
-// ADMIN ROUTES (Authenticated + Admin Middleware)
+// ADMIN ROUTES (Authenticated + Role-Based Access)
 // =============================================================================
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    
     // --- Dashboard ---
     Route::get('/', [SupportTicketController::class, 'index'])->name('index');
 
-    // --- FAQ Category Management (for AJAX and CRUD) ---
+    // --- FAQ Category Management ---
     Route::prefix('faq-categories')->name('faq-categories.')->controller(FaqCategoryController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
         Route::post('/', 'store')->name('store');
+        Route::get('/{faqCategory}/edit', 'edit')->name('edit');
+        Route::put('/{faqCategory}', 'update')->name('update');
         Route::delete('/{faqCategory}', 'destroy')->name('destroy');
     });
 
@@ -221,4 +203,71 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // --- Contact Management ---
     Route::resource('contacts', CustomerContactController::class);
+
+    // =============================================================================
+    // JOB CARDS / CALL LOGS MANAGEMENT (IT Support System)
+    // =============================================================================
+    
+    Route::prefix('call-logs')
+          ->name('call-logs.')
+          ->controller(CallLogController::class)
+          ->group(function () {
+
+        // ---- General dashboards & lists (visible to every logged-in user) ----
+        Route::get('/', 'index')->name('index');                    // full list + filters
+        Route::get('/dashboard', 'dashboard')->name('dashboard');   // KPI widgets
+        
+        // ---- Quick filtered views ------------------------------------------
+        Route::get('/my-jobs', 'myJobs')->name('my-jobs');         // engineer dashboard
+        Route::get('/in-progress', 'inProgress')->name('in-progress');
+        Route::get('/completed', 'completed')->name('completed');
+        Route::get('/pending', 'pending')->name('pending');
+        Route::get('/unassigned', 'unassigned')->name('unassigned');
+        Route::get('/assigned', 'assigned')->name('assigned');
+        Route::get('/cancelled', 'cancelled')->name('cancelled');
+
+        // ---- View individual job cards (accessible to all authenticated users) ----
+        Route::get('/{callLog}', 'show')->name('show');            // single card details
+
+        // ---- Create – admin & accounts only --------------------------------
+        Route::middleware(['role:admin,accounts'])->group(function () {
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+        });
+
+        // ---- Edit / update – admin, accounts, assigned engineer ------------
+        Route::middleware(['role:technician,admin,accounts'])->group(function () {
+            Route::get('/{callLog}/edit', 'edit')->name('edit');
+            Route::put('/{callLog}', 'update')->name('update');
+        });
+
+        // ---- Delete – admin only -------------------------------------------
+        Route::middleware(['role:admin'])->group(function () {
+            Route::delete('/{callLog}', 'destroy')->name('destroy');
+        });
+
+        // ---- Assignment & status management --------------------------------
+        Route::middleware(['role:admin,accounts'])->group(function () {
+            Route::post('/{callLog}/assign', 'assign')->name('assign');
+        });
+
+        // Status changes:
+        // • engineers can update cards assigned to them
+        // • admin/accounts can update any card
+        Route::patch('/{callLog}/status', 'updateStatus')->name('update-status');
+        Route::post('/{callLog}/complete', 'complete')->name('complete');   // convenience route
+
+        // ---- Reports & data export – admin only ----------------------------
+        Route::middleware(['role:admin'])->group(function () {
+            Route::get('/reports', 'reports')->name('reports');
+            Route::get('/export', 'export')->name('export');       // ?format=csv|excel|pdf
+        });
+    });
+
+    // --- Call Reports Management (Legacy - can be removed if not needed) ---
+    Route::prefix('call-reports')->name('call-reports.')->controller(CallReportController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/export', 'export')->name('export');
+        Route::post('/generate', 'generate')->name('generate');
+    });
 });
