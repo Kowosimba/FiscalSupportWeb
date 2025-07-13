@@ -3,22 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
+use App\Models\User;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use App\Models\User;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Notifications\CustomerTicketResolvedNotification;
 use App\Notifications\CustomerTicketCreatedNotification;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
+use App\Notifications\TicketAssignedNotification;
 
 class SupportTicketController extends Controller
 {
-    use AuthorizesRequests;
-    
+    use \Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -47,7 +48,7 @@ class SupportTicketController extends Controller
                 'priority' => $request->input('priority', 'low'),
             ]);
 
-            // In your store method
+            // Delay notification for UX
             $ticket->notify((new CustomerTicketCreatedNotification($ticket))->delay(now()->addSeconds(10)));
 
             return redirect()->back()
@@ -58,13 +59,10 @@ class SupportTicketController extends Controller
                 'exception' => $e,
                 'request_data' => $request->except('attachment')
             ]);
-
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Failed to submit ticket. Please try again.');
         }
-
-        
     }
 
     protected function storeAttachment($file): string
@@ -82,9 +80,10 @@ class SupportTicketController extends Controller
             $previousWeekStart = $now->copy()->subWeek()->startOfWeek();
             $previousWeekEnd = $now->copy()->subWeek()->endOfWeek();
 
-            // Cache these expensive queries
+            // Cache expensive queries
             $currentCounts = Cache::remember('current_counts_' . $currentWeekStart->format('Y-m-d'), 3600, function() use ($currentWeekStart, $currentWeekEnd) {
                 return $this->getStatusCountsByDateRange($currentWeekStart, $currentWeekEnd) ?? (object)[
+                    'total' => 0,
                     'pending' => 0,
                     'in_progress' => 0,
                     'resolved' => 0,
@@ -94,6 +93,7 @@ class SupportTicketController extends Controller
 
             $previousCounts = Cache::remember('previous_counts_' . $previousWeekStart->format('Y-m-d'), 3600, function() use ($previousWeekStart, $previousWeekEnd) {
                 return $this->getStatusCountsByDateRange($previousWeekStart, $previousWeekEnd) ?? (object)[
+                    'total' => 0,
                     'pending' => 0,
                     'in_progress' => 0,
                     'resolved' => 0,
@@ -108,10 +108,10 @@ class SupportTicketController extends Controller
                 $percentageChanges[$status] = $previous == 0 ? ($current > 0 ? 100 : 0) : round((($current - $previous) / $previous * 100));
             }
 
-            // Cache the status counts
+            // Cache status counts
             $statusCounts = Cache::remember('ticket_status_counts', 3600, function() {
                 return Ticket::select([
-                    DB::raw('COUNT(*) as total'),
+                    DB::raw("COUNT(*) as total"),
                     DB::raw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending"),
                     DB::raw("SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress"),
                     DB::raw("SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved"),
@@ -119,9 +119,8 @@ class SupportTicketController extends Controller
                 ])->first();
             });
 
-            // Optimize the main query
-            $query = Ticket::query()
-                ->with(['assignedTechnician:id,name'])
+            // Main tickets query
+            $query = Ticket::with(['assignedTechnician:id,name'])
                 ->select(['id', 'subject', 'company_name', 'priority', 'status', 'updated_at', 'assigned_to']);
 
             if ($request->filled('status')) {
@@ -142,20 +141,18 @@ class SupportTicketController extends Controller
                 });
             }
 
-            // Get only active technicians
+            // Active technicians
             $technicians = User::whereIn('id', function($query) {
-                    $query->select('assigned_to')
-                        ->from('tickets')
-                        ->whereNotNull('assigned_to');
+                    $query->select('assigned_to')->from('tickets')->whereNotNull('assigned_to');
                 })
                 ->select(['id', 'name'])
                 ->get();
 
             $tickets = $query->latest()->paginate(10);
-
             $priorities = ['low', 'medium', 'high'];
+
             return view('admin.index', compact('statusCounts', 'percentageChanges', 'tickets', 'technicians', 'priorities'));
-            
+
         } catch (\Exception $e) {
             Log::error('Dashboard error: ' . $e->getMessage());
             return back()->with('error', 'Error loading dashboard. Please try again.');
@@ -164,34 +161,15 @@ class SupportTicketController extends Controller
 
     public function allTickets(Request $request)
     {
-        $query = Ticket::query()
-            ->with(['assignedTechnician:id,name'])
+        $query = Ticket::with(['assignedTechnician:id,name'])
             ->select(['id', 'subject', 'company_name', 'priority', 'status', 'updated_at', 'assigned_to']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('priority')) {
-            $query->where('priority', $request->priority);
-        }
-        if ($request->filled('assigned_to')) {
-            $query->where('assigned_to', $request->assigned_to);
-        }
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('subject', 'like', "%$search%")
-                  ->orWhere('company_name', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%");
-            });
-        }
+        $this->applyFilters($query, $request);
 
         $tickets = $query->latest()->paginate(15)->withQueryString();
 
         $technicians = User::whereIn('id', function($query) {
-                $query->select('assigned_to')
-                    ->from('tickets')
-                    ->whereNotNull('assigned_to');
+                $query->select('assigned_to')->from('tickets')->whereNotNull('assigned_to');
             })
             ->select(['id', 'name'])
             ->get();
@@ -204,12 +182,11 @@ class SupportTicketController extends Controller
 
     public function show(Ticket $ticket)
     {
-        // Load only necessary relationships with limited data
         $ticket->load([
             'comments' => function($query) {
                 $query->latest()->limit(10)->with(['user:id,name']);
-            }, 
-            'assigned_to_user:id,name'
+            },
+            'assignedTechnician:id,name'
         ]);
 
         $technicians = User::where('role', 'technician')
@@ -221,34 +198,16 @@ class SupportTicketController extends Controller
 
     public function openTickets(Request $request)
     {
-        $query = Ticket::query()
-            ->where('status', 'in_progress')
+        $query = Ticket::where('status', 'in_progress')
             ->with(['assignedTechnician:id,name'])
             ->select(['id', 'subject', 'company_name', 'priority', 'status', 'updated_at', 'assigned_to']);
 
-        if ($request->filled('priority')) {
-            $query->where('priority', $request->priority);
-        }
-        if ($request->filled('technician')) {
-            $query->whereHas('assignedTechnician', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->technician . '%');
-            });
-        }
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('subject', 'like', "%$search%")
-                  ->orWhere('company_name', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%");
-            });
-        }
+        $this->applyFilters($query, $request);
 
         $tickets = $query->latest()->paginate(15)->withQueryString();
 
         $technicians = User::whereIn('id', function($query) {
-                $query->select('assigned_to')
-                    ->from('tickets')
-                    ->whereNotNull('assigned_to');
+                $query->select('assigned_to')->from('tickets')->whereNotNull('assigned_to');
             })
             ->select(['id', 'name'])
             ->get();
@@ -260,36 +219,16 @@ class SupportTicketController extends Controller
 
     public function solvedTickets(Request $request)
     {
-        $query = Ticket::query()
-            ->where('status', 'resolved')
+        $query = Ticket::where('status', 'resolved')
             ->with(['assignedTechnician:id,name'])
             ->select(['id', 'subject', 'company_name', 'priority', 'status', 'updated_at', 'assigned_to']);
 
-        if ($request->filled('priority')) {
-            $query->where('priority', $request->priority);
-        }
-
-        if ($request->filled('technician')) {
-            $query->whereHas('assignedTechnician', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->technician . '%');
-            });
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('subject', 'like', "%$search%")
-                  ->orWhere('company_name', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%");
-            });
-        }
+        $this->applyFilters($query, $request);
 
         $tickets = $query->latest()->paginate(15)->withQueryString();
 
         $technicians = User::whereIn('id', function($query) {
-                $query->select('assigned_to')
-                    ->from('tickets')
-                    ->whereNotNull('assigned_to');
+                $query->select('assigned_to')->from('tickets')->whereNotNull('assigned_to');
             })
             ->select(['id', 'name'])
             ->get();
@@ -301,36 +240,16 @@ class SupportTicketController extends Controller
 
     public function pendingTickets(Request $request)
     {
-        $query = Ticket::query()
-            ->where('status', 'pending')
+        $query = Ticket::where('status', 'pending')
             ->with(['assignedTechnician:id,name'])
             ->select(['id', 'subject', 'company_name', 'priority', 'status', 'updated_at', 'assigned_to']);
 
-        if ($request->filled('priority')) {
-            $query->where('priority', $request->priority);
-        }
-
-        if ($request->filled('technician')) {
-            $query->whereHas('assignedTechnician', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->technician . '%');
-            });
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('subject', 'like', "%$search%")
-                  ->orWhere('company_name', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%");
-            });
-        }
+        $this->applyFilters($query, $request);
 
         $tickets = $query->latest()->paginate(15)->withQueryString();
 
         $technicians = User::whereIn('id', function($query) {
-                $query->select('assigned_to')
-                    ->from('tickets')
-                    ->whereNotNull('assigned_to');
+                $query->select('assigned_to')->from('tickets')->whereNotNull('assigned_to');
             })
             ->select(['id', 'name'])
             ->get();
@@ -349,11 +268,9 @@ class SupportTicketController extends Controller
         if ($request->filled('priority')) {
             $query->where('priority', $request->priority);
         }
-
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -372,12 +289,7 @@ class SupportTicketController extends Controller
         $statuses = ['pending', 'in_progress', 'resolved', 'closed'];
         $priorities = ['low', 'medium', 'high'];
 
-        return view('admin.unassigned-tickets', compact(
-            'tickets', 
-            'technicians', 
-            'statuses', 
-            'priorities'
-        ));
+        return view('admin.unassigned-tickets', compact('tickets', 'technicians', 'statuses', 'priorities'));
     }
 
     public function adminStore(Request $request)
@@ -395,17 +307,16 @@ class SupportTicketController extends Controller
         ]);
 
         if ($request->hasFile('attachment')) {
-            $path = $request->file('attachment')->store('attachments', 'public');
-            $validated['attachment'] = $path;
+            $validated['attachment'] = $request->file('attachment')->store('attachments', 'public');
         }
 
         $validated['status'] = 'in_progress';
 
-        $ticket = \App\Models\Ticket::create($validated);
+        $ticket = Ticket::create($validated);
 
         if ($ticket->assigned_to) {
             $technician = User::find($ticket->assigned_to);
-            $technician->notify(new \App\Notifications\TicketAssignedNotification($ticket));
+            $technician->notify(new TicketAssignedNotification($ticket));
         }
 
         if ($request->ajax()) {
@@ -441,7 +352,7 @@ class SupportTicketController extends Controller
 
         if ($previousTechnician != $ticket->assigned_to) {
             $technician = User::find($ticket->assigned_to);
-            $technician->notify(new \App\Notifications\TicketAssignedNotification($ticket));
+            $technician->notify(new TicketAssignedNotification($ticket));
         }
 
         return redirect()->route('admin.tickets.unassigned')->with('success', 'Ticket assigned successfully!');
@@ -449,7 +360,7 @@ class SupportTicketController extends Controller
 
     public function myTickets(Request $request)
     {
-        $userId = optional(Auth::user())->id;
+        $userId = Auth::id();
 
         if (!$userId) {
             return redirect()->route('login')->with('error', 'You must be logged in to view your tickets.');
@@ -463,10 +374,7 @@ class SupportTicketController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('subject', 'like', "%$search%");
-            });
+            $query->where('subject', 'like', "%{$request->search}%");
         }
 
         $tickets = $query->latest()->paginate(10)->withQueryString();
@@ -499,7 +407,7 @@ class SupportTicketController extends Controller
         ]);
 
         $ticket->comments()->create([
-            'user_id' => \Illuminate\Support\Facades\Auth::id(),
+            'user_id' => Auth::id(),
             'body' => $request->body,
         ]);
 
@@ -508,7 +416,7 @@ class SupportTicketController extends Controller
 
     public function updateStatusPriority(Request $request, Ticket $ticket)
     {
-        if (optional(Auth::user())->id !== $ticket->assigned_to) {
+        if (Auth::id() !== $ticket->assigned_to) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -529,7 +437,7 @@ class SupportTicketController extends Controller
         if ($newStatus === 'resolved') {
             $user = User::where('email', $ticket->email)->first();
             if ($user) {
-                $user->notify(new \App\Notifications\CustomerTicketResolvedNotification($ticket));
+                $user->notify(new CustomerTicketResolvedNotification($ticket));
             }
         }
 
@@ -546,11 +454,11 @@ class SupportTicketController extends Controller
     {
         return Ticket::whereBetween('created_at', [$startDate, $endDate])
             ->select([
-                DB::raw('COUNT(*) as total'),
-                DB::raw('SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending'),
-                DB::raw('SUM(CASE WHEN status = "in_progress" THEN 1 ELSE 0 END) as in_progress'),
-                DB::raw('SUM(CASE WHEN status = "resolved" THEN 1 ELSE 0 END) as resolved'),
-                DB::raw('SUM(CASE WHEN assigned_to IS NULL THEN 1 ELSE 0 END) as unassigned')
+                DB::raw("COUNT(*) as total"),
+                DB::raw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending"),
+                DB::raw("SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress"),
+                DB::raw("SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved"),
+                DB::raw("SUM(CASE WHEN assigned_to IS NULL THEN 1 ELSE 0 END) as unassigned")
             ])
             ->first();
     }
@@ -562,7 +470,23 @@ class SupportTicketController extends Controller
         }
         $ticket->status = 'in_progress';
         $ticket->save();
-
         return back()->with('message', 'Ticket reopened successfully.');
+    }
+
+    protected function applyFilters($query, $request)
+    {
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->priority);
+        }
+        if ($request->filled('assigned_to')) {
+            $query->where('assigned_to', $request->assigned_to);
+        }
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('subject', 'like', "%{$request->search}%")
+                  ->orWhere('company_name', 'like', "%{$request->search}%")
+                  ->orWhere('email', 'like', "%{$request->search}%");
+            });
+        }
     }
 }

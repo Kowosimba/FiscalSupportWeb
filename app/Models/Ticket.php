@@ -8,8 +8,7 @@ use Illuminate\Notifications\Notifiable;
 
 class Ticket extends Model
 {
-    use HasFactory;
-    use Notifiable;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'company_name',
@@ -23,30 +22,23 @@ class Ticket extends Model
         'assigned_to',
         'attachment',
     ];
-  
- public function assignedTechnician()
-    {
-        return $this->belongsTo(User::class, 'assigned_to');
-    }
 
-     protected $attributes = [
-        'priority' => 'low', // default priority
+    protected $attributes = [
+        'priority' => 'low',
     ];
 
-    public function comments()
-{
-    return $this->hasMany(Comment::class);
-}
-
-  public function assigned_to_user()
+    public function assignedTechnician()
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
-public function routeNotificationForMail($notification)
-{
-    return $this->email;
-}
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 
-    
+    public function routeNotificationForMail($notification)
+    {
+        return $this->email;
+    }
 }
