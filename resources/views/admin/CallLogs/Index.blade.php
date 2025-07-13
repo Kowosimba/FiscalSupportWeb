@@ -1,6 +1,6 @@
 @extends('layouts.calllogs')
 
-@section('title', 'Job Cards Management - Dashboard')
+@section('title', 'Calls Management - Dashboard')
 
 @section('content')
 
@@ -389,6 +389,7 @@
 {{-- Dashboard Navigation Tabs --}}
 <div class="dashboard-nav-wrapper mb-4">
     <ul class="panel-nav nav nav-tabs">
+        {{-- Faults Allocation --}}
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.index') || request()->routeIs('admin.tickets.*') ? 'active' : '' }}"
                href="{{ route('admin.index') }}">
@@ -396,20 +397,7 @@
                 Faults Allocation
             </a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('content.*') || request()->routeIs('blogs.*') || request()->routeIs('admin.faqs.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.subscribers.*') || request()->routeIs('admin.newsletters.*') || request()->routeIs('faq-categories.*') ? 'active' : '' }}"
-               href="{{ route('admin.content.index') }}">
-                <i class="fa fa-cog me-2"></i>
-                Manage Content
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('admin.call-logs.*') ? 'active' : '' }}" 
-               href="{{ route('admin.call-logs.index') }}">
-                <i class="fa fa-phone me-2"></i>
-                Call Logs
-            </a>
-        </li>
+        {{-- Customer Contacts --}}
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.contacts.*') ? 'active' : '' }}"
                href="{{ route('admin.contacts.index') }}">
@@ -417,14 +405,31 @@
                 Customer Contacts
             </a>
         </li>
+        {{-- Call Logs --}}
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('admin.call-logs.*') ? 'active' : '' }}" 
+               href="{{ route('admin.call-logs.index') }}">
+                <i class="fa fa-phone me-2"></i>
+                Call Logs
+            </a>
+        </li>
+        {{-- Content Management --}}
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('content.*') || request()->routeIs('blogs.*') || request()->routeIs('admin.faqs.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.subscribers.*') || request()->routeIs('admin.newsletters.*') || request()->routeIs('faq-categories.*') ? 'active' : '' }}"
+               href="{{ route('admin.content.index') }}">
+                <i class="fa fa-cog me-2"></i>
+                Manage Content
+            </a>
+        </li>
     </ul>
 </div>
+
 
 <div class="container-fluid">
     <!-- Header Section -->
     <div class="page-header">
         <div>
-            <h1>Job Cards Management</h1>
+            <h1>Billed Calls Management</h1>
             <p>Manage and track all IT support job cards and services</p>
         </div>
         @if(in_array(auth()->user()->role, ['admin', 'accounts']))

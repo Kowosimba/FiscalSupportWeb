@@ -15,7 +15,7 @@
                 <i class="fa fa-clock me-1"></i>
                 <span>{{ $ticket->created_at->diffForHumans() }}</span>
             </div>
-            <a href="{{ route('tickets.mine') }}" class="btn btn-outline ms-3">
+            <a href="{{ route('admin.tickets.mine') }}" class="btn btn-outline ms-3">
                 <i class="fas fa-arrow-left me-2"></i> Back to Tickets
             </a>
         </div>
@@ -86,7 +86,7 @@
                     @endif
 
                     @if(auth()->id() === $ticket->assigned_to)
-                        <form action="{{ route('tickets.updateStatusPriority', $ticket->id) }}" method="POST" class="mt-4">
+                        <form action="{{ route('admin.tickets.updateStatusPriority', $ticket->id) }}" method="POST" class="mt-4">
                             @csrf
                             @method('PATCH')
                             <div class="row g-2">
@@ -153,7 +153,7 @@
                         </div>
                     @endforelse
                     
-                    <form action="{{ route('tickets.addComment', $ticket->id) }}" method="POST" class="comment-form mt-4">
+                    <form action="{{ route('admin.tickets.addComment', $ticket->id) }}" method="POST" class="comment-form mt-4">
                         @csrf
                         <div class="form-group mb-3">
                             <label for="comment-body" class="form-label">Add Comment</label>

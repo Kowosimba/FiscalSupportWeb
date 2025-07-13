@@ -1,3 +1,7 @@
+@php
+    use Illuminate\Support\Str;
+@endphp
+
 @extends('components.homelayout')
 
 @section('title', 'Blog - ' . config('app.name'))

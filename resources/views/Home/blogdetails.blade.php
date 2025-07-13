@@ -134,44 +134,44 @@
                         <!-- Comments List -->
                         <div class="comments-list">
                             @forelse($blog->blogComments as $comment)
-                                <div class="comment-item mb-4">
-                                    <div class="comment-card border rounded-lg p-4 bg-white shadow-sm">
-                                        <div class="comment-header d-flex align-items-start mb-3">
-                                            <div class="comment-avatar me-3">
-                                                <div class="avatar-circle bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: 600;">
-                                                    {{ strtoupper(substr($comment->name, 0, 1)) }}
-                                                </div>
-                                            </div>
-                                            <div class="comment-meta flex-grow-1">
-                                                <div class="d-flex align-items-center gap-2 mb-1">
-                                                    <h5 class="comment-author mb-0 fw-semibold">{{ $comment->name }}</h5>
-                                                    @if($comment->user_id)
-                                                        <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 0.7rem;">
-                                                            <i class="fas fa-star me-1 text-green-600"></i>Author
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                                <p class="comment-date text-muted mb-0" style="font-size: 0.875rem;">
-                                                    <i class="far fa-clock me-1 text-green-600"></i>
-                                                    {{ $comment->created_at->diffForHumans() }}
-                                                    <span class="text-muted ms-2">{{ $comment->created_at->format('M j, Y \a\t g:i a') }}</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div class="comment-content">
-                                            <p class="mb-0 text-gray-700 lh-base">{{ $comment->content }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            @empty
-                                <div class="no-comments text-center py-5">
-                                    <div class="mb-3">
-                                        <i class="far fa-comment-dots text-muted" style="font-size: 3rem;"></i>
-                                    </div>
-                                    <h5 class="text-muted mb-2">No comments yet</h5>
-                                    <p class="text-muted">Be the first to share your thoughts!</p>
-                                </div>
-                            @endforelse
+    <div class="comment-item mb-4">
+        <div class="comment-card border rounded-lg p-4 bg-white shadow-sm">
+            <div class="comment-header d-flex align-items-start mb-3">
+                <div class="comment-avatar me-3">
+                    <div class="avatar-circle bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: 600;">
+                        {{ strtoupper(substr($comment->name, 0, 1)) }}
+                    </div>
+                </div>
+                <div class="comment-meta flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h5 class="comment-author mb-0 fw-semibold">{{ $comment->name }}</h5>
+                        @if($comment->user_id)
+                            <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                                <i class="fas fa-star me-1 text-green-600"></i>Author
+                            </span>
+                        @endif
+                    </div>
+                    <p class="comment-date text-muted mb-0" style="font-size: 0.875rem;">
+                        <i class="far fa-clock me-1 text-green-600"></i>
+                        {{ $comment->created_at->diffForHumans() }}
+                        <span class="text-muted ms-2">{{ $comment->created_at->format('M j, Y \a\t g:i a') }}</span>
+                    </p>
+                </div>
+            </div>
+            <div class="comment-content">
+                <p class="mb-0 text-gray-700 lh-base">{{ $comment->content }}</p>
+            </div>
+        </div>
+    </div>
+@empty
+    <div class="no-comments text-center py-5">
+        <div class="mb-3">
+            <i class="far fa-comment-dots text-muted" style="font-size: 3rem;"></i>
+        </div>
+        <h5 class="text-muted mb-2">No comments yet</h5>
+        <p class="text-muted">Be the first to share your thoughts!</p>
+    </div>
+@endforelse
                         </div>
 
                         <!-- Comment Form -->

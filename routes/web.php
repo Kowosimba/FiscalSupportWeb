@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
 use App\Http\Controllers\{
     HomeController,
     MailController,
@@ -34,7 +33,7 @@ use App\Http\Controllers\Admin\{
 // PUBLIC ROUTES (No Authentication Required)
 // =============================================================================
 
-// --- Public Pages ---
+// General Pages
 Route::controller(HomeController::class)->group(function () {
     Route::get('/', 'index')->name('home');
     Route::get('/about-us', 'about')->name('about');
@@ -43,35 +42,32 @@ Route::controller(HomeController::class)->group(function () {
     Route::get('/pricing', 'pricing')->name('pricing');
 });
 
-// --- Public Actions ---
+// Contact Forms
 Route::post('/send-email', [MailController::class, 'sendMail'])->name('send_email');
 Route::post('/submit-ticket', [SupportTicketController::class, 'store'])->name('submit.ticket');
 
-// --- Public FAQ ---
-Route::get('/faqs', [FaqController::class, 'index'])->name('faqs');
 
-// --- Public Blog Routes ---
+
+// Blog Routes
 Route::prefix('blog')->name('blog.')->controller(BlogController::class)->group(function () {
     Route::get('/', 'frontIndex')->name('index');
     Route::get('/category/{category}', 'byCategory')->name('category');
     Route::get('/search/results', 'search')->name('search');
     Route::get('/{slug}', 'frontShow')->name('details');
 });
-
-// Blog Comments (Public)
 Route::post('/blogs/{blog}/comments', [BlogCommentController::class, 'store'])->name('blog-comments.store');
 
-// --- Public Services ---
+// Services
 Route::prefix('services')->name('services.')->group(function () {
     Route::get('/', [ServiceController::class, 'index'])->name('index');
     Route::get('/{slug}', [ServiceController::class, 'show'])->name('show');
 });
 
-// Service Resource Downloads
+// Service Resources
 Route::get('/service-resource/{resource}/download', [ServiceResourceController::class, 'download'])
     ->name('service-resource.download');
 
-// --- Newsletter (Public) ---
+// Newsletter
 Route::prefix('newsletter')->name('newsletter.')->group(function () {
     Route::post('/subscribe', [NewsletterController::class, 'subscribe'])->name('subscribe');
     Route::get('/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])->name('unsubscribe');
@@ -93,20 +89,10 @@ Route::middleware('guest')->controller(AuthController::class)->group(function ()
 // =============================================================================
 
 Route::middleware('auth')->group(function () {
-    // Logout
+    // Authentication
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // --- User Ticket Management ---
-    Route::prefix('tickets')->name('tickets.')->controller(SupportTicketController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/my-tickets', 'myTickets')->name('mine');
-        Route::get('/{ticket}', 'show')->name('show');
-        Route::get('/{ticket}/reopen', 'reopen')->name('reopen');
-        Route::patch('/{ticket}/status-priority', 'updateStatusPriority')->name('updateStatusPriority');
-        Route::post('/{ticket}/comments', 'addComment')->name('addComment');
-    });
-
-    // --- Notifications ---
+    // Notifications
     Route::prefix('notifications')->name('notifications.')->controller(NotificationController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/{notification}/read', 'markAsRead')->name('read');
@@ -114,41 +100,40 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+// Public FAQ listing
+Route::get('/faqs', [FaqController::class, 'index'])->name('faqs');
+
+// Admin FAQ Management
+Route::prefix('admin')->name('admin.')->group(function () {
+    // Admin FAQ listing (custom)
+    Route::get('faqs', [FaqController::class, 'adminIndex'])->name('faqs.index');
+
+    // Admin CRUD routes (optional, but best to avoid resourceful route if you have custom methods)
+    // Instead, define them manually to avoid confusion:
+    Route::get('faqs/create', [FaqController::class, 'create'])->name('faqs.create');
+    Route::post('faqs', [FaqController::class, 'store'])->name('faqs.store');
+    Route::get('faqs/{faq}/edit', [FaqController::class, 'edit'])->name('faqs.edit');
+    Route::put('faqs/{faq}', [FaqController::class, 'update'])->name('faqs.update');
+    Route::delete('faqs/{faq}', [FaqController::class, 'destroy'])->name('faqs.destroy');
+});
+
+
 // =============================================================================
 // ADMIN ROUTES (Authenticated + Role-Based Access)
 // =============================================================================
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
-    
-    // --- Dashboard ---
+    // Dashboard
     Route::get('/', [SupportTicketController::class, 'index'])->name('index');
 
-    // --- FAQ Category Management ---
-    Route::prefix('faq-categories')->name('faq-categories.')->controller(FaqCategoryController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/{faqCategory}/edit', 'edit')->name('edit');
-        Route::put('/{faqCategory}', 'update')->name('update');
-        Route::delete('/{faqCategory}', 'destroy')->name('destroy');
-    });
+    // FAQ Category Management
+    Route::resource('faq-categories', FaqCategoryController::class)->except(['show']);
 
-    // --- FAQ Management ---
-    Route::prefix('faqs')->name('faqs.')->controller(FaqController::class)->group(function () {
-        Route::get('/', 'adminIndex')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/{faq}/edit', 'edit')->name('edit');
-        Route::put('/{faq}', 'update')->name('update');
-        Route::delete('/{faq}', 'destroy')->name('destroy');
-    });
-
-    // --- Blog Management ---
+    // Blog Management
     Route::prefix('blogs')->name('blogs.')->controller(BlogController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
         Route::post('/', 'store')->name('store');
-        Route::get('/{blog}', 'show')->name('show');
         Route::get('/{blog}/edit', 'edit')->name('edit');
         Route::put('/{blog}', 'update')->name('update');
         Route::delete('/{blog}', 'destroy')->name('destroy');
@@ -156,118 +141,93 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::post('/bulk-action', 'bulkAction')->name('bulk-action');
     });
 
-    // --- Ticket Management ---
+    // Admin Tickets Management
     Route::prefix('tickets')->name('tickets.')->controller(SupportTicketController::class)->group(function () {
+        // Ticket Listing Views
+        Route::get('/', 'index')->name('index'); // Default view
         Route::get('/all', 'allTickets')->name('all');
         Route::get('/open', 'openTickets')->name('open');
         Route::get('/solved', 'solvedTickets')->name('solved');
         Route::get('/pending', 'pendingTickets')->name('pending');
         Route::get('/unassigned', 'unassignedTickets')->name('unassigned');
+        Route::get('/my-tickets', 'myTickets')->name('mine'); // Technicians' assigned tickets
+
+        // Ticket Creation
         Route::get('/create', 'create')->name('create');
-        Route::post('/store', 'adminStore')->name('store');
-        Route::put('/{ticket}/assign', 'assignTechnician')->name('assign');
+        Route::post('/', 'adminStore')->name('store');
+
+        // Single Ticket Operations
+        Route::prefix('{ticket}')->group(function () {
+            Route::get('/', 'show')->name('show');
+            Route::get('/reopen', 'reopen')->name('reopen');
+            Route::patch('/status-priority', 'updateStatusPriority')->name('updateStatusPriority');
+            Route::post('/comments', 'addComment')->name('addComment');
+            Route::put('/assign', 'assignTechnician')->name('assign');
+        });
     });
 
-    // --- User Management ---
+    // User Management
     Route::prefix('users')->name('users.')->controller(AdminUserController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/{user}/assign-role', 'assignRole')->name('assign-role');
     });
 
-    // --- Content Management ---
+    // Content Management
     Route::get('/content', [ContentController::class, 'index'])->name('content.index');
-
-    // --- Comment Management ---
     Route::resource('comments', AdminCommentController::class)->only(['index', 'edit', 'update', 'destroy']);
 
-    // --- Service Management ---
+    // Service Management
     Route::prefix('services')->name('services.')->group(function () {
         Route::get('/', [AdminServiceController::class, 'index'])->name('index');
         Route::post('/', [AdminServiceController::class, 'store'])->name('store');
         Route::put('/{service}', [AdminServiceController::class, 'update'])->name('update');
         Route::delete('/{service}', [AdminServiceController::class, 'destroy'])->name('destroy');
-        // Service Resources
         Route::post('/{service}/resources', [ServiceResourceController::class, 'store'])->name('resources.store');
         Route::delete('/{service}/resources/{resource}', [ServiceResourceController::class, 'destroy'])->name('resources.destroy');
     });
 
-    // --- Newsletter Management ---
+    // Newsletter Management
     Route::prefix('subscribers')->name('subscribers.')->controller(NewsletterSubscriberController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::delete('/{subscriber}', 'destroy')->name('destroy');
     });
-
-    // Newsletter Campaigns
     Route::resource('newsletters', NewsletterCampaignController::class)->except(['destroy']);
     Route::post('newsletters/{newsletter}/send', [NewsletterCampaignController::class, 'send'])->name('newsletters.send');
 
-    // --- Contact Management ---
+    // Contact Management
     Route::resource('contacts', CustomerContactController::class);
 
-    // =============================================================================
-    // JOB CARDS / CALL LOGS MANAGEMENT (IT Support System)
-    // =============================================================================
-    
-    Route::prefix('call-logs')
-          ->name('call-logs.')
-          ->controller(CallLogController::class)
-          ->group(function () {
-
-        // ---- General dashboards & lists (visible to every logged-in user) ----
-        Route::get('/', 'index')->name('index');                    // full list + filters
-        Route::get('/dashboard', 'dashboard')->name('dashboard');   // KPI widgets
-        
-        // ---- Quick filtered views ------------------------------------------
-        Route::get('/my-jobs', 'myJobs')->name('my-jobs');         // engineer dashboard
+    // Call Logs Management
+    Route::prefix('call-logs')->name('call-logs.')->controller(CallLogController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/dashboard', 'dashboard')->name('dashboard');
+        Route::get('/my-jobs', 'myJobs')->name('my-jobs');
         Route::get('/in-progress', 'inProgress')->name('in-progress');
         Route::get('/completed', 'completed')->name('completed');
         Route::get('/pending', 'pending')->name('pending');
         Route::get('/unassigned', 'unassigned')->name('unassigned');
         Route::get('/assigned', 'assigned')->name('assigned');
         Route::get('/cancelled', 'cancelled')->name('cancelled');
-
-        // ---- View individual job cards (accessible to all authenticated users) ----
-        Route::get('/{callLog}', 'show')->name('show');            // single card details
-
-        // ---- Create – admin & accounts only --------------------------------
-        Route::middleware(['role:admin,accounts'])->group(function () {
-            Route::get('/create', 'create')->name('create');
-            Route::post('/', 'store')->name('store');
-        });
-
-        // ---- Edit / update – admin, accounts, assigned engineer ------------
-        Route::middleware(['role:technician,admin,accounts'])->group(function () {
-            Route::get('/{callLog}/edit', 'edit')->name('edit');
-            Route::put('/{callLog}', 'update')->name('update');
-        });
-
-        // ---- Delete – admin only -------------------------------------------
-        Route::middleware(['role:admin'])->group(function () {
-            Route::delete('/{callLog}', 'destroy')->name('destroy');
-        });
-
-        // ---- Assignment & status management --------------------------------
-        Route::middleware(['role:admin,accounts'])->group(function () {
-            Route::post('/{callLog}/assign', 'assign')->name('assign');
-        });
-
-        // Status changes:
-        // • engineers can update cards assigned to them
-        // • admin/accounts can update any card
+        Route::get('/{callLog}', 'show')->name('show');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{callLog}/edit', 'edit')->name('edit');
+        Route::put('/{callLog}', 'update')->name('update');
+        Route::delete('/{callLog}', 'destroy')->name('destroy');
+        Route::post('/{callLog}/assign', 'assign')->name('assign');
         Route::patch('/{callLog}/status', 'updateStatus')->name('update-status');
-        Route::post('/{callLog}/complete', 'complete')->name('complete');   // convenience route
-
-        // ---- Reports & data export – admin only ----------------------------
-        Route::middleware(['role:admin'])->group(function () {
-            Route::get('/reports', 'reports')->name('reports');
-            Route::get('/export', 'export')->name('export');       // ?format=csv|excel|pdf
-        });
+        Route::post('/{callLog}/complete', 'complete')->name('complete');
+        Route::get('/reports', 'reports')->name('reports');
+        Route::get('/export', 'export')->name('export');
     });
 
-    // --- Call Reports Management (Legacy - can be removed if not needed) ---
+    // Call Reports Management (Legacy)
     Route::prefix('call-reports')->name('call-reports.')->controller(CallReportController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/export', 'export')->name('export');
         Route::post('/generate', 'generate')->name('generate');
     });
 });
+
+Route::get('/notifications/{notification}/redirect', [NotificationController::class, 'redirect'])
+    ->name('notifications.redirect');

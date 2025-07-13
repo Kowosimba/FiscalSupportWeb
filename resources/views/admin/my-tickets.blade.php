@@ -27,7 +27,7 @@
             </h5>
         </div>
         <div class="filter-body">
-            <form method="GET" action="{{ route('tickets.mine') }}" class="filter-form">
+            <form method="GET" action="{{ route('admin.tickets.mine') }}" class="filter-form">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="priority" class="form-label">Priority Level</label>
@@ -60,7 +60,7 @@
                             <i class="fa fa-filter me-2"></i>
                             Apply Filters
                         </button>
-                        <a href="{{ route('tickets.mine') }}" class="btn btn-outline">
+                        <a href="{{ route('admin.tickets.mine') }}" class="btn btn-outline">
                             <i class="fa fa-times me-2"></i>
                             Reset
                         </a>
@@ -141,7 +141,7 @@
                                 </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <a href="{{ route('tickets.show', $ticket->id) }}"
+                                        <a href="{{ route('admin.tickets.show', $ticket->id) }}"
                                            class="action-btn view-btn"
                                            title="View Ticket Details">
                                             <i class="fa fa-eye"></i>

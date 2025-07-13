@@ -570,6 +570,8 @@
             transition: var(--transition);
         }
 
+        
+
         .btn-primary:hover {
             background: var(--primary-green-dark);
             border-color: var(--primary-green-dark);
@@ -693,7 +695,7 @@
         }
 
         .dropdown-notifications .dropdown-item:hover {
-            background-color: rgba(16, 185, 129, 0.05);
+            background-color: rgb(147, 7, 7)
         }
 
         /* Content container */
@@ -1424,89 +1426,83 @@
             </div>
 
             <ul class="navbar-nav ms-auto align-items-center flex-row gap-3">
+                
                 <!-- Notifications -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link notification-link" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-bell"></i>
-                        @auth
-                            @php
-                                $unreadCount = auth()->user()->unreadNotifications()->count();
-                            @endphp
-                            @if($unreadCount > 0)
-                                <span class="notification-badge">{{ $unreadCount }}</span>
-                            @endif
-                        @endauth
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end dropdown-notifications" aria-labelledby="notificationsDropdown">
-                        @auth
-                            @php
-                                $notifications = auth()->user()->unreadNotifications()
-                                    ->latest()
-                                    ->take(5)
-                                    ->get();
-                            @endphp
-                            
-                            @forelse($notifications as $notification)
-                                <li>
-                                    <div class="dropdown-item d-flex align-items-start py-2">
-                                        <div class="flex-shrink-0 me-2 text-primary">
-                                            <i class="fas fa-ticket-alt fa-fw"></i>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <a href="{{ $notification->data['url'] ?? '#' }}" class="text-decoration-none text-dark">
-                                                    <div class="mb-1">
-                                                        {{ $notification->data['message'] ?? 'New ticket notification' }}
-                                                    </div>
-                                                    <small class="text-muted">
-                                                        {{ $notification->created_at->diffForHumans() }}
-                                                    </small>
-                                                </a>
-                                                @if(Route::has('notifications.read'))
-                                                <form action="{{ route('notifications.read', $notification->id) }}" method="POST" class="ms-2">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-sm btn-link p-0 text-muted" title="Mark as read">
-                                                        <i class="fas fa-check"></i>
-                                                    </button>
-                                                </form>
-                                                @endif
-                                            </div>
-                                        </div>
+<li class="nav-item dropdown">
+    <a class="nav-link notification-link" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-bell"></i>
+        @auth
+            @php
+                $unreadCount = auth()->user()->unreadNotifications()->count();
+            @endphp
+            @if($unreadCount > 0)
+                <span class="notification-badge-red">{{ $unreadCount }}</span>
+            @endif
+        @endauth
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end dropdown-notifications" aria-labelledby="notificationsDropdown">
+        @auth
+            @php
+                $notifications = auth()->user()->unreadNotifications()
+                    ->latest()
+                    ->take(5)
+                    ->get();
+            @endphp
+            
+            @forelse($notifications as $notification)
+                <li>
+                    <div class="dropdown-item d-flex align-items-start py-2">
+                        <div class="flex-shrink-0 me-2 text-danger">
+                            <i class="fas fa-ticket-alt fa-fw"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <a href="{{ route('notifications.redirect', $notification->id) }}" class="text-decoration-none text-dark">
+                                    <div class="mb-1">
+                                        {{ $notification->data['message'] ?? 'New ticket notification' }}
                                     </div>
-                                </li>
-                                @if(!$loop->last)
-                                    <li><hr class="dropdown-divider my-1"></li>
-                                @endif
-                            @empty
-                                <li>
-                                    <div class="dropdown-item text-muted py-2">
-                                        No new notifications
-                                    </div>
-                                </li>
-                            @endforelse
-                            
-                            @if(Route::has('notifications.index') && $unreadCount > 0)
-                                <li><hr class="dropdown-divider my-1"></li>
-                                <li>
-                                    <div class="text-center py-1">
-                                        <a href="{{ route('notifications.index') }}" class="small">
-                                            View all notifications
-                                        </a>
-                                        @if(Route::has('notifications.read-all'))
-                                        <span class="mx-2">•</span>
-                                        <form action="{{ route('notifications.read-all') }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-link p-0 small">
-                                                Mark all as read
-                                            </button>
-                                        </form>
-                                        @endif
-                                    </div>
-                                </li>
-                            @endif
-                        @endauth
-                    </ul>
+                                    <small class="text-muted">
+                                        {{ $notification->created_at->diffForHumans() }}
+                                    </small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </li>
+                @if(!$loop->last)
+                    <li><hr class="dropdown-divider my-1"></li>
+                @endif
+            @empty
+                <li>
+                    <div class="dropdown-item text-muted py-2">
+                        No new notifications
+                    </div>
+                </li>
+            @endforelse
+            
+            @if(Route::has('notifications.index') && $unreadCount > 0)
+                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                    <div class="text-center py-1">
+                        <a href="{{ route('notifications.index') }}" class="small">
+                            View all notifications
+                        </a>
+                        @if(Route::has('notifications.read-all'))
+                        <span class="mx-2">•</span>
+                        <form action="{{ route('notifications.read-all') }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-link p-0 small text-danger">
+                                Mark all as read
+                            </button>
+                        </form>
+                        @endif
+                    </div>
+                </li>
+            @endif
+        @endauth
+    </ul>
+</li>
+
 
                 <!-- User Dropdown -->
                 <li class="nav-item dropdown">
@@ -1597,7 +1593,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('tickets.mine') ? 'active' : '' }}" href="{{ route('tickets.mine') }}">
+                <a class="nav-link {{ request()->routeIs('tickets.mine') ? 'active' : '' }}" href="{{ route('admin.tickets.mine') }}">
                     <i class="fas fa-user-check"></i>
                     <span>My Faults</span>
                 </a>

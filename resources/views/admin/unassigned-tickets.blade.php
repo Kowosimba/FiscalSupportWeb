@@ -180,7 +180,7 @@
                                 </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <a href="{{ route('tickets.show', $ticket->id) }}"
+                                        <a href="{{ route('admin.tickets.show', $ticket->id) }}"
                                            class="action-btn view-btn"
                                            title="View Ticket Details">
                                             <i class="fa fa-eye"></i>

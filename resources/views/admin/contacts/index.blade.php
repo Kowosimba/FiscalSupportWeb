@@ -1,17 +1,44 @@
 @extends('layouts.tickets')
 
 @section('ticket-content')
+{{-- Dashboard Navigation Tabs --}}
 <div class="dashboard-nav-wrapper mb-4">
     <ul class="panel-nav nav nav-tabs">
-        {{-- ...other nav items... --}}
+        {{-- Faults Allocation --}}
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('admin.index') || request()->routeIs('admin.tickets.*') ? 'active' : '' }}"
+               href="{{ route('admin.index') }}">
+                <i class="fa fa-tasks me-2"></i>
+                Faults Allocation
+            </a>
+        </li>
+        {{-- Customer Contacts --}}
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.contacts.*') ? 'active' : '' }}"
                href="{{ route('admin.contacts.index') }}">
-                <i class="fa fa-users me-2"></i> Customer Contacts
+                <i class="fa fa-users me-2"></i>
+                Customer Contacts
+            </a>
+        </li>
+        {{-- Call Logs --}}
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('admin.call-logs.*') ? 'active' : '' }}" 
+               href="{{ route('admin.call-logs.index') }}">
+                <i class="fa fa-phone me-2"></i>
+                Call Logs
+            </a>
+        </li>
+        {{-- Content Management --}}
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('content.*') || request()->routeIs('blogs.*') || request()->routeIs('admin.faqs.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.subscribers.*') || request()->routeIs('admin.newsletters.*') || request()->routeIs('faq-categories.*') ? 'active' : '' }}"
+               href="{{ route('admin.content.index') }}">
+                <i class="fa fa-cog me-2"></i>
+                Manage Content
             </a>
         </li>
     </ul>
 </div>
+
 
 <div class="container-fluid">
     <div class="page-header-card mb-4">

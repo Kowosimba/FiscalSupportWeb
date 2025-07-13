@@ -6,7 +6,7 @@
         <h5 class="mb-0">My Notifications</h5>
         <form action="{{ route('notifications.read-all') }}" method="POST">
             @csrf
-            <button type="submit" class="btn btn-sm btn-outline-primary">
+            <button type="submit" class="btn btn-sm btn-outline-danger">
                 Mark All as Read
             </button>
         </form>
@@ -17,27 +17,31 @@
         @else
             <div class="list-group">
                 @foreach($notifications as $notification)
-                    <a href="{{ $notification->data['url'] ?? '#' }}" 
-                    class="list-group-item list-group-item-action {{ $notification->read_at ? '' : 'list-group-item-primary' }}">
+                    <a href="{{ route('notifications.redirect', $notification->id) }}" 
+                    class="list-group-item list-group-item-action {{ $notification->read_at ? '' : 'list-group-item-danger' }}">
                         <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-1">
-                                    {{ $notification->data['message'] ?? 'New notification' }}
-                                    @if(isset($notification->data['ticket_id']))
-                                        (Ticket #{{ $notification->data['ticket_id'] }})
-                                    @endif
-                                </p>
-                                <small class="text-muted">
-                                    {{ $notification->created_at->diffForHumans() }}
-                                </small>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-start">
+                                    <div class="flex-shrink-0 me-3">
+                                        <i class="fas fa-ticket-alt text-danger"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <p class="mb-1">
+                                            {{ $notification->data['message'] ?? 'New notification' }}
+                                            @if(isset($notification->data['ticket_id']))
+                                                <span class="badge bg-danger ms-2">Ticket #{{ $notification->data['ticket_id'] }}</span>
+                                            @endif
+                                        </p>
+                                        <small class="text-muted">
+                                            {{ $notification->created_at->diffForHumans() }}
+                                        </small>
+                                    </div>
+                                </div>
                             </div>
                             @if(!$notification->read_at)
-                                <form action="{{ route('notifications.read', $notification->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-link text-decoration-none">
-                                        <i class="fas fa-check"></i> Mark as read
-                                    </button>
-                                </form>
+                                <div class="flex-shrink-0">
+                                    <span class="badge bg-danger">New</span>
+                                </div>
                             @endif
                         </div>
                     </a>

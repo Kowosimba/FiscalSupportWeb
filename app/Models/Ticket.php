@@ -22,12 +22,9 @@ class Ticket extends Model
         'status',
         'assigned_to',
         'attachment',
-        'subject',
-        'body',
     ];
   
-
-    public function assignedTechnician()
+ public function assignedTechnician()
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
@@ -41,10 +38,10 @@ class Ticket extends Model
     return $this->hasMany(Comment::class);
 }
 
-public function assigned_to_user()
-{
-    return $this->belongsTo(User::class, 'assigned_to');
-}
+  public function assigned_to_user()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
 
 public function routeNotificationForMail($notification)
 {

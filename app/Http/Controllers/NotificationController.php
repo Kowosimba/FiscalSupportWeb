@@ -53,4 +53,24 @@ class NotificationController extends Controller
         Auth::user()->unreadNotifications->markAsRead();
         return back()->with('success', 'All notifications marked as read');
     }
+
+
+    public function redirect($notificationId)
+{
+    $notification = auth::user()->notifications()->findOrFail($notificationId);
+    
+    // Mark as readw
+    $notification->markAsRead();
+    
+    // Determine the correct URL based on notification data
+    if (isset($notification->data['ticket_id'])) {
+        $ticketId = $notification->data['ticket_id'];
+        return redirect()->route('admin.tickets.show', $ticketId);
+    }
+    
+    // Fallback to the stored URL or notifications index
+    $url = $notification->data['url'] ?? route('notifications.index');
+    return redirect($url);
+}
+
 }
