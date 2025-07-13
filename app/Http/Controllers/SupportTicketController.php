@@ -112,10 +112,10 @@ class SupportTicketController extends Controller
             $statusCounts = Cache::remember('ticket_status_counts', 3600, function() {
                 return Ticket::select([
                     DB::raw('COUNT(*) as total'),
-                    DB::raw('SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending'),
-                    DB::raw('SUM(CASE WHEN status = "in_progress" THEN 1 ELSE 0 END) as in_progress'),
-                    DB::raw('SUM(CASE WHEN status = "resolved" THEN 1 ELSE 0 END) as resolved'),
-                    DB::raw('SUM(CASE WHEN assigned_to IS NULL THEN 1 ELSE 0 END) as unassigned')
+                    DB::raw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending"),
+                    DB::raw("SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress"),
+                    DB::raw("SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved"),
+                    DB::raw("SUM(CASE WHEN assigned_to IS NULL THEN 1 ELSE 0 END) as unassigned")
                 ])->first();
             });
 
