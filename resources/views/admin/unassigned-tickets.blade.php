@@ -173,10 +173,15 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="update-time">
+                                   <span class="update-time">
                                         <i class="fa fa-clock me-1"></i>
-                                        {{ $ticket->created_at->diffForHumans() }}
+                                        @if($ticket->created_at)
+                                            {{ $ticket->created_at->diffForHumans() }}
+                                        @else
+                                            Not available
+                                        @endif
                                     </span>
+
                                 </td>
                                 <td>
                                     <div class="action-buttons">

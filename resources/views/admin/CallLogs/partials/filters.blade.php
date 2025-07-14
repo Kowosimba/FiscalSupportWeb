@@ -12,7 +12,7 @@
                     <div class="form-group">
                         <label for="search" class="form-label">Search</label>
                         <input type="text" class="form-control form-control-enhanced" id="search" name="search" 
-                               value="{{ request('search') }}" placeholder="Job card, company, fault description...">
+                               value="{{ request('search') }}" placeholder="Job card, company, fault...">
                     </div>
                 </div>
                 
@@ -32,28 +32,14 @@
                 
                 <div class="col-md-2">
                     <div class="form-group">
-                        <label for="type" class="form-label">Job Type</label>
-                        <select class="form-control form-control-enhanced" id="type" name="type">
-                            <option value="">All Types</option>
-                            <option value="normal" {{ request('type') == 'normal' ? 'selected' : '' }}>Normal</option>
-                            <option value="maintenance" {{ request('type') == 'maintenance' ? 'selected' : '' }}>Maintenance</option>
-                            <option value="repair" {{ request('type') == 'repair' ? 'selected' : '' }}>Repair</option>
-                            <option value="installation" {{ request('type') == 'installation' ? 'selected' : '' }}>Installation</option>
-                            <option value="consultation" {{ request('type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
-                            <option value="emergency" {{ request('type') == 'emergency' ? 'selected' : '' }}>Emergency</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label for="engineer" class="form-label">Engineer</label>
-                        <select class="form-control form-control-enhanced" id="engineer" name="engineer">
-                            <option value="">All Engineers</option>
-                            <option value="Benson" {{ request('engineer') == 'Benson' ? 'selected' : '' }}>Benson</option>
-                            <option value="Malvine" {{ request('engineer') == 'Malvine' ? 'selected' : '' }}>Malvine</option>
-                            <option value="Mukai" {{ request('engineer') == 'Mukai' ? 'selected' : '' }}>Mukai</option>
-                            <option value="Tapera" {{ request('engineer') == 'Tapera' ? 'selected' : '' }}>Tapera</option>
+                        <label for="technician" class="form-label">Technician/Manager</label>
+                        <select class="form-control form-control-enhanced" id="technician" name="technician">
+                            <option value="">All</option>
+                            @foreach($technicians as $tech)
+                                <option value="{{ $tech->name }}" {{ request('technician') == $tech->name ? 'selected' : '' }}>
+                                    {{ $tech->name }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -72,7 +58,7 @@
                     </div>
                 </div>
                 
-                <div class="col-md-1">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label class="form-label">&nbsp;</label>
                         <div class="d-flex flex-column gap-2">
@@ -83,41 +69,6 @@
                                 <i class="fa fa-times me-1"></i> Clear
                             </a>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Advanced Filters Row -->
-            <div class="row mt-3">
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="date_from" class="form-label">Date From</label>
-                        <input type="date" class="form-control form-control-enhanced" id="date_from" name="date_from" 
-                               value="{{ request('date_from') }}">
-                    </div>
-                </div>
-                
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="date_to" class="form-label">Date To</label>
-                        <input type="date" class="form-control form-control-enhanced" id="date_to" name="date_to" 
-                               value="{{ request('date_to') }}">
-                    </div>
-                </div>
-                
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="min_amount" class="form-label">Min Amount (USD)</label>
-                        <input type="number" class="form-control form-control-enhanced" id="min_amount" name="min_amount" 
-                               value="{{ request('min_amount') }}" placeholder="0.00" step="0.01">
-                    </div>
-                </div>
-                
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label for="max_amount" class="form-label">Max Amount (USD)</label>
-                        <input type="number" class="form-control form-control-enhanced" id="max_amount" name="max_amount" 
-                               value="{{ request('max_amount') }}" placeholder="999999.99" step="0.01">
                     </div>
                 </div>
             </div>

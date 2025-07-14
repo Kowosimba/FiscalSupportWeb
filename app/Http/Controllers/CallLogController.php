@@ -26,85 +26,68 @@ class CallLogController extends Controller
         $this->middleware('role:admin,accounts,engineer')->only(['edit', 'update', 'assign', 'updateStatus', 'complete']);
     }
 
-    public function index(Request $request)
-    {
-        $query = CallLog::query();
+   public function index(Request $request)
+{
+    $query = CallLog::query();
 
-        // Search functionality
-        if ($search = $request->input('search')) {
-            $query->where(function($q) use ($search) {
-                $q->where('company_name', 'like', "%{$search}%")
-                  ->orWhere('job_card', 'like', "%{$search}%")
-                  ->orWhere('fault_description', 'like', "%{$search}%")
-                  ->orWhere('zimra_ref', 'like', "%{$search}%")
-                  ->orWhere('engineer', 'like', "%{$search}%");
-            });
-        }
-
-        // Apply all filters
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
-        if ($type = $request->input('type')) {
-            $query->where('type', $type);
-        }
-
-        if ($engineer = $request->input('engineer')) {
-            $query->where('engineer', 'like', "%{$engineer}%");
-        }
-
-        if ($dateFrom = $request->input('date_from')) {
-            $query->whereDate('date_booked', '>=', $dateFrom);
-        }
-
-        if ($dateTo = $request->input('date_to')) {
-            $query->whereDate('date_booked', '<=', $dateTo);
-        }
-
-        if ($minAmount = $request->input('min_amount')) {
-            $query->where('amount_charged', '>=', $minAmount);
-        }
-
-        if ($maxAmount = $request->input('max_amount')) {
-            $query->where('amount_charged', '<=', $maxAmount);
-        }
-
-        if ($dateRange = $request->input('date_range')) {
-            $query->where(function($q) use ($dateRange) {
-                switch($dateRange) {
-                    case 'today':
-                        $q->whereDate('date_booked', today());
-                        break;
-                    case 'this_week':
-                        $q->whereBetween('date_booked', [now()->startOfWeek(), now()->endOfWeek()]);
-                        break;
-                    case 'this_month':
-                        $q->whereMonth('date_booked', now()->month)->whereYear('date_booked', now()->year);
-                        break;
-                    case 'last_month':
-                        $q->whereMonth('date_booked', now()->subMonth()->month)->whereYear('date_booked', now()->subMonth()->year);
-                        break;
-                    case 'this_year':
-                        $q->whereYear('date_booked', now()->year);
-                        break;
-                }
-            });
-        }
-
-        $callLogs = $query->orderBy('date_booked', 'desc')->paginate(15)->withQueryString();
-        
-        // Calculate statistics
-        $stats = [
-            'total_jobs' => CallLog::count(),
-            'pending_jobs' => CallLog::where('status', 'pending')->count(),
-            'in_progress_jobs' => CallLog::where('status', 'in_progress')->count(),
-            'completed_jobs' => CallLog::where('status', 'complete')->count(),
-            'emergency_jobs' => CallLog::where('type', 'emergency')->count(),
-        ];
-        
-        return view('admin.calllogs.index', compact('callLogs', 'stats'));
+    // Search
+    if ($search = $request->input('search')) {
+        $query->where(function($q) use ($search) {
+            $q->where('company_name', 'like', "%{$search}%")
+              ->orWhere('job_card', 'like', "%{$search}%")
+              ->orWhere('fault_description', 'like', "%{$search}%")
+              ->orWhere('zimra_ref', 'like', "%{$search}%");
+        });
     }
+
+    // Status
+    if ($status = $request->input('status')) {
+        $query->where('status', $status);
+    }
+
+    // Technician
+    if ($technician = $request->input('technician')) {
+        $query->where('engineer', $technician);
+    }
+
+    // Date Range
+    if ($dateRange = $request->input('date_range')) {
+        switch($dateRange) {
+            case 'today':
+                $query->whereDate('date_booked', today());
+                break;
+            case 'this_week':
+                $query->whereBetween('date_booked', [now()->startOfWeek(), now()->endOfWeek()]);
+                break;
+            case 'this_month':
+                $query->whereMonth('date_booked', now()->month)->whereYear('date_booked', now()->year);
+                break;
+            case 'last_month':
+                $query->whereMonth('date_booked', now()->subMonth()->month)
+                      ->whereYear('date_booked', now()->subMonth()->year);
+                break;
+            case 'this_year':
+                $query->whereYear('date_booked', now()->year);
+                break;
+        }
+    }
+
+    $callLogs = $query->orderBy('date_booked', 'desc')->paginate(15)->withQueryString();
+
+    $stats = [
+        'total_jobs' => CallLog::count(),
+        'pending_jobs' => CallLog::where('status', 'pending')->count(),
+        'in_progress_jobs' => CallLog::where('status', 'in_progress')->count(),
+        'completed_jobs' => CallLog::where('status', 'complete')->count(),
+    ];
+
+    $technicians = User::whereIn('role', ['technician', 'manager'])
+        ->select(['id', 'name'])
+        ->get();
+
+    return view('admin.calllogs.index', compact('callLogs', 'stats', 'technicians'));
+}
+
 
     public function create()
     {
@@ -378,22 +361,39 @@ public function unassigned(Request $request)
         return response()->json(['success' => true, 'message' => 'Job assigned successfully.']);
     }
 
-    public function updateStatus(Request $request, CallLog $callLog)
-    {
-        $request->validate([
-            'status' => 'required|in:pending,assigned,in_progress,complete,cancelled'
-        ]);
+  public function updateStatus(Request $request, CallLog $callLog)
+{
+    $request->validate([
+        'status' => 'required|in:pending,assigned,in_progress,complete,cancelled'
+    ]);
 
-        $updateData = ['status' => $request->status];
+    if ($request->status === 'complete') {
+        $requiredFields = [
+            'job_card', 'company_name', 'fault_description', 'type',
+            'amount_charged', 'approved_by', 'customer_name', 'customer_email'
+        ];
 
-        if ($request->status === 'complete') {
-            $updateData['date_resolved'] = now()->format('Y-m-d');
+        foreach ($requiredFields as $field) {
+            if (empty($callLog->$field)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'All required fields must be filled before marking as complete.'
+                ], 422);
+            }
         }
-
-        $callLog->update($updateData);
-
-        return response()->json(['success' => true, 'message' => 'Job status updated successfully.']);
     }
+
+    $updateData = ['status' => $request->status];
+
+    if ($request->status === 'complete') {
+        $updateData['date_resolved'] = now()->format('Y-m-d');
+    }
+
+    $callLog->update($updateData);
+
+    return response()->json(['success' => true, 'message' => 'Job status updated successfully.']);
+}
+
 
     public function complete(CallLog $callLog)
     {

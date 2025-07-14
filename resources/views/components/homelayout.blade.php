@@ -30,6 +30,265 @@
 
     @stack('styles')
     
+
+        <style>
+        /* Enhanced Mobile Navigation Styles */
+        .tgmobile__menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+        }
+        
+        .tgmobile__menu.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .tgmobile__menu-box {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 300px;
+            height: 100%;
+            background: #fff;
+            z-index: 1;
+            padding: 30px;
+            transition: all 0.5s ease;
+            overflow-y: auto;
+        }
+        
+        .tgmobile__menu.active .tgmobile__menu-box {
+            left: 0;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            color: #0f8447;
+            transform: rotate(90deg);
+        }
+        
+        .tgmobile__menu-outer {
+            margin-top: 40px;
+        }
+        
+        .tgmobile__menu-outer ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .tgmobile__menu-outer ul li {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .tgmobile__menu-outer ul li a {
+            display: block;
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            transition: all 0.3s ease;
+        }
+        
+        .tgmobile__menu-outer ul li a:hover {
+            color: #0f8447;
+            padding-left: 10px;
+        }
+        
+        .tgmobile__menu-bottom {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .contact-info ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        
+        .contact-info ul li {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .contact-info ul li a {
+            color: #0f8447;
+            transition: all 0.3s ease;
+        }
+        
+        .contact-info ul li a:hover {
+            color: #06621c;
+        }
+        
+        .social-links ul {
+            display: flex;
+            gap: 15px;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .social-links ul li a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: #f5f5f5;
+            border-radius: 50%;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        
+        .social-links ul li a:hover {
+            background: #0f8447;
+            color: #fff;
+            transform: translateY(-3px);
+        }
+        
+        /* Mobile menu toggler button */
+        .mobile-nav-toggler {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            z-index: 999;
+        }
+        
+        .sidebar-btn {
+            width: 40px;
+            height: 40px;
+            background: #0f8447;
+            border: none;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-btn:hover {
+            background: #06621c;
+        }
+        
+        .sidebar-btn .line {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: #fff;
+            margin: 4px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-btn.active .line:nth-child(1) {
+            transform: translateY(6px) rotate(45deg);
+        }
+        
+        .sidebar-btn.active .line:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .sidebar-btn.active .line:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg);
+        }
+        
+        /* Mobile header adjustments */
+        @media (max-width: 991px) {
+            .tgmenu__wrap {
+                padding: 15px 0;
+                position: relative;
+            }
+            
+            .logo img {
+                max-height: 50px;
+            }
+            
+            .mobile-nav-toggler {
+                display: inline-flex !important;
+            }
+        }
+        
+        /* Mobile menu animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .tgmobile__menu-outer ul li {
+            opacity: 0;
+            animation: fadeInUp 0.4s ease forwards;
+        }
+        
+        .tgmobile__menu-outer ul li:nth-child(1) { animation-delay: 0.1s; }
+        .tgmobile__menu-outer ul li:nth-child(2) { animation-delay: 0.2s; }
+        .tgmobile__menu-outer ul li:nth-child(3) { animation-delay: 0.3s; }
+        .tgmobile__menu-outer ul li:nth-child(4) { animation-delay: 0.4s; }
+        .tgmobile__menu-outer ul li:nth-child(5) { animation-delay: 0.5s; }
+        .tgmobile__menu-outer ul li:nth-child(6) { animation-delay: 0.6s; }
+        .tgmobile__menu-outer ul li:nth-child(7) { animation-delay: 0.7s; }
+        .tgmobile__menu-outer ul li:nth-child(8) { animation-delay: 0.8s; }
+        
+        /* Login button for mobile */
+        .mobile-login-btn {
+            display: none;
+            background: #0f8447;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-left: auto;
+            margin-right: 60px;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-login-btn:hover {
+            background: #06621c;
+            color: white;
+        }
+        
+        @media (max-width: 991px) {
+            .mobile-login-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+            }
+            
+            .header-login {
+                display: none !important;
+            }
+        }
+    </style>
     <!-- Enhanced Create Ticket Button Styles -->
     <style>
         /* Enhanced Support Ticket Button */
@@ -37,7 +296,7 @@
             position: fixed;
             bottom: 25px;
             right: 25px;
-            background: linear-gradient(135deg, #06621c, #0f8447);
+            background: linear-gradient(135deg, #16582f), #0f8447);
             color: white;
             border: none;
             border-radius: 50px;
@@ -60,7 +319,7 @@
         .support-ticket-trigger:hover {
             background: linear-gradient(135deg, #45a216, #16582f);
             transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(224, 6, 6, 0.4);
+            box-shadow: 0 6px 25px rgba(6, 173, 224, 0.4);
             color: white;
         }
 
@@ -235,7 +494,7 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <input type="text" class="form-control" name="name" id="name" placeholder="Name" value="{{ old('name') }}" required>
+                                        <input type="text" class="form-control" name="name" id="name" placeholder="Company Name" value="{{ old('name') }}" required>
                                         @error('name')
                                             <span class="text-danger">{{ $message }}</span>
                                         @enderror
@@ -267,7 +526,7 @@
                                                 <span class="custom-option" data-value="Fiscal Device Setup">Fiscal Device Setup</span>
                                                 <span class="custom-option" data-value="Technical Support">Technical Support</span>
                                                 <span class="custom-option" data-value="Billing Inquiry">Billing Inquiry</span>
-                                                <span class="custom-option" data-value="Software Update">Software Update</span>
+                                                
                                                 <span class="custom-option" data-value="Other">Other</span>
                                             </div>
                                         </div>
@@ -432,34 +691,36 @@
             </div>
         </div>
         
-        <!-- Mobile Menu -->
-        <div class="tgmobile__menu">
-            <nav class="tgmobile__menu-box">
-                <div class="close-btn"><i class="fas fa-times"></i></div>
-                <div class="tgmobile__menu-outer"></div>
-                <div class="tgmobile__menu-bottom">
-                    <div class="contact-info">
-                        <ul class="list-wrap">
-                            <li>Mail: <a href="mailto:sales@fiscalsupportservices.com">sales@fiscalsupportservices.com</a></li>
-                            <li>Phone: <a href="tel:+263292270666">+263292270666</a></li>
-                        </ul>
-                    </div>
-                    <div class="social-links">
-                        <ul class="list-wrap">
-                            <li><a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
-                            <li><a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M8.33192 5.92804L13.5438 0H12.3087L7.78328 5.14724L4.16883 0H0L5.46575 7.78353L0 14H1.2351L6.01407 8.56431L9.83119 14H14L8.33192 5.92804ZM6.64027 7.85211L6.08648 7.07704L1.68013 0.909771H3.57718L7.13316 5.88696L7.68694 6.66202L12.3093 13.1316H10.4123L6.64027 7.85211Z" fill="currentColor" />
-                                </svg>
-                            </a></li>
-                            <li><a href="https://www.whatsapp.com/" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a></li>
-                            <li><a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
-                            <li><a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube"></i></a></li>
-                        </ul>
-                    </div>
+        <!-- Enhanced Mobile Navigation -->
+    <div class="tgmobile__menu">
+        <div class="tgmobile__menu-box">
+            <div class="close-btn"><i class="fas fa-times"></i></div>
+            <div class="tgmobile__menu-outer">
+            </div>
+            
+            <div class="tgmobile__menu-bottom">
+                
+                <div class="contact-info">
+                    <ul class="list-wrap">
+                        <li><i class="fas fa-envelope"></i> <a href="mailto:sales@fiscalsupportservices.com">sales@fiscalsupportservices.com</a></li>
+                        <li><i class="fas fa-phone"></i> <a href="tel:+263292270666">+263 292 270666</a></li>
+                        <li><i class="fas fa-map-marker-alt"></i> 123 Business Park, Harare, Zimbabwe</li>
+                    </ul>
                 </div>
-            </nav>
+                <div class="social-links">
+                    
+                    <ul class="list-wrap">
+                        <li><a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
+                        <li><a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
+                        <li><a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></li>
+                        <li><a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
+                        <li><a href="https://wa.me/263772123456" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
+    </div>
+
     </header>
 
     <!-- Main Content -->
@@ -810,6 +1071,69 @@
                     submitBtn.querySelector('.spinner-border').classList.add('d-none');
                 }
             };
+        });
+    </script>
+
+     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
+            const mobileMenu = document.querySelector('.tgmobile__menu');
+            const sidebarBtn = document.querySelector('.sidebar-btn');
+            const closeBtn = document.querySelector('.close-btn');
+            
+            // Show mobile menu
+            sidebarBtn.addEventListener('click', function() {
+                this.classList.add('active');
+                mobileMenu.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+            
+            // Hide mobile menu
+            closeBtn.addEventListener('click', function() {
+                sidebarBtn.classList.remove('active');
+                mobileMenu.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+            
+            // Close menu when clicking on a link
+            document.querySelectorAll('.tgmobile__menu-outer a').forEach(link => {
+                link.addEventListener('click', function() {
+                    sidebarBtn.classList.remove('active');
+                    mobileMenu.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
+            });
+            
+            // Close menu when clicking outside
+            mobileMenu.addEventListener('click', function(e) {
+                if (e.target === mobileMenu) {
+                    sidebarBtn.classList.remove('active');
+                    mobileMenu.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+            
+            // Mobile login button (visible only on mobile)
+            const mobileLoginBtn = document.createElement('button');
+            mobileLoginBtn.className = 'mobile-login-btn';
+            
+            @auth
+                mobileLoginBtn.innerHTML = '<i class="fas fa-tachometer-alt"></i> Dashboard';
+                mobileLoginBtn.addEventListener('click', function() {
+                    window.location.href = "{{ route('admin.index') }}";
+                });
+            @else
+                mobileLoginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                mobileLoginBtn.addEventListener('click', function() {
+                    window.location.href = "{{ route('show.login') }}";
+                });
+            @endauth
+            
+            // Insert mobile login button in header
+            const headerWrap = document.querySelector('.tgmenu__wrap');
+            if (headerWrap) {
+                headerWrap.insertBefore(mobileLoginBtn, document.querySelector('.mobile-nav-toggler'));
+            }
         });
     </script>
 

@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/NewsletterController.php
 
 namespace App\Http\Controllers;
 

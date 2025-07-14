@@ -130,13 +130,14 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="engineer" class="form-label">Assigned Engineer</label>
+                                <label for="engineer" class="form-label">Assigned Technician/Manager</label>
                                 <select class="form-control form-control-enhanced @error('engineer') is-invalid @enderror" id="engineer" name="engineer">
-                                    <option value="">Select engineer...</option>
-                                    <option value="Benson" {{ old('engineer') == 'Benson' ? 'selected' : '' }}>Benson</option>
-                                    <option value="Malvine" {{ old('engineer') == 'Malvine' ? 'selected' : '' }}>Malvine</option>
-                                    <option value="Mukai" {{ old('engineer') == 'Mukai' ? 'selected' : '' }}>Mukai</option>
-                                    <option value="Tapera" {{ old('engineer') == 'Tapera' ? 'selected' : '' }}>Tapera</option>
+                                    <option value="">Select technician or manager...</option>
+                                    @foreach($technicians as $tech)
+                                        <option value="{{ $tech->name }}" {{ old('engineer') == $tech->name ? 'selected' : '' }}>
+                                            {{ $tech->name }}
+                                        </option>
+                                    @endforeach
                                 </select>
                                 @error('engineer')
                                     <div class="invalid-feedback">{{ $message }}</div>

@@ -1,6 +1,8 @@
 @extends('components.homelayout')
 @section('home-content')
 
+
+
 <div class="tg-header-contact-info d-lg-block d-none">
     <div class="container">
         <div class="info-card-wrap style3">
@@ -317,90 +319,91 @@
     </div>
 </section>
 <!--======== / Service Section ========-->
-
-<!--============================== About Area ==============================-->
 <section class="about-area-4 pb-120 overflow-hidden">
-    <div class="container">
-        <div class="about-wrap4">
-            <div class="row gx-80 gy-5 align-items-center">
-                <div class="col-xl-5">
-                    <div class="about-thumb4-1">
-                        <div class="img1 image-anim">
-                            <img src="assets/img/project/project3-6.jpg" alt="img">
-                        </div>
-                        <div class="img2 jump image-anim">
-                            <div class="thumb">
-                                <img src="assets/img/others/about4-2.jpg" alt="img">
+        <div class="container">
+            <div class="about-wrap4">
+                <div class="row gx-80 gy-5 align-items-center">
+                    <div class="col-xl-5">
+                        <div class="about-thumb4-1">
+                            <div class="img1 image-anim">
+                                <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500&h=400&fit=crop" alt="Team collaboration">
+                            </div>
+                            <div class="img2 jump image-anim">
+                                <div class="thumb">
+                                    <img src="assets/img/others/about4-2.jpg" alt="img">
+                                </div>
+                            </div>
+                            <div class="about-experience-wrap movingX">
+                                <h3 class="counter-title"><span class="counter-number">25</span>+</h3>
+                                <span class="counter-text">Years of Experience</span>
                             </div>
                         </div>
-                        <div class="about-experience-wrap movingX">
-                            <h3 class="counter-title"><span class="counter-number">25</span>+</h3>
-                            <span class="counter-text">Years of Experience</span>
-                        </div>
                     </div>
-                </div>
-                <div class="col-xl-7">
-                    <div class="section__title mb-50">
-                        <span class="sub-title text-anim">About Our Company</span>
-                        <h2 class="title text-anim2">Empowering Businesses Through Cost-Effective Technology Solutions</h2>
-                    </div>
-                    <ul class="nav nav-tabs about-tabs">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="about-tab1" data-bs-toggle="tab" data-bs-target="#aboutTab1" type="button" role="tab" aria-controls="aboutTab1" aria-selected="true">Our Values</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="about-tab2" data-bs-toggle="tab" data-bs-target="#aboutTab2" type="button" role="tab" aria-controls="aboutTab2" aria-selected="false">Our Vision</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="about-tab3" data-bs-toggle="tab" data-bs-target="#aboutTab3" type="button" role="tab" aria-controls="aboutTab3" aria-selected="false">Our Mission</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content mt-25">
-                        <div class="tab-pane fade show active" id="aboutTab1" role="tabpanel" aria-labelledby="about-tab1">
-                            <p class="mb-0">We uphold integrity, passion, continual self-improvement, and accountability in all our actions. Our values guide us to deliver exceptional service to our clients and partners.</p>
+                    <div class="col-xl-7">
+                        <div class="section__title mb-50">
+                            <span class="sub-title text-anim">About Our Company</span>
+                            <h2 class="title text-anim2">Empowering Businesses Through Cost-Effective Technology Solutions</h2>
                         </div>
-                        <div class="tab-pane fade" id="aboutTab2" role="tabpanel" aria-labelledby="about-tab2">
-                            <p class="mb-0">To bridge the gap in IT services for emerging markets, enabling businesses to align technology investments with their strategic goals.</p>
+                        <ul class="nav nav-tabs about-tabs">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="about-tab1" data-bs-toggle="tab" data-bs-target="#aboutTab1" type="button" role="tab" aria-controls="aboutTab1" aria-selected="true">Our Values</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="about-tab2" data-bs-toggle="tab" data-bs-target="#aboutTab2" type="button" role="tab" aria-controls="aboutTab2" aria-selected="false">Our Vision</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="about-tab3" data-bs-toggle="tab" data-bs-target="#aboutTab3" type="button" role="tab" aria-controls="aboutTab3" aria-selected="false">Our Mission</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content mt-25">
+                            <div class="tab-pane fade show active" id="aboutTab1" role="tabpanel" aria-labelledby="about-tab1">
+                                <p class="mb-0">We champion <strong>integrity</strong>, <strong>innovation</strong>, and <strong>excellence</strong> in everything we do. Our commitment to continuous improvement and accountability drives us to deliver transformative solutions that exceed expectations and create lasting value for our clients and partners.</p>
+                            </div>
+                            <div class="tab-pane fade" id="aboutTab2" role="tabpanel" aria-labelledby="about-tab2">
+                                <p class="mb-0">To be the leading technology partner for emerging markets, revolutionizing how businesses leverage digital transformation to achieve sustainable growth and competitive advantage in an increasingly connected world.</p>
+                            </div>
+                            <div class="tab-pane fade" id="aboutTab3" role="tabpanel" aria-labelledby="about-tab3">
+                                <p class="mb-0">We deliver cutting-edge technology solutions through strategic partnerships, exceptional talent acquisition, and continuous innovation. Our mission is to empower businesses with scalable, efficient, and cost-effective solutions that drive measurable results.</p>
+                            </div>
                         </div>
-                        <div class="tab-pane fade" id="aboutTab3" role="tabpanel" aria-labelledby="about-tab3">
-                            <p class="mb-0">We aim to deliver differentiated technology support, recruit top talent, and continuously refine our value chain to meet the evolving needs of our clients.</p>
-                        </div>
-                    </div>
 
-                    <div class="about-grid-wrap style4 mt-20">
-                        <div class="about-grid-card style4">
-                            <div class="box-icon">
-                                <svg width="42" height="40" viewBox="0 0 42 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <!-- SVG Paths Here -->
-                                </svg>
+                        <div class="about-grid-wrap style4 mt-20">
+                            <div class="about-grid-card style4">
+                                <div class="box-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div class="card-details">
+                                    <h4 class="box-title">Strategic Problem Solving</h4>
+                                    <p>We analyze complex business challenges through a strategic lens, developing innovative solutions that align with your long-term objectives and drive sustainable competitive advantage.</p>
+                                </div>
                             </div>
-                            <div class="card-details">
-                                <h4 class="box-title">Strategic Problem Solving</h4>
-                                <p>We tackle complex business challenges with innovative solutions, ensuring sustainable growth for our clients.</p>
+                            <div class="about-grid-card style4">
+                                <div class="box-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M14.7 6.3A1 1 0 0 0 13 5H5A2 2 0 0 0 3 7V19A2 2 0 0 0 5 21H19A2 2 0 0 0 21 19V11A1 1 0 0 0 19.7 9.3L14.7 6.3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                        <path d="M9 13L11 15L16 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div class="card-details">
+                                    <h4 class="box-title">Implementation Excellence</h4>
+                                    <p>Our dedicated implementation team ensures seamless deployment of technology solutions with minimal disruption, comprehensive training, and ongoing support for optimal performance.</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="about-grid-card style4">
-                            <div class="box-icon">
-                                <svg width="42" height="40" viewBox="0 0 42 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <!-- SVG Paths Here -->
-                                </svg>
-                            </div>
-                            <div class="card-details">
-                                <h4 class="box-title">Implementation Support</h4>
-                                <p>We provide hands-on support for deploying technology solutions, ensuring seamless integration and operational efficiency.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="tg-button-wrap mt-40">
+                         <div class="tg-button-wrap mt-40">
                         <a href="{{ route('contact') }}" class="btn">
                             <span class="btn-text" data-text="Make an Appointment"></span>
                         </a>
                     </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 <!--======== / About Section ========-->
   <!--==============================
     Faq Area

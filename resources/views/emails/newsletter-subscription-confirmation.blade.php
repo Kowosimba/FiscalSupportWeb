@@ -1,4 +1,3 @@
-{{-- resources/views/emails/newsletter-subscription-confirmation.blade.php --}}
 @component('mail::message')
 # Welcome!
 
@@ -32,7 +31,7 @@ Follow us on social media for even more updates:
 
 **Subscription Details:**
 - Email: {{ $subscriber->email }}
-- Subscribed: {{ $subscriber->subscribed_at->format('F j, Y \a\t g:i A') }}
+- Subscribed: {{ $subscriber->subscribed_at ? $subscriber->subscribed_at->format('F j, Y \a\t g:i A') : 'Not specified' }}
 - Status: Active
 
 If you didn't request this subscription or want to unsubscribe, please ignore this email.

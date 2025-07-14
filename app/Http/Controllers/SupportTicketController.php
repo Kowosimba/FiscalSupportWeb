@@ -415,40 +415,38 @@ class SupportTicketController extends Controller
     }
 
     public function updateStatusPriority(Request $request, Ticket $ticket)
-    {
-        if (Auth::id() !== $ticket->assigned_to) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $validated = $request->validate([
-            'priority' => 'required|in:low,medium,high',
-            'status' => 'required|in:pending,in_progress,resolved',
-        ]);
-
-        $currentStatus = $ticket->status;
-        $newStatus = $validated['status'];
-
-        $allowedTransitions = [
-            'pending' => ['in_progress'],
-            'in_progress' => ['resolved'],
-            'resolved' => ['in_progress'],
-        ];
-
-        if ($newStatus === 'resolved') {
-            $user = User::where('email', $ticket->email)->first();
-            if ($user) {
-                $user->notify(new CustomerTicketResolvedNotification($ticket));
-            }
-        }
-
-        if (!in_array($newStatus, $allowedTransitions[$currentStatus] ?? [])) {
-            return back()->with('error', 'Invalid status transition!');
-        }
-
-        $ticket->update($validated);
-
-        return back()->with('success', 'Ticket updated successfully.');
+{
+    if (Auth::id() !== $ticket->assigned_to) {
+        abort(403, 'Unauthorized action.');
     }
+
+    $validated = $request->validate([
+        'priority' => 'required|in:low,medium,high',
+        'status' => 'required|in:pending,in_progress,resolved',
+    ]);
+
+    $currentStatus = $ticket->status;
+    $newStatus = $validated['status'];
+
+    $allowedTransitions = [
+        'pending' => ['in_progress'],
+        'in_progress' => ['resolved'],
+        'resolved' => ['in_progress'],
+    ];
+
+    if ($newStatus === 'resolved') {
+        $ticket->notify(new CustomerTicketResolvedNotification($ticket));
+    }
+
+    if (!in_array($newStatus, $allowedTransitions[$currentStatus] ?? [])) {
+        return back()->with('error', 'Invalid status transition!');
+    }
+
+    $ticket->update($validated);
+
+    return back()->with('success', 'Ticket updated successfully.');
+}
+
 
     protected function getStatusCountsByDateRange($startDate, $endDate)
     {
