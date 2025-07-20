@@ -1,555 +1,235 @@
 @extends('layouts.calllogs')
 
-@section('title', 'Unassigned Job Cards')
+@section('title', 'Unassigned Jobs')
 
 @section('content')
-
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="page-header-card mb-4">
-        <div class="page-header-content">
-            <div class="header-text">
-                <h3 class="page-title">
-                    <i class="fa fa-user-slash me-2"></i>
-                    Unassigned Job Cards
-                </h3>
-                <p class="page-subtitle">Job cards waiting for engineer assignment</p>
-            </div>
-            <div class="page-actions">
-                @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                    <button class="btn btn-primary btn-enhanced" onclick="bulkAssign()" id="bulkAssignBtn" disabled>
-                        <i class="fa fa-users me-2"></i>
-                        Bulk Assign
-                    </button>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="stats-grid mb-4">
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon warning">
-                    <i class="fa fa-user-slash"></i>
+<div class="container-fluid px-4">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom-0 py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-clock text-warning me-2"></i>
+                        Unassigned Jobs
+                    </h5>
+                    <p class="text-muted mb-0">Jobs waiting to be assigned to technicians</p>
                 </div>
-                <div class="stat-content">
-                    <div class="stat-number">{{ $callLogs->total() }}</div>
-                    <div class="stat-label">Unassigned</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-exclamation-triangle me-1"></i>
-                        Need assignment
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon danger">
-                    <i class="fa fa-fire"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number">{{ $callLogs->where('type', 'emergency')->count() }}</div>
-                    <div class="stat-label">Emergency</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-arrow-up me-1"></i>
-                        High priority
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon info">
-                    <i class="fa fa-clock"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number">{{ $callLogs->where('date_booked', '<=', now()->subDays(1)->format('Y-m-d'))->count() }}</div>
-                    <div class="stat-label">Overdue</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-exclamation-circle me-1"></i>
-                        >24 hours
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon primary">
-                    <i class="fa fa-users"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number">4</div>
-                    <div class="stat-label">Available Engineers</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-user-check me-1"></i>
-                        Ready to assign
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Filter Card -->
-    <div class="content-card mb-4">
-        <div class="content-card-header">
-            <h5 class="card-title">
-                <i class="fa fa-filter me-2"></i>
-                Filter Unassigned Job Cards
-            </h5>
-        </div>
-        <div class="content-card-body">
-            <form method="GET" action="{{ route('admin.call-logs.unassigned') }}">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label class="form-label">Job Type</label>
-                            <select class="form-control form-control-enhanced" name="type">
+                <div class="d-flex align-items-center">
+                    <form method="GET" class="me-3">
+                        <div class="input-group">
+                            <select name="type" class="form-select" onchange="this.form.submit()">
                                 <option value="">All Types</option>
                                 <option value="normal" {{ request('type') == 'normal' ? 'selected' : '' }}>Normal</option>
-                                <option value="maintenance" {{ request('type') == 'maintenance' ? 'selected' : '' }}>Maintenance</option>
-                                <option value="repair" {{ request('type') == 'repair' ? 'selected' : '' }}>Repair</option>
-                                <option value="installation" {{ request('type') == 'installation' ? 'selected' : '' }}>Installation</option>
-                                <option value="consultation" {{ request('type') == 'consultation' ? 'selected' : '' }}>Consultation</option>
                                 <option value="emergency" {{ request('type') == 'emergency' ? 'selected' : '' }}>Emergency</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label class="form-label">Date Range</label>
-                            <select class="form-control form-control-enhanced" name="date_range">
+                    </form>
+                    <form method="GET">
+                        <div class="input-group">
+                            <select name="date_range" class="form-select" onchange="this.form.submit()">
                                 <option value="">All Dates</option>
                                 <option value="today" {{ request('date_range') == 'today' ? 'selected' : '' }}>Today</option>
                                 <option value="yesterday" {{ request('date_range') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
                                 <option value="this_week" {{ request('date_range') == 'this_week' ? 'selected' : '' }}>This Week</option>
-                                <option value="overdue" {{ request('date_range') == 'overdue' ? 'selected' : '' }}>Overdue (>24h)</option>
+                                <option value="overdue" {{ request('date_range') == 'overdue' ? 'selected' : '' }}>Overdue</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label class="form-label">Amount Range</label>
-                            <select class="form-control form-control-enhanced" name="amount_range">
-                                <option value="">All Amounts</option>
-                                <option value="low" {{ request('amount_range') == 'low' ? 'selected' : '' }}>Under $100</option>
-                                <option value="medium" {{ request('amount_range') == 'medium' ? 'selected' : '' }}>$100 - $500</option>
-                                <option value="high" {{ request('amount_range') == 'high' ? 'selected' : '' }}>Over $500</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label class="form-label">&nbsp;</label>
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary btn-enhanced">
-                                    <i class="fa fa-search me-1"></i>Filter
-                                </button>
-                                <a href="{{ route('admin.call-logs.unassigned') }}" class="btn btn-outline-secondary btn-enhanced">
-                                    <i class="fa fa-times me-1"></i>Clear
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                    </form>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Job Cards Table -->
-    <div class="content-card">
-        <div class="content-card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="header-content">
-                    <h5 class="card-title">
-                        <i class="fa fa-user-slash me-2"></i>
-                        Unassigned Job Cards
-                    </h5>
-                    <p class="card-subtitle">{{ $callLogs->total() }} unassigned job cards</p>
-                </div>
-                @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                    <div class="form-check">
-                        <input type="checkbox" id="selectAll" class="form-check-input">
-                        <label class="form-check-label" for="selectAll">Select All</label>
-                    </div>
-                @endif
             </div>
         </div>
         
-        <div class="content-card-body">
-            <div class="table-responsive">
-                <table class="enhanced-table">
-                    <thead>
-                        <tr>
-                            @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                                <th width="50">
-                                    <input type="checkbox" id="selectAllHeader" class="form-check-input">
-                                </th>
-                            @endif
-                            <th><i class="fa fa-hashtag me-1"></i>Job Card</th>
-                            <th><i class="fa fa-building me-1"></i>Company</th>
-                            <th><i class="fa fa-exclamation-circle me-1"></i>Fault Description</th>
-                            <th><i class="fa fa-cogs me-1"></i>Type</th>
-                            <th><i class="fa fa-calendar me-1"></i>Date Booked</th>
-                            <th><i class="fa fa-clock me-1"></i>Age</th>
-                            <th><i class="fa fa-dollar-sign me-1"></i>Amount</th>
-                            <th><i class="fa fa-cog me-1"></i>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($callLogs as $jobCard)
-                            <tr class="job-row">
-                                @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                                    <td>
-                                        <input type="checkbox" class="form-check-input jobcard-checkbox" value="{{ $jobCard->id }}">
-                                    </td>
-                                @endif
+        <div class="card-body">
+            @if($callLogs->isEmpty())
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No unassigned jobs found.
+                </div>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Job ID</th>
+                                <th>Customer</th>
+                                <th>Fault Description</th>
+                                <th>Type</th>
+                                <th>Date Booked</th>
+                                <th>Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($callLogs as $job)
+                            <tr>
                                 <td>
-                                    <span class="job-card-number">{{ $jobCard->job_card }}</span>
-                                    @if($jobCard->zimra_ref)
-                                        <br>
-                                        <small class="text-muted">ZIMRA: {{ $jobCard->zimra_ref }}</small>
+                                    <span class="badge bg-light text-dark">#{{ $job->id }}</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ $job->customer_name }}</div>
+                                    <small class="text-muted">{{ $job->customer_email }}</small>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 200px;" title="{{ $job->fault_description }}">
+                                        {{ $job->fault_description }}
+                                    </div>
+                                </td>
+                                <td>
+                                    @if($job->type == 'emergency')
+                                        <span class="badge bg-danger">Emergency</span>
+                                    @else
+                                        <span class="badge bg-primary">Normal</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="company-info">
-                                        <i class="fa fa-building me-1"></i>
-                                        <strong>{{ $jobCard->company_name }}</strong>
-                                    </div>
+                                    {{ $job->date_booked->format('M d, Y') }}
+                                    @if($job->date_booked->diffInHours(now()) > 24)
+                                        <span class="badge bg-warning text-dark ms-2">Overdue</span>
+                                    @endif
+                                </td>
+                                <td class="fw-bold">
+                                    ${{ number_format($job->amount_charged, 2) }}
                                 </td>
                                 <td>
-                                    <div class="fault-description">
-                                        {{ Str::limit($jobCard->fault_description ?: 'No description provided', 50) }}
-                                    </div>
-                                </td>
-                                <td>
-                                    @include('admin.calllogs.partials.type-badge', ['type' => $jobCard->type])
-                                </td>
-                                <td>
-                                    <div class="job-date">
-                                        <i class="fa fa-calendar me-1"></i>
-                                        {{ \Carbon\Carbon::parse($jobCard->date_booked)->format('M j, Y') }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="job-age {{ \Carbon\Carbon::parse($jobCard->date_booked)->diffInHours() > 24 ? 'text-danger' : '' }}">
-                                        <i class="fa fa-clock me-1"></i>
-                                        {{ \Carbon\Carbon::parse($jobCard->date_booked)->diffForHumans() }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="amount-charged">
-                                        <strong>USD ${{ number_format($jobCard->amount_charged, 2) }}</strong>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a href="{{ route('admin.call-logs.show', $jobCard) }}" class="action-btn view-btn" title="View Details">
-                                            <i class="fa fa-eye"></i>
-                                        </a>
-                                        @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                                            <button class="action-btn assign-btn" onclick="assignJobCard({{ $jobCard->id }})" title="Assign Engineer">
-                                                <i class="fa fa-user-plus"></i>
-                                            </button>
-                                        @endif
-                                    </div>
+                                    @if(auth()->user()->role == 'admin' || auth()->user()->role == 'manager')
+                                        <button class="btn btn-sm btn-outline-primary assign-btn" 
+                                                data-job-id="{{ $job->id }}"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#assignModal">
+                                            <i class="fas fa-user-plus me-1"></i>
+                                            Assign
+                                        </button>
+                                    @endif
+                                    <a href="{{ route('admin.call-logs.show', $job) }}" 
+                                       class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="{{ in_array(auth()->user()->role, ['admin', 'accounts']) ? '9' : '8' }}">
-                                    <div class="empty-state">
-                                        <div class="empty-content">
-                                            <i class="fa fa-check-circle"></i>
-                                            <h5 class="empty-title">All job cards assigned</h5>
-                                            <p class="empty-description">Great! All job cards have been assigned to engineers.</p>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            @if($callLogs->hasPages())
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                
                 <div class="d-flex justify-content-center mt-4">
-                    {{ $callLogs->links() }}
+                    {{ $callLogs->withQueryString()->links() }}
                 </div>
             @endif
         </div>
     </div>
 </div>
 
-<!-- Assignment Modal -->
-@if(in_array(auth()->user()->role, ['admin', 'accounts']))
-<div class="modal fade" id="assignJobCardModal" tabindex="-1">
+<!-- Assign Technician Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Assign Job to Engineer</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="assignModalLabel">Assign Technician</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="assignJobCardForm">
+            <form id="assignForm" method="POST">
+                @csrf
                 <div class="modal-body">
+                    <input type="hidden" name="job_id" id="job_id">
+                    
                     <div class="mb-3">
-                        <label for="engineer" class="form-label">Select Engineer</label>
-                        <select class="form-control form-control-enhanced" id="engineer" name="engineer" required>
-                            <option value="">Choose engineer...</option>
-                            <option value="Benson">Benson</option>
-                            <option value="Malvine">Malvine</option>
-                            <option value="Mukai">Mukai</option>
-                            <option value="Tapera">Tapera</option>
+                        <label for="technician" class="form-label">Select Technician</label>
+                        <select class="form-select" id="technician" name="engineer" required>
+                            <option value="">Select Technician</option>
+                            @foreach($technicians as $tech)
+                                <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                            @endforeach
                         </select>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="assignment_notes" class="form-label">Assignment Notes (Optional)</label>
-                        <textarea class="form-control form-control-enhanced" id="assignment_notes" name="assignment_notes" rows="3" placeholder="Any specific instructions or notes for the engineer..."></textarea>
+                        <label for="assignment_notes" class="form-label">Assignment Notes</label>
+                        <textarea class="form-control" id="assignment_notes" name="assignment_notes" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-enhanced" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-enhanced">Assign Job</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Assign Job</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+@endsection
 
-<!-- Bulk Assignment Modal -->
-<div class="modal fade" id="bulkAssignModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Bulk Assign Job Cards</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="bulkAssignForm">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="bulk_engineer" class="form-label">Select Engineer</label>
-                        <select class="form-control form-control-enhanced" id="bulk_engineer" name="engineer" required>
-                            <option value="">Choose engineer...</option>
-                            <option value="Benson">Benson</option>
-                            <option value="Malvine">Malvine</option>
-                            <option value="Mukai">Mukai</option>
-                            <option value="Tapera">Tapera</option>
-                        </select>
-                    </div>
-                    <div class="alert alert-info">
-                        <i class="fa fa-info-circle me-2"></i>
-                        <span id="selectedCount">0</span> job cards will be assigned to the selected engineer.
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-enhanced" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-enhanced">Assign Selected Jobs</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
+@section('scripts')
+<script>
+    $(document).ready(function() {
+        // Handle assign button click
+        $('.assign-btn').click(function() {
+            const jobId = $(this).data('job-id');
+            $('#job_id').val(jobId);
+            $('#assignForm').attr('action', `/admin/call-logs/${jobId}/assign`);
+        });
 
+        // Handle form submission
+        $('#assignForm').submit(function(e) {
+            e.preventDefault();
+            
+            const form = $(this);
+            const url = form.attr('action');
+            const method = 'POST';
+            const data = form.serialize();
+            
+            $.ajax({
+                url: url,
+                type: method,
+                data: data,
+                success: function(response) {
+                    if(response.success) {
+                        $('#assignModal').modal('hide');
+                        showToast('success', response.message);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    }
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.message || 'An error occurred';
+                    showToast('error', error);
+                }
+            });
+        });
+
+        function showToast(type, message) {
+            const toast = `<div class="toast align-items-center text-white bg-${type} border-0 position-fixed bottom-0 end-0 m-3" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>`;
+            
+            $('.toast-container').append(toast);
+            $('.toast').toast('show');
+            
+            setTimeout(() => {
+                $('.toast').toast('hide').remove();
+            }, 3000);
+        }
+    });
+</script>
+@endsection
+
+@section('styles')
 <style>
-    .dashboard-nav-wrapper { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); padding: 0.5rem; margin-bottom: 2rem;}
-    .panel-nav { border: none; gap: 0.5rem; }
-    .panel-nav .nav-link { border: none; padding: 0.75rem 1.5rem; border-radius: 8px; color: var(--light-text); font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; }
-    .panel-nav .nav-link:hover { background: var(--hover-bg); color: var(--medium-text);}
-    .panel-nav .nav-link.active { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); color: var(--white); box-shadow: var(--shadow-hover);}
-    .page-header-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden;}
-    .page-header-content { padding: 2rem; background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%); display: flex; justify-content: space-between; align-items: center;}
-    .page-title { font-size: 1.5rem; font-weight: 600; color: var(--primary-green-dark); margin: 0;}
-    .page-subtitle { color: var(--light-text); margin: 0.5rem 0 0 0; font-size: 0.95rem;}
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;}
-    .stat-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border-color); transition: all 0.3s ease;}
-    .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover);}
-    .stat-card-body { padding: 1.5rem; display: flex; align-items: center; gap: 1rem;}
-    .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
-    .stat-icon.primary { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); }
-    .stat-icon.warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-    .stat-icon.danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
-    .stat-icon.info { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-    .stat-icon i { font-size: 1.5rem; color: var(--white);}
-    .stat-content { flex: 1;}
-    .stat-number { font-size: 2rem; font-weight: 700; color: var(--dark-text); margin: 0; line-height: 1;}
-    .stat-label { color: var(--light-text); font-size: 0.9rem; margin: 0.25rem 0; font-weight: 500;}
-    .stat-footer { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.25rem; color: var(--primary-green);}
-    .content-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border-color);}
-    .content-card-header { padding: 1.5rem 2rem; background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%); border-bottom: 1px solid var(--border-color);}
-    .content-card-header .card-title { font-size: 1.25rem; font-weight: 600; color: var(--primary-green); margin: 0;}
-    .card-subtitle { color: var(--light-text); font-size: 0.9rem; margin: 0.25rem 0 0 0;}
-    .content-card-body { padding: 2rem;}
-    .form-group { margin-bottom: 1.5rem;}
-    .form-label { font-weight: 600; color: var(--dark-text); margin-bottom: 0.5rem; display: block;}
-    .form-control-enhanced { border: 2px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.95rem; transition: all 0.3s ease; background: var(--white);}
-    .form-control-enhanced:focus { border-color: var(--primary-green); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1); outline: none;}
-    .btn-enhanced { padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; border: none; display: flex; align-items: center; text-decoration: none;}
-    .btn-primary.btn-enhanced { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); color: var(--white);}
-    .btn-primary.btn-enhanced:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover);}
-    .btn-primary.btn-enhanced:disabled { opacity: 0.6; cursor: not-allowed; transform: none;}
-    .btn-secondary.btn-enhanced { background: var(--hover-bg); color: var(--medium-text); border: 2px solid var(--border-color);}
-    .btn-secondary.btn-enhanced:hover { background: var(--medium-text); color: var(--white);}
-    .btn-outline-secondary.btn-enhanced { border: 2px solid var(--border-color); color: var(--medium-text); background: transparent;}
-    .btn-outline-secondary.btn-enhanced:hover { background: var(--medium-text); color: var(--white);}
-    .enhanced-table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 0;}
-    .enhanced-table thead th { background: var(--ultra-light-green); color: var(--primary-green); font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem 1.5rem; border-bottom: 2px solid var(--light-green);}
-    .enhanced-table tbody tr { transition: all 0.2s ease; border-bottom: 1px solid var(--border-color);}
-    .enhanced-table tbody tr:hover { background: var(--ultra-light-green);}
-    .enhanced-table tbody td { padding: 1rem 1.5rem; vertical-align: middle;}
-    .job-card-number { font-family: 'Monaco', 'Menlo', monospace; background: var(--light-green); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; color: var(--primary-green-dark); font-weight: 600; border: 1px solid var(--secondary-green);}
-    .fault-description { font-weight: 500; color: var(--dark-text); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-    .company-info { color: var(--medium-text); font-weight: 500; display: flex; align-items: center;}
-    .job-date, .job-age { color: var(--light-text); font-size: 0.875rem; display: flex; align-items: center;}
-    .amount-charged { font-weight: 600; color: var(--primary-green-dark);}
-    .action-buttons { display: flex; gap: 0.5rem;}
-    .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; transition: all 0.2s ease; text-decoration: none; border: none; cursor: pointer;}
-    .view-btn { background: var(--light-green); color: var(--primary-green);}
-    .view-btn:hover { background: var(--primary-green); color: var(--white); transform: translateY(-1px);}
-    .assign-btn { background: #F3E8FF; color: #8B5CF6;}
-    .assign-btn:hover { background: #8B5CF6; color: var(--white); transform: translateY(-1px);}
-    .empty-state { text-align: center; padding: 3rem 1.5rem;}
-    .empty-content i { font-size: 2rem; color: var(--light-text); margin-bottom: 1rem;}
-    .empty-title { color: var(--primary-green); font-weight: 600; margin-bottom: 0.5rem;}
-    .empty-description { color: var(--light-text); margin: 0;}
-    .form-check-input { border: 2px solid var(--border-color); border-radius: 4px;}
-    .form-check-input:checked { background-color: var(--primary-green); border-color: var(--primary-green);}
-    .alert-info { background: var(--ultra-light-green); border: 1px solid var(--light-green); color: var(--primary-green-dark); border-radius: 8px; padding: 1rem;}
-    @media (max-width: 768px) {
-        .page-header-content { flex-direction: column; align-items: flex-start; gap: 1rem;}
-        .stats-grid { grid-template-columns: 1fr;}
-        .content-card-header, .content-card-body { padding: 1rem;}
-        .enhanced-table th, .enhanced-table td { padding: 0.75rem 1rem;}
+    .toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1100;
+    }
+    .text-truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .badge {
+        font-size: 0.85em;
     }
 </style>
-
-@push('scripts')
-<script>
-    let currentJobCardId = null;
-    
-    @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-    const assignModal = new bootstrap.Modal(document.getElementById('assignJobCardModal'));
-    const bulkAssignModal = new bootstrap.Modal(document.getElementById('bulkAssignModal'));
-    
-    // Checkbox handling
-    document.getElementById('selectAll').addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('.jobcard-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
-        updateBulkAssignButton();
-    });
-    
-    document.getElementById('selectAllHeader').addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('.jobcard-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
-        document.getElementById('selectAll').checked = this.checked;
-        updateBulkAssignButton();
-    });
-    
-    document.querySelectorAll('.jobcard-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', updateBulkAssignButton);
-    });
-    
-    function updateBulkAssignButton() {
-        const selectedJobCards = document.querySelectorAll('.jobcard-checkbox:checked');
-        const bulkAssignBtn = document.getElementById('bulkAssignBtn');
-        
-        if (selectedJobCards.length > 0) {
-            bulkAssignBtn.disabled = false;
-            bulkAssignBtn.innerHTML = `<i class="fa fa-users me-2"></i> Bulk Assign (${selectedJobCards.length})`;
-        } else {
-            bulkAssignBtn.disabled = true;
-            bulkAssignBtn.innerHTML = '<i class="fa fa-users me-2"></i> Bulk Assign';
-        }
-        
-        document.getElementById('selectedCount').textContent = selectedJobCards.length;
-    }
-    
-    function assignJobCard(jobCardId) {
-        currentJobCardId = jobCardId;
-        assignModal.show();
-    }
-    
-    function bulkAssign() {
-        const selectedJobCards = document.querySelectorAll('.jobcard-checkbox:checked');
-        if (selectedJobCards.length === 0) {
-            alert('Please select at least one job card to assign.');
-            return;
-        }
-        bulkAssignModal.show();
-    }
-    
-    // Single assignment
-    document.getElementById('assignJobCardForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        
-        fetch(`{{ route('admin.call-logs.index') }}/${currentJobCardId}/assign`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                assignModal.hide();
-                location.reload();
-            } else {
-                alert('Error assigning job card');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error assigning job card');
-        });
-    });
-    
-    // Bulk assignment
-    document.getElementById('bulkAssignForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const selectedJobCards = Array.from(document.querySelectorAll('.jobcard-checkbox:checked')).map(cb => cb.value);
-        const engineer = document.getElementById('bulk_engineer').value;
-        
-        if (selectedJobCards.length === 0) {
-            alert('No job cards selected');
-            return;
-        }
-        
-        Promise.all(selectedJobCards.map(jobCardId => {
-            return fetch(`{{ route('admin.call-logs.index') }}/${jobCardId}/assign`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ engineer: engineer })
-            });
-        }))
-        .then(responses => {
-            bulkAssignModal.hide();
-            location.reload();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error during bulk assignment');
-        });
-    });
-    @endif
-</script>
-@endpush
 @endsection

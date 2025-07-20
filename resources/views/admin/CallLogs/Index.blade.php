@@ -1,7 +1,212 @@
 @extends('layouts.calllogs')
 
-@section('title', 'Calls Management - Dashboard')
+@section('title', 'Call Logs Dashboard')
+
+@section('content')
+{{-- Dashboard Navigation Tabs --}}
+<div class="dashboard-nav-wrapper mb-4">
+    <ul class="panel-nav nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('admin.index') || request()->routeIs('admin.tickets.*') ? 'active' : '' }}"
+               href="{{ route('admin.index') }}">
+                <i class="fa fa-tasks me-2"></i> Faults Allocation
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('admin.contacts.*') ? 'active' : '' }}"
+               href="{{ route('admin.contacts.index') }}">
+                <i class="fa fa-users me-2"></i> Customer Contacts
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('admin.call-logs.*') ? 'active' : '' }}" 
+               href="{{ route('admin.call-logs.index') }}">
+                <i class="fa fa-phone me-2"></i> Call Logs
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('content.*') || request()->routeIs('blogs.*') || request()->routeIs('admin.faqs.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.subscribers.*') || request()->routeIs('admin.newsletters.*') || request()->routeIs('faq-categories.*') ? 'active' : '' }}"
+               href="{{ route('admin.content.index') }}">
+                <i class="fa fa-cog me-2"></i> Manage Content
+            </a>
+        </li>
+    </ul>
+</div>
+
+{{-- Info Boxes --}}
+@php
+$statuses = [
+    'pending' => [
+        'label' => 'Pending Jobs', 
+        'icon' => 'fa-clock', 
+        'bg' => 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+        'count' => $stats['pending_jobs'] ?? 0
+    ],
+    'in_progress' => [
+        'label' => 'In Progress Jobs', 
+        'icon' => 'fa-spinner', 
+        'bg' => 'linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%)',
+        'count' => $stats['in_progress_jobs'] ?? 0
+    ],
+    'completed' => [
+        'label' => 'Completed Jobs', 
+        'icon' => 'fa-check-circle', 
+        'bg' => 'linear-gradient(135deg, var(--primary-green-dark) 0%, #0F3D0F 100%)',
+        'count' => $stats['completed_jobs'] ?? 0
+    ],
+    'total' => [
+        'label' => 'Total Jobs', 
+        'icon' => 'fa-clipboard-list', 
+        'bg' => 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+        'count' => $stats['total_jobs'] ?? 0
+    ],
+];
+@endphp
+
+<div class="stats-grid mb-5">
+    @foreach ($statuses as $key => $data)
+        <div class="stat-card">
+            <div class="stat-card-body">
+                <div class="stat-icon" style="background: {{ $data['bg'] }};">
+                    <i class="fa {{ $data['icon'] }}"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ $data['count'] }}</h3>
+                    <p class="stat-label">{{ $data['label'] }}</p>
+                </div>
+            </div>
+        </div>
+    @endforeach
+</div>
+
+{{-- Recent Jobs Table --}}
+<div class="tickets-card">
+    <div class="tickets-card-header">
+        <div class="header-content">
+            <h5 class="card-title">
+                <i class="fa fa-history me-2"></i>
+                Recent Job Cards
+            </h5>
+            <p class="card-subtitle">Latest service jobs and their current status</p>
+        </div>
+        <div class="header-actions">
+            @if(in_array(auth()->user()->role, ['admin', 'accounts']))
+                <a href="{{ route('admin.call-logs.create') }}" class="btn btn-success me-2">
+                    <i class="fa fa-plus me-2"></i>
+                    New Job
+                </a>
+            @endif
+            <a href="{{ route('admin.call-logs.all') }}" class="btn btn-primary">
+                <i class="fa fa-external-link-alt me-2"></i>
+                View All
+            </a>
+        </div>
+    </div>
+    <div class="tickets-card-body">
+        <div class="table-responsive">
+            <table class="enhanced-table">
+                <thead>
+                    <tr>
+                        <th class="col-id">ID</th>
+                        <th class="col-customer">Customer</th>
+                        <th class="col-description">Description</th>
+                        <th class="col-status">Status</th>
+                        <th class="col-technician">Technician</th>
+                        <th class="col-amount">Amount</th>
+                        <th class="col-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($callLogs as $job)
+                    <tr>
+                        <td class="col-id">
+                            <span class="ticket-id">#{{ $job->id }}</span>
+                        </td>
+                        <td class="col-customer">
+                            <div class="customer-name">{{ $job->customer_name }}</div>
+                            @if($job->customer_email)
+                                <div class="customer-email text-truncate" title="{{ $job->customer_email }}">
+                                    {{ $job->customer_email }}
+                                </div>
+                            @endif
+                        </td>
+                        <td class="col-description">
+                            <div class="job-description text-truncate" title="{{ $job->fault_description }}">
+                                {{ $job->fault_description }}
+                            </div>
+                        </td>
+                        <td class="col-status">
+                            @php
+                                $statusMappings = [
+                                    'pending' => ['class' => 'status-pending', 'icon' => 'fa-clock', 'label' => 'Pending'],
+                                    'assigned' => ['class' => 'status-assigned', 'icon' => 'fa-user-check', 'label' => 'Assigned'],
+                                    'in_progress' => ['class' => 'status-in_progress', 'icon' => 'fa-spinner', 'label' => 'In Progress'],
+                                    'complete' => ['class' => 'status-resolved', 'icon' => 'fa-check', 'label' => 'Complete'],
+                                    'cancelled' => ['class' => 'status-cancelled', 'icon' => 'fa-times', 'label' => 'Cancelled']
+                                ];
+                                $statusConfig = $statusMappings[$job->status] ?? ['class' => 'status-pending', 'icon' => 'fa-question', 'label' => ucfirst($job->status)];
+                            @endphp
+                            <span class="status-badge {{ $statusConfig['class'] }}">
+                                <i class="fa {{ $statusConfig['icon'] }} me-1"></i>
+                                {{ $statusConfig['label'] }}
+                            </span>
+                        </td>
+                        <td class="col-technician">
+                            <div class="technician-name text-truncate" title="{{ $job->assignedTo->name ?? 'Unassigned' }}">
+                                {{ $job->assignedTo->name ?? 'Unassigned' }}
+                            </div>
+                        </td>
+                        <td class="col-amount">
+                            <div class="amount-charged">${{ number_format($job->amount_charged, 2) }}</div>
+                        </td>
+                        <td class="col-actions">
+                            <a href="{{ route('admin.call-logs.show', $job) }}"
+                               class="action-btn view-btn"
+                               title="View Job">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="empty-state">
+                                <div class="empty-content">
+                                    <i class="fa fa-clipboard-list"></i>
+                                    <p>No job cards found.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        
+        @if($callLogs->hasPages())
+            <div class="pagination-wrapper">
+                {{ $callLogs->links() }}
+            </div>
+        @endif
+    </div>
+</div>
+
 <style>
+    :root {
+        --primary-green: #055317;
+        --primary-green-dark: #1e7e34;
+        --light-green: #d4edda;
+        --ultra-light-green: #f8f9fa;
+        --secondary-green: #20c997;
+        --accent-green: #17a2b8;
+        --white: #ffffff;
+        --dark-text: #212529;
+        --medium-text: #495057;
+        --light-text: #6c757d;
+        --border-color: #dee2e6;
+        --hover-bg: #f8f9fa;
+        --shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        --shadow-hover: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
     /* Dashboard Navigation */
     .dashboard-nav-wrapper {
         background: var(--white);
@@ -43,7 +248,6 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 1rem;
-        margin-bottom: 2rem;
     }
 
     .stat-card {
@@ -61,15 +265,15 @@
     }
 
     .stat-card-body {
-        padding: 1.5rem;
+        padding: 1rem;
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 0.75rem;
     }
 
     .stat-icon {
-        width: 56px;
-        height: 56px;
+        width: 48px;
+        height: 48px;
         border-radius: 12px;
         display: flex;
         align-items: center;
@@ -77,14 +281,8 @@
         flex-shrink: 0;
     }
 
-    .stat-icon.primary { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); }
-    .stat-icon.warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-    .stat-icon.info { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-    .stat-icon.success { background: linear-gradient(135deg, var(--success-green) 0%, var(--primary-green) 100%); }
-    .stat-icon.danger { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
-
     .stat-icon i {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
         color: var(--white);
     }
 
@@ -93,7 +291,7 @@
     }
 
     .stat-number {
-        font-size: 2rem;
+        font-size: 1.75rem;
         font-weight: 700;
         color: var(--dark-text);
         margin: 0;
@@ -102,22 +300,13 @@
 
     .stat-label {
         color: var(--light-text);
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         margin: 0.25rem 0;
         font-weight: 500;
     }
 
-    .stat-change {
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        color: var(--primary-green);
-    }
-
-    /* Job Cards Table */
-    .job-cards-card {
+    /* Tickets Card */
+    .tickets-card {
         background: var(--white);
         border-radius: 16px;
         box-shadow: var(--shadow);
@@ -125,7 +314,7 @@
         border: 1px solid var(--border-color);
     }
 
-    .job-cards-card-header {
+    .tickets-card-header {
         padding: 1.5rem 2rem;
         background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
         border-bottom: 1px solid var(--border-color);
@@ -149,25 +338,34 @@
         margin: 0.25rem 0 0 0;
     }
 
-    .job-cards-card-header .btn-enhanced {
-        padding: 0.5rem 1rem;
+    .header-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .tickets-card-header .btn {
+        padding: 0.4rem 0.8rem;
         border-radius: 8px;
         font-weight: 500;
         transition: all 0.3s ease;
         border: none;
-        background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
         color: var(--white);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
     }
 
-    .job-cards-card-header .btn-enhanced:hover {
+    .btn-success {
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--accent-green) 0%, #114223 100%);
+    }
+
+    .tickets-card-header .btn:hover {
         transform: translateY(-1px);
         box-shadow: var(--shadow-hover);
     }
 
-    .job-cards-card-body {
+    .tickets-card-body {
         padding: 0;
     }
 
@@ -211,7 +409,7 @@
         vertical-align: middle;
     }
 
-    .job-card-number {
+    .ticket-id {
         font-family: 'Monaco', 'Menlo', monospace;
         background: var(--light-green);
         padding: 0.25rem 0.5rem;
@@ -222,36 +420,75 @@
         border: 1px solid var(--secondary-green);
     }
 
-    .company-name {
+    .customer-name {
         font-weight: 500;
         color: var(--dark-text);
+    }
+
+    .customer-email {
+        font-size: 0.8rem;
+        color: var(--light-text);
+        margin-top: 0.2rem;
+    }
+
+    .job-description {
+        color: var(--medium-text);
+        font-size: 0.9rem;
         max-width: 200px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    .fault-description {
-        color: var(--medium-text);
-        max-width: 250px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .engineer-name {
+    .technician-name {
         color: var(--medium-text);
         font-weight: 500;
     }
 
-    .job-date {
-        color: var(--light-text);
-        font-size: 0.875rem;
-    }
-
     .amount-charged {
         font-weight: 600;
+        color: var(--primary-green);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .status-pending {
+        background: #FFFBEB;
+        color: #D97706;
+        border: 1px solid #fde68a;
+    }
+
+    .status-assigned {
+        background: #EFF6FF;
+        color: #2563EB;
+        border: 1px solid #DBEAFE;
+    }
+
+    .status-in_progress {
+        background: var(--light-green);
         color: var(--primary-green-dark);
+        border: 1px solid var(--accent-green);
+    }
+
+    .status-resolved {
+        background: var(--ultra-light-green);
+        color: var(--primary-green);
+        border: 1px solid var(--secondary-green);
+    }
+
+    .status-cancelled {
+        background: #FEF2F2;
+        color: #DC2626;
+        border: 1px solid #fecaca;
     }
 
     .action-btn {
@@ -263,9 +500,6 @@
         border-radius: 8px;
         transition: all 0.2s ease;
         text-decoration: none;
-        border: none;
-        cursor: pointer;
-        margin-right: 0.25rem;
     }
 
     .view-btn {
@@ -275,28 +509,6 @@
 
     .view-btn:hover {
         background: var(--primary-green);
-        color: var(--white);
-        transform: translateY(-1px);
-    }
-
-    .edit-btn {
-        background: #EFF6FF;
-        color: #3B82F6;
-    }
-
-    .edit-btn:hover {
-        background: #3B82F6;
-        color: var(--white);
-        transform: translateY(-1px);
-    }
-
-    .assign-btn {
-        background: #F3E8FF;
-        color: #8B5CF6;
-    }
-
-    .assign-btn:hover {
-        background: #8B5CF6;
         color: var(--white);
         transform: translateY(-1px);
     }
@@ -312,41 +524,33 @@
         margin-bottom: 1rem;
     }
 
-    .empty-content h5 {
-        color: var(--primary-green);
-        margin-bottom: 0.5rem;
-    }
-
     .empty-content p {
         color: var(--light-text);
         font-size: 1.1rem;
         margin: 0;
     }
 
-    /* Page Header */
-    .page-header {
+    .pagination-wrapper {
+        padding: 1rem 2rem;
+        border-top: 1px solid var(--border-color);
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        background: var(--white);
-        padding: 1.5rem 2rem;
-        border-radius: 12px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border-color);
+        justify-content: center;
     }
 
-    .page-header h1 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--primary-green-dark);
-        margin: 0;
+    /* Table Responsive */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .page-header p {
-        color: var(--light-text);
-        margin: 0.25rem 0 0 0;
-    }
+    /* Column Widths */
+    .col-id { width: 80px; }
+    .col-customer { width: 180px; }
+    .col-description { width: 220px; }
+    .col-status { width: 140px; }
+    .col-technician { width: 150px; }
+    .col-amount { width: 100px; }
+    .col-actions { width: 80px; }
 
     /* Responsive Design */
     @media (max-width: 768px) {
@@ -359,11 +563,16 @@
             padding: 1rem;
         }
 
-        .job-cards-card-header {
+        .tickets-card-header {
             padding: 1rem;
             flex-direction: column;
             align-items: flex-start;
             gap: 1rem;
+        }
+
+        .header-actions {
+            width: 100%;
+            justify-content: flex-start;
         }
 
         .enhanced-table {
@@ -374,383 +583,6 @@
         .enhanced-table td {
             padding: 0.75rem 1rem;
         }
-
-        .page-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-        }
     }
 </style>
-@section('content')
-    {{-- Dashboard Navigation Tabs --}}
-    <div class="dashboard-nav-wrapper mb-4">
-        <ul class="panel-nav nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('admin.index') || request()->routeIs('admin.tickets.*') ? 'active' : '' }}"
-                   href="{{ route('admin.index') }}">
-                    <i class="fa fa-tasks me-2"></i>
-                    Faults Allocation
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('admin.contacts.*') ? 'active' : '' }}"
-                   href="{{ route('admin.contacts.index') }}">
-                    <i class="fa fa-users me-2"></i>
-                    Customer Contacts
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('admin.call-logs.*') ? 'active' : '' }}" 
-                   href="{{ route('admin.call-logs.index') }}">
-                    <i class="fa fa-phone me-2"></i>
-                    Call Logs
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('content.*') || request()->routeIs('blogs.*') || request()->routeIs('admin.faqs.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.subscribers.*') || request()->routeIs('admin.newsletters.*') || request()->routeIs('faq-categories.*') ? 'active' : '' }}"
-                   href="{{ route('admin.content.index') }}">
-                    <i class="fa fa-cog me-2"></i>
-                    Manage Content
-                </a>
-            </li>
-        </ul>
-    </div>
-
-    <div class="container-fluid">
-        <!-- Header Section -->
-        <div class="page-header">
-            <div>
-                <h1>Billed Calls Management</h1>
-                <p>Manage and track all IT support job cards and services</p>
-            </div>
-            @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                <a href="{{ route('admin.call-logs.create') }}" class="btn btn-primary btn-enhanced">
-                    <i class="fa fa-plus me-2"></i>
-                    Create New Job Card
-                </a>
-            @endif
-        </div>
-
-        <!-- Statistics Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-card-body">
-                    <div class="stat-icon primary">
-                        <i class="fa fa-clipboard"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number">{{ $stats['total_jobs'] ?? 0 }}</div>
-                        <div class="stat-label">Total Jobs</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-card-body">
-                    <div class="stat-icon warning">
-                        <i class="fa fa-clock"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number">{{ $stats['pending_jobs'] ?? 0 }}</div>
-                        <div class="stat-label">Pending Jobs</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-card-body">
-                    <div class="stat-icon info">
-                        <i class="fa fa-cog"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number">{{ $stats['in_progress_jobs'] ?? 0 }}</div>
-                        <div class="stat-label">In Progress</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-card-body">
-                    <div class="stat-icon success">
-                        <i class="fa fa-check-circle"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-number">{{ $stats['completed_jobs'] ?? 0 }}</div>
-                        <div class="stat-label">Completed</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Job Cards Table -->
-        <div class="job-cards-card">
-            <div class="job-cards-card-header">
-                <div class="header-content">
-                    <h5 class="card-title">
-                        <i class="fa fa-list me-2"></i>
-                        Job Cards
-                    </h5>
-                    <p class="card-subtitle">Recent IT support jobs and services</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-enhanced" onclick="refreshTable()">
-                        <i class="fa fa-sync-alt"></i>
-                        Refresh
-                    </button>
-                    @if(auth()->user()->role === 'admin')
-                        <button type="button" class="btn btn-enhanced" onclick="exportJobCards()">
-                            <i class="fa fa-download"></i>
-                            Export
-                        </button>
-                    @endif
-                </div>
-            </div>
-            <div class="job-cards-card-body">
-                <div class="table-responsive">
-                    <table class="enhanced-table" id="jobCardsTable">
-                        <thead>
-                            <tr>
-                                <th><i class="fa fa-hashtag me-1"></i>ID</th>
-                                <th><i class="fa fa-building me-1"></i>Company</th>
-                                <th><i class="fa fa-exclamation-circle me-1"></i>Fault Description</th>
-                                <th><i class="fa fa-check-circle me-1"></i>Status</th>
-                                <th><i class="fa fa-user-tie me-1"></i>Engineer</th>
-                                <th><i class="fa fa-calendar me-1"></i>Date Booked</th>
-                                <th><i class="fa fa-cog me-1"></i>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($callLogs as $jobCard)
-                                <tr>
-                                    <td>{{ $jobCard->id }}</td>
-                                    <td>
-                                        <div class="company-name" title="{{ $jobCard->company_name }}">
-                                            {{ $jobCard->company_name }}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="fault-description" title="{{ $jobCard->fault_description }}">
-                                            {{ Str::limit($jobCard->fault_description, 50) ?: 'No description' }}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        @include('admin.calllogs.partials.status-badge', ['status' => $jobCard->status])
-                                    </td>
-                                    <td>
-                                        @if($jobCard->engineer)
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm me-2">
-                                                    <div class="avatar-initial rounded-circle bg-light-primary">
-                                                        {{ substr($jobCard->engineer, 0, 1) }}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <strong class="engineer-name">{{ $jobCard->engineer }}</strong>
-                                                </div>
-                                            </div>
-                                        @else
-                                            <span class="text-muted">Unassigned</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="job-date">
-                                            {{ \Carbon\Carbon::parse($jobCard->date_booked)->format('M j, Y') }}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex">
-                                            <a href="{{ route('admin.call-logs.show', $jobCard) }}" class="action-btn view-btn" title="View Details">
-                                                <i class="fa fa-eye"></i>
-                                            </a>
-                                            @if((auth()->user()->role === 'engineer' && $jobCard->engineer === auth()->user()->name) || in_array(auth()->user()->role, ['admin', 'accounts']))
-                                                <a href="{{ route('admin.call-logs.edit', $jobCard) }}" class="action-btn edit-btn" title="Edit">
-                                                    <i class="fa fa-edit"></i>
-                                                </a>
-                                            @endif
-                                            @if(in_array(auth()->user()->role, ['admin', 'accounts']) && !$jobCard->engineer && $jobCard->status !== 'complete')
-                                                <button class="action-btn assign-btn" onclick="assignJobCard({{ $jobCard->id }})" title="Assign Engineer">
-                                                    <i class="fa fa-user-plus"></i>
-                                                </button>
-                                            @endif
-                                            @if($jobCard->status === 'assigned' && $jobCard->engineer === auth()->user()->name)
-                                                <button class="action-btn" style="background: #EFF6FF; color: #3B82F6;" onclick="updateStatus({{ $jobCard->id }}, 'in_progress')" title="Start Work">
-                                                    <i class="fa fa-play"></i>
-                                                </button>
-                                            @elseif($jobCard->status === 'in_progress' && $jobCard->engineer === auth()->user()->name)
-                                                <button class="action-btn" style="background: var(--ultra-light-green); color: var(--primary-green);" onclick="updateStatus({{ $jobCard->id }}, 'complete')" title="Complete Job">
-                                                    <i class="fa fa-check"></i>
-                                                </button>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="empty-state">
-                                        <div class="empty-content">
-                                            <i class="fa fa-clipboard"></i>
-                                            <h5>No job cards found</h5>
-                                            <p>Try adjusting your filters or create a new job card</p>
-                                            @if(in_array(auth()->user()->role, ['admin', 'accounts']))
-                                                <a href="{{ route('admin.call-logs.create') }}" class="btn btn-primary btn-enhanced mt-2">
-                                                    <i class="fa fa-plus me-2"></i>
-                                                    Create First Job Card
-                                                </a>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-4 px-3 pb-3">
-                    <div class="text-muted">
-                        Showing {{ $callLogs->firstItem() ?? 0 }} to {{ $callLogs->lastItem() ?? 0 }} of {{ $callLogs->total() }} results
-                    </div>
-                    {{ $callLogs->links() }}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Assignment Modal -->
-    <div class="modal fade" id="assignJobCardModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Assign Job to Engineer/Manager</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <form id="assignJobCardForm">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="engineer">Select Engineer or Manager</label>
-                            <select class="form-control" id="engineer" name="engineer" required>
-                                <option value="">Choose engineer or manager...</option>
-                                @foreach($technicians as $tech)
-                                    <option value="{{ $tech->id }}">{{ $tech->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="assignment_notes">Assignment Notes (Optional)</label>
-                            <textarea class="form-control" id="assignment_notes" name="assignment_notes" rows="3" placeholder="Any specific instructions or notes for the engineer/manager..."></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Assign Job</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {{-- Minimal inline styles only for modal and avatar --}}
-    <style>
-        /* Avatar and modal only */
-        .avatar-sm {
-            width: 32px;
-            height: 32px;
-        }
-        .avatar-initial {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: var(--primary-green);
-        }
-        .bg-light-primary {
-            background-color: var(--ultra-light-green);
-        }
-        /* Modal only */
-        .modal-header {
-            border-bottom: 1px solid #dee2e6;
-            padding: 1rem;
-        }
-        .modal-title {
-            margin: 0;
-            font-size: 1.25rem;
-        }
-        .modal-body {
-            padding: 1rem;
-        }
-        .modal-footer {
-            border-top: 1px solid #dee2e6;
-            padding: 1rem;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-    </style>
-
-    @push('scripts')
-    <script>
-        let currentJobCardId = null;
-        
-        function assignJobCard(jobCardId) {
-            currentJobCardId = jobCardId;
-            $('#assignJobCardModal').modal('show');
-        }
-        
-        function updateStatus(jobCardId, newStatus) {
-            if (!confirm('Are you sure you want to update this job status?')) {
-                return;
-            }
-            
-            $.ajax({
-                url: `{{ route('admin.call-logs.index') }}/${jobCardId}/status`,
-                method: 'PATCH',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    status: newStatus
-                },
-                success: function(response) {
-                    location.reload();
-                },
-                error: function(xhr) {
-                    alert('Error updating job status: ' + (xhr.responseJSON?.message || 'Unknown error'));
-                }
-            });
-        }
-        
-        function refreshTable() {
-            location.reload();
-        }
-        
-        function exportJobCards() {
-            window.location.href = '{{ route("admin.call-logs.export") }}?format=csv';
-        }
-        
-        $('#assignJobCardForm').on('submit', function(e) {
-            e.preventDefault();
-            
-            $.ajax({
-                url: `{{ route('admin.call-logs.index') }}/${currentJobCardId}/assign`,
-                method: 'POST',
-                data: $(this).serialize(),
-                success: function(response) {
-                    $('#assignJobCardModal').modal('hide');
-                    location.reload();
-                },
-                error: function(xhr) {
-                    alert('Error assigning job: ' + (xhr.responseJSON?.message || 'Unknown error'));
-                }
-            });
-        });
-    </script>
-    @endpush
 @endsection

@@ -18,7 +18,7 @@ return new class extends Migration
     $table->timestamp('date_resolved')->nullable();
     $table->timestamp('time_start')->nullable();
     $table->timestamp('time_finish')->nullable();
-    $table->enum('type', ['maintenance', 'repair', 'installation', 'consultation', 'emergency'])->default('repair');
+    $table->enum('type', ['normal','emergency'])->default('normal');
     $table->decimal('billed_hours', 8, 2)->nullable();
     $table->decimal('amount_charged', 10, 2);
     $table->enum('status', ['pending', 'assigned', 'in_progress', 'completed', 'cancelled'])->default('pending');

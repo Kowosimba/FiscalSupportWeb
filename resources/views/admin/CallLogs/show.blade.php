@@ -46,7 +46,7 @@
                         </h5>
                         <div class="d-flex gap-2">
                             @include('admin.calllogs.partials.status-badge', ['status' => $callLog->status])
-                            @include('admin.calllogs.partials.type-badge', ['type' => $callLog->type])
+                            
                         </div>
                     </div>
                 </div>

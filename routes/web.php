@@ -196,38 +196,47 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // Contact Management
     Route::resource('contacts', CustomerContactController::class);
+// Call Logs Management
+Route::prefix('call-logs')->name('call-logs.')->controller(CallLogController::class)->group(function () {
+    // Static routes (should come first)
+    Route::get('/', 'index')->name('index');
+    Route::get('/create', 'create')->name('create');
+    Route::post('/', 'store')->name('store');
+    Route::get('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/reports', 'reports')->name('reports');
+    Route::get('/export', 'export')->name('export');
+    
+    // Status-based listing routes
+    Route::get('/my-jobs', 'myJobs')->name('my-jobs');
+    Route::get('/in-progress', 'inProgress')->name('in-progress');
+    Route::get('/completed', 'completed')->name('completed');
+    Route::get('/pending', 'pending')->name('pending');
+    Route::get('/unassigned', 'unassigned')->name('unassigned');
+    Route::get('/assigned', 'assigned')->name('assigned');
+    Route::get('/cancelled', 'cancelled')->name('cancelled');
+    
+    // Resource routes with parameters (should come last)
+    Route::get('/{callLog}', 'show')->name('show');
+    Route::get('/{callLog}/edit', 'edit')->name('edit');
+    Route::put('/{callLog}', 'update')->name('update');
+    Route::delete('/{callLog}', 'destroy')->name('destroy');
+    Route::post('/{callLog}/assign', 'assign')->name('assign');
+    Route::patch('/{callLog}/status', 'updateStatus')->name('update-status');
+    Route::post('/{callLog}/complete', 'complete')->name('complete');
+});
 
-    // Call Logs Management
-    Route::prefix('call-logs')->name('call-logs.')->controller(CallLogController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/dashboard', 'dashboard')->name('dashboard');
-        Route::get('/my-jobs', 'myJobs')->name('my-jobs');
-        Route::get('/in-progress', 'inProgress')->name('in-progress');
-        Route::get('/completed', 'completed')->name('completed');
-        Route::get('/pending', 'pending')->name('pending');
-        Route::get('/unassigned', 'unassigned')->name('unassigned');
-        Route::get('/assigned', 'assigned')->name('assigned');
-        Route::get('/cancelled', 'cancelled')->name('cancelled');
-        Route::get('/{callLog}', 'show')->name('show');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/{callLog}/edit', 'edit')->name('edit');
-        Route::put('/{callLog}', 'update')->name('update');
-        Route::delete('/{callLog}', 'destroy')->name('destroy');
-        Route::post('/{callLog}/assign', 'assign')->name('assign');
-        Route::patch('/{callLog}/status', 'updateStatus')->name('update-status');
-        Route::post('/{callLog}/complete', 'complete')->name('complete');
-        Route::get('/reports', 'reports')->name('reports');
-        Route::get('/export', 'export')->name('export');
-    });
-
-    // Call Reports Management (Legacy)
-    Route::prefix('call-reports')->name('call-reports.')->controller(CallReportController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/export', 'export')->name('export');
-        Route::post('/generate', 'generate')->name('generate');
-    });
+// Call Reports Management (Legacy)
+Route::prefix('call-reports')->name('call-reports.')->controller(CallReportController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/export', 'export')->name('export');
+    Route::post('/generate', 'generate')->name('generate');
+});
 });
 
 Route::get('/notifications/{notification}/redirect', [NotificationController::class, 'redirect'])
     ->name('notifications.redirect');
+
+   // In web.php
+Route::get('/admin/call-logs/all', [CallLogController::class, 'all'])->name('admin.call-logs.all');
+
+    Route::get('/admin/call-logs/export', [CallLogController::class, 'export'])->name('admin.call-logs.export');

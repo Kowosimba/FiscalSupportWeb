@@ -3,52 +3,295 @@
 
 <x-breadcrumb> Our Team </x-breadcrumb>
 
-<!-- Team Area -->
+<!-- Team Leadership Area -->
 <section class="team-page-area pt-120 pb-120 overflow-hidden">
     <div class="container">
-        <div class="slider-area team-page-slider">
-            <div class="tg-swiper__slider swiper-container overflow-hidden" id="teamPageSlider" data-swiper-options='{
-            "loop": true,
-            "autoplay": { "delay": 1000 },
-            "spaceBetween": 24,
-            "slidesPerView": 1
-            }'>
-                <div class="swiper-wrapper">
-                    <div class="swiper-slide">
-                        <div class="team-slider-card">
-                            <div class="team-card-bg-thumb">
-                                <img src="{{ asset('assets/img/others/FSSTeam2.jpg') }}" alt="Team background">
+        <div class="row justify-content-center mb-60">
+            <div class="col-xl-8 text-center">
+                <div class="section__title">
+                    <h1 class="title text-anim2">Experienced Professionals Driving Innovation</h1>
+                    <p class="section-desc">Our leadership team brings decades of combined experience in IT solutions, fiscal device support, and African market expertise to serve your business needs.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row gy-40">
+            <!-- Individual Team Member Cards -->
+            <div class="col-xl-4 col-md-6">
+                <div class="team-card-modern">
+                    <div class="team-card-thumb">
+                        <img src="{{ asset('assets/img/team/team-leader-1.jpg') }}" alt="Managing Director">
+                        <div class="team-card-overlay">
+                            <div class="social-links">
+                                <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                                <a href="mailto:"><i class="fas fa-envelope"></i></a>
                             </div>
-                            <div class="team-slider-bg-shape1-1 bg-cover" style="background-image: url('{{ asset('assets/img/others/FSSTeam2.jpg') }}')"></div>
-                            <div class="team-card-wrap">
-                                <span class="box-subtitle">Strong Message From Our Founders</span>
-                                <h2 class="box-title">Our Foundation</h2>
-                                <div class="team-card-details">
-                                    <div class="box-icon">
-                                        <svg width="43" height="30" viewBox="0 0 43 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M17.1894 0H1.24081C0.555456 0 0 0.548296 0 1.22482V16.9678C0 17.6444 0.555456 18.1927 1.24081 18.1927H7.97413V28.7752C7.97413 29.4514 8.52959 30 9.21494 30H13.2023C13.7361 30 14.2105 29.6625 14.3792 29.1624L18.3662 17.3554C18.4086 17.2303 18.4302 17.0996 18.4302 16.9678V1.22482C18.4302 0.548296 17.8748 0 17.1894 0ZM15.9486 16.7691L12.3079 27.55H10.4558V16.9678C10.4558 16.2913 9.9003 15.743 9.21494 15.743H2.48162V2.44963H15.9486V16.7691Z" fill="currentColor" />
-                                            <path d="M41.1121 0H25.1635C24.4782 0 23.9227 0.548296 23.9227 1.22482V16.9678C23.9227 17.6444 24.4782 18.1927 25.1635 18.1927H31.8972V28.7752C31.8972 29.4514 32.4526 30 33.138 30H37.1251C37.6592 30 38.1332 29.6625 38.3022 29.1624L42.2893 17.3554C42.3313 17.2303 42.3529 17.0996 42.3529 16.9678V1.22482C42.3529 0.548296 41.7975 0 41.1121 0ZM39.8713 16.7691L36.2306 27.55H34.3788V16.9678C34.3788 16.2913 33.823 15.743 33.138 15.743H26.4043V2.44963H39.8713V16.7691Z" fill="currentColor" />
-                                        </svg>
-                                    </div>
-                                    <div class="media-body">
-                                        <p class="box-text">Fiscal Support Services was founded by former employees of First Computers with a mission to deliver cost-effective and efficient technology solutions to businesses in emerging markets. With over 25 years of collective experience in fiscal devices support, we continue the legacy of First Computers with even greater dedication.</p>
-                                        <div class="team-card-info">
-                                            <h4 class="team-card-title">Our Founders</h4>
-                                            <span class="team-card-desig">Former First Computers Team</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
+                        </div>
+                    </div>
+                    <div class="team-card-content">
+                        <h4 class="team-name">Leadership Team</h4>
+                        <span class="team-designation">Managing Director & Co-Founder</span>
+                        <p class="team-bio">Leading strategic direction with over 15 years in African IT markets and extensive fiscal device implementation experience.</p>
+                        <div class="expertise-tags">
+                            <span class="tag">Strategic Planning</span>
+                            <span class="tag">Market Development</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <button data-slider-prev="#teamPageSlider" class="slider-arrow slider-prev btn"><i class="fas fa-arrow-left"></i></button>
-            <button data-slider-next="#teamPageSlider" class="slider-arrow slider-next btn"><i class="fas fa-arrow-right"></i></button>
+
+            <div class="col-xl-4 col-md-6">
+                <div class="team-card-modern">
+                    <div class="team-card-thumb">
+                        <img src="{{ asset('assets/img/team/team-leader-2.jpg') }}" alt="Technical Director">
+                        <div class="team-card-overlay">
+                            <div class="social-links">
+                                <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                                <a href="mailto:"><i class="fas fa-envelope"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="team-card-content">
+                        <h4 class="team-name">Technical Leadership</h4>
+                        <span class="team-designation">Technical Director & Co-Founder</span>
+                        <p class="team-bio">Driving technical excellence with deep expertise in fiscal compliance systems and enterprise IT infrastructure across multiple African markets.</p>
+                        <div class="expertise-tags">
+                            <span class="tag">Fiscal Systems</span>
+                            <span class="tag">IT Infrastructure</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-md-6">
+                <div class="team-card-modern">
+                    <div class="team-card-thumb">
+                        <img src="{{ asset('assets/img/team/team-leader-3.jpg') }}" alt="Operations Director">
+                        <div class="team-card-overlay">
+                            <div class="social-links">
+                                <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                                <a href="mailto:"><i class="fas fa-envelope"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="team-card-content">
+                        <h4 class="team-name">Operations Leadership</h4>
+                        <span class="team-designation">Operations Director</span>
+                        <p class="team-bio">Ensuring seamless service delivery and client satisfaction with proven track record in multi-country operations and support systems.</p>
+                        <div class="expertise-tags">
+                            <span class="tag">Service Delivery</span>
+                            <span class="tag">Client Relations</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
+
+
+<style>
+
+/* Modern Team Card Styles */
+.team-card-modern {
+    background: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+.team-card-modern:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+}
+
+.team-card-thumb {
+    position: relative;
+    overflow: hidden;
+    height: 280px;
+}
+
+.team-card-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.team-card-modern:hover .team-card-thumb img {
+    transform: scale(1.1);
+}
+
+.team-card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.team-card-modern:hover .team-card-overlay {
+    opacity: 1;
+}
+
+.social-links {
+    display: flex;
+    gap: 15px;
+}
+
+.social-links a {
+    width: 40px;
+    height: 40px;
+    background: var(--theme-color);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+.social-links a:hover {
+    background: var(--theme-color2);
+}
+
+.team-card-content {
+    padding: 30px 25px;
+}
+
+.team-name {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--title-color);
+}
+
+.team-designation {
+    color: var(--theme-color);
+    font-weight: 500;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.team-bio {
+    color: var(--body-color);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.expertise-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.expertise-tags .tag {
+    background: var(--theme-color);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Mission Statement Card */
+.mission-statement-card {
+    background: linear-gradient(135deg, var(--theme-color) 0%, var(--theme-color2) 100%);
+    border-radius: 20px;
+    padding: 50px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+.mission-statement-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: url('path-to-pattern.svg') no-repeat;
+    opacity: 0.1;
+}
+
+.mission-content {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    position: relative;
+    z-index: 2;
+}
+
+.mission-icon {
+    flex-shrink: 0;
+    color: rgba(255,255,255,0.9);
+}
+
+.mission-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.mission-description {
+    font-size: 16px;
+    line-height: 1.7;
+    margin-bottom: 30px;
+    color: rgba(255,255,255,0.9);
+}
+
+.mission-highlights {
+    display: flex;
+    gap: 40px;
+}
+
+.highlight-item {
+    text-align: center;
+}
+
+.highlight-number {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.highlight-text {
+    font-size: 14px;
+    color: rgba(255,255,255,0.8);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .mission-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 30px;
+    }
+    
+    .mission-highlights {
+        justify-content: center;
+        gap: 30px;
+    }
+    
+    .mission-statement-card {
+        padding: 30px 20px;
+    }
+}
+
+
+</style>
 
 <!-- Why Choose Us Area -->
 <section class="wcu-area-1 pb-120">

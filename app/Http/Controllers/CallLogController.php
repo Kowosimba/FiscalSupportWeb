@@ -8,118 +8,113 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
+use App\Exports\CallLogsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CallLogController extends Controller
 {
-    public function __construct()
+    // Middleware removed - will be added back later
+
+    public function index(Request $request)
     {
-        // Apply authentication to all methods
-        $this->middleware('auth');
-        
-        // Only admin and accounts can create/store job cards
-        $this->middleware('role:admin,accounts')->only(['create', 'store']);
-        
-        // Only admin can delete and access reports
-        $this->middleware('role:admin')->only(['destroy', 'reports', 'export']);
-        
-        // Engineers can update their assigned jobs
-        $this->middleware('role:admin,accounts,engineer')->only(['edit', 'update', 'assign', 'updateStatus', 'complete']);
-    }
+        $query = CallLog::query();
 
-   public function index(Request $request)
-{
-    $query = CallLog::query();
-
-    // Search
-    if ($search = $request->input('search')) {
-        $query->where(function($q) use ($search) {
-            $q->where('company_name', 'like', "%{$search}%")
-              ->orWhere('job_card', 'like', "%{$search}%")
-              ->orWhere('fault_description', 'like', "%{$search}%")
-              ->orWhere('zimra_ref', 'like', "%{$search}%");
-        });
-    }
-
-    // Status
-    if ($status = $request->input('status')) {
-        $query->where('status', $status);
-    }
-
-    // Technician
-    if ($technician = $request->input('technician')) {
-        $query->where('engineer', $technician);
-    }
-
-    // Date Range
-    if ($dateRange = $request->input('date_range')) {
-        switch($dateRange) {
-            case 'today':
-                $query->whereDate('date_booked', today());
-                break;
-            case 'this_week':
-                $query->whereBetween('date_booked', [now()->startOfWeek(), now()->endOfWeek()]);
-                break;
-            case 'this_month':
-                $query->whereMonth('date_booked', now()->month)->whereYear('date_booked', now()->year);
-                break;
-            case 'last_month':
-                $query->whereMonth('date_booked', now()->subMonth()->month)
-                      ->whereYear('date_booked', now()->subMonth()->year);
-                break;
-            case 'this_year':
-                $query->whereYear('date_booked', now()->year);
-                break;
+        // Search
+        if ($search = $request->input('search')) {
+            $query->where(function($q) use ($search) {
+                $q->where('company_name', 'like', "%{$search}%")
+                  ->orWhere('job_card', 'like', "%{$search}%")
+                  ->orWhere('fault_description', 'like', "%{$search}%")
+                  ->orWhere('zimra_ref', 'like', "%{$search}%");
+            });
         }
+
+        // Status
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        // Technician
+        if ($technician = $request->input('technician')) {
+            $query->where('engineer', $technician);
+        }
+
+        // Date Range
+        if ($dateRange = $request->input('date_range')) {
+            switch($dateRange) {
+                case 'today':
+                    $query->whereDate('date_booked', today());
+                    break;
+                case 'this_week':
+                    $query->whereBetween('date_booked', [now()->startOfWeek(), now()->endOfWeek()]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('date_booked', now()->month)->whereYear('date_booked', now()->year);
+                    break;
+                case 'last_month':
+                    $query->whereMonth('date_booked', now()->subMonth()->month)
+                          ->whereYear('date_booked', now()->subMonth()->year);
+                    break;
+                case 'this_year':
+                    $query->whereYear('date_booked', now()->year);
+                    break;
+            }
+        }
+
+        $callLogs = $query->orderBy('date_booked', 'desc')->paginate(15)->withQueryString();
+
+        $stats = [
+            'total_jobs' => CallLog::count(),
+            'pending_jobs' => CallLog::where('status', 'pending')->count(),
+            'in_progress_jobs' => CallLog::where('status', 'in_progress')->count(),
+            'completed_jobs' => CallLog::where('status', 'complete')->count(),
+        ];
+
+        $technicians = User::whereIn('role', ['technician', 'manager'])
+            ->select(['id', 'name'])
+            ->get();
+
+        return view('admin.calllogs.index', compact('callLogs', 'stats', 'technicians'));
     }
 
-    $callLogs = $query->orderBy('date_booked', 'desc')->paginate(15)->withQueryString();
-
-    $stats = [
-        'total_jobs' => CallLog::count(),
-        'pending_jobs' => CallLog::where('status', 'pending')->count(),
-        'in_progress_jobs' => CallLog::where('status', 'in_progress')->count(),
-        'completed_jobs' => CallLog::where('status', 'complete')->count(),
-    ];
-
-    $technicians = User::whereIn('role', ['technician', 'manager'])
-        ->select(['id', 'name'])
-        ->get();
-
-    return view('admin.calllogs.index', compact('callLogs', 'stats', 'technicians'));
+public function create()
+{
+    $user = auth::user();
+    
+    // For admin/accounts users, we don't need to fetch any additional data
+    return view('admin.calllogs.create');
 }
 
+public function store(Request $request)
+{
+    $user = auth::user();
+    
+    $rules = [
+        'customer_name' => 'required|string|max:255',
+        'customer_email' => 'nullable|email|max:255',
+        'customer_phone' => 'nullable|string|max:20',
+        'fault_description' => 'required|string',
+        'zimra_ref' => 'nullable|string|max:255',
+        'type' => 'required|in:normal,emergency',
+        'amount_charged' => 'required|numeric|min:0',
+        'date_booked' => 'required|date',
+    ];
 
-    public function create()
-    {
-        return view('admin.calllogs.create');
-    }
+    $validated = $request->validate($rules);
 
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'job_card' => 'nullable|string|unique:call_logs,job_card',
-            'company_name' => 'required|string|max:255',
-            'fault_description' => 'nullable|string',
-            'zimra_ref' => 'nullable|string|max:255',
-            'date_booked' => 'required|date',
-            'date_resolved' => 'nullable|date|after_or_equal:date_booked',
-            'time_start' => 'nullable|date_format:H:i',
-            'time_finish' => 'nullable|date_format:H:i|after:time_start',
-            'type' => 'required|in:normal,maintenance,repair,installation,consultation,emergency',
-            'billed_hours' => 'nullable|numeric|min:0',
-            'amount_charged' => 'required|numeric|min:0',
-            'status' => 'required|in:pending,assigned,in_progress,complete,cancelled',
-            'approved_by' => 'required|string|max:255',
-            'engineer' => 'nullable|string|max:255',
-            'engineer_comments' => 'nullable|string',
-            'booked_by' => 'nullable|string|max:255'
-        ]);
+    // Set default values
+    $validated['status'] = 'pending';
+    $validated['approved_by'] = $user->id;
+    $validated['approved_by_name'] = $user->name; // Add the user's name
+    $validated['date_booked'] = $validated['date_booked'] ?? now()->format('Y-m-d');
+    $validated['job_card'] = null;
 
-        CallLog::create($data);
+    CallLog::create($validated);
 
-        return redirect()->route('admin.call-logs.index')
-            ->with('success', 'Job card created successfully.');
-    }
+    return redirect()->route('admin.call-logs.index')
+        ->with('success', 'Job card created successfully.');
+}
 
     public function show(CallLog $callLog)
     {
@@ -128,15 +123,7 @@ class CallLogController extends Controller
 
     public function edit(CallLog $callLog)
     {
-        // Check if user can edit this job card
-        if (Auth::user()->role === 'engineer' && $callLog->engineer !== Auth::user()->name) {
-            return redirect()->back()->with('error', 'You can only edit job cards assigned to you.');
-        }
-        
-        if (!in_array(Auth::user()->role, ['admin', 'accounts', 'engineer'])) {
-            return redirect()->back()->with('error', 'Unauthorized access.');
-        }
-        
+        // All role checks removed
         return view('admin.calllogs.edit', compact('callLog'));
     }
 
@@ -190,107 +177,274 @@ class CallLogController extends Controller
         return view('admin.calllogs.index', compact('callLogs', 'stats'));
     }
 
-   public function myJobs(Request $request)
+  public function myJobs(Request $request)
+    {
+        // Base query: only jobs assigned to current user
+        $query = CallLog::where('assigned_to', auth::user()->id);
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('company_name', 'like', "%{$search}%")
+                  ->orWhere('customer_name', 'like', "%{$search}%")
+                  ->orWhere('fault_description', 'like', "%{$search}%")
+                  ->orWhere('job_card', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter: status (only pending, in_progress, complete)
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter: job type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        // Filter: date range
+        if ($request->filled('date_range')) {
+            switch ($request->date_range) {
+                case 'today':
+                    $query->whereDate('date_booked', Carbon::today());
+                    break;
+                case 'this_week':
+                    $query->whereBetween('date_booked', [
+                        Carbon::now()->startOfWeek(),
+                        Carbon::now()->endOfWeek()
+                    ]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('date_booked', Carbon::now()->month)
+                          ->whereYear('date_booked', Carbon::now()->year);
+                    break;
+                case 'overdue':
+                    $query->where('date_booked', '<=', Carbon::now()->subDays(7))
+                          ->whereNotIn('status', ['complete']);
+                    break;
+            }
+        }
+
+        // Paginate
+        $callLogs = $query->orderByRaw("FIELD(status, 'pending', 'in_progress', 'complete')")
+                         ->orderBy('date_booked', 'desc')
+                         ->paginate(20);
+
+        // Calculate statistics for only 3 statuses
+        $stats = [
+            'pending' => CallLog::where('assigned_to', auth::user()->id)->where('status', 'pending')->count(),
+            'in_progress' => CallLog::where('assigned_to', auth::user()->id)->where('status', 'in_progress')->count(),
+            'complete' => CallLog::where('assigned_to', auth::user()->id)->where('status', 'complete')->count(),
+        ];
+
+        return view('admin.calllogs.my-jobs', compact('callLogs', 'stats'));
+    }
+
+
+
+    public function inProgress(Request $request)
+    {
+        // Base query: only in progress jobs
+        $query = CallLog::with('assignedTo')
+                        ->where('status', 'in_progress');
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('company_name', 'like', "%{$search}%")
+                  ->orWhere('customer_name', 'like', "%{$search}%")
+                  ->orWhere('fault_description', 'like', "%{$search}%")
+                  ->orWhere('job_card', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter: engineer (assigned_to user id)
+        if ($request->filled('engineer')) {
+            $query->where('assigned_to', $request->engineer);
+        }
+
+        // Filter: job type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        // Filter: date range
+        if ($request->filled('date_range')) {
+            switch ($request->date_range) {
+                case 'today':
+                    $query->whereDate('date_booked', Carbon::today());
+                    break;
+                case 'this_week':
+                    $query->whereBetween('date_booked', [
+                        Carbon::now()->startOfWeek(),
+                        Carbon::now()->endOfWeek()
+                    ]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('date_booked', Carbon::now()->month)
+                          ->whereYear('date_booked', Carbon::now()->year);
+                    break;
+                case 'overdue':
+                    $query->where('date_booked', '<=', Carbon::now()->subDays(3));
+                    break;
+            }
+        }
+
+        // Paginate
+        $callLogs = $query->orderBy('date_booked', 'desc')->paginate(20);
+
+        // Get technicians for filter
+        $technicians = User::where('role', 'technician')
+                           ->orderBy('name')
+                           ->get();
+
+        return view('admin.calllogs.in-progress', compact('callLogs', 'technicians'));
+    }
+
+     public function completed(Request $request)
+    {
+        // Base query: only completed jobs
+        $query = CallLog::with('assignedTo')
+                        ->where('status', 'complete');
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('company_name', 'like', "%{$search}%")
+                  ->orWhere('customer_name', 'like', "%{$search}%")
+                  ->orWhere('fault_description', 'like', "%{$search}%")
+                  ->orWhere('job_card', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter: engineer (assigned_to user id)
+        if ($request->filled('engineer')) {
+            $query->where('assigned_to', $request->engineer);
+        }
+
+        // Filter: job type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        // Filter: date range
+        if ($request->filled('date_range')) {
+            switch ($request->date_range) {
+                case 'today':
+                    $query->whereDate('date_resolved', Carbon::today());
+                    break;
+                case 'this_week':
+                    $query->whereBetween('date_resolved', [
+                        Carbon::now()->startOfWeek(),
+                        Carbon::now()->endOfWeek()
+                    ]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('date_resolved', Carbon::now()->month)
+                          ->whereYear('date_resolved', Carbon::now()->year);
+                    break;
+                case 'last_month':
+                    $query->whereMonth('date_resolved', Carbon::now()->subMonth()->month)
+                          ->whereYear('date_resolved', Carbon::now()->subMonth()->year);
+                    break;
+            }
+        }
+
+        // Paginate
+        $callLogs = $query->orderBy('date_resolved', 'desc')->paginate(20);
+
+        // Calculate dynamic statistics
+        $stats = [
+            'total_completed' => CallLog::where('status', 'complete')->count(),
+            'this_month' => CallLog::where('status', 'complete')
+                                  ->whereMonth('date_resolved', Carbon::now()->month)
+                                  ->whereYear('date_resolved', Carbon::now()->year)
+                                  ->count(),
+            'total_revenue' => CallLog::where('status', 'complete')->sum('amount_charged'),
+            'avg_duration' => CallLog::where('status', 'complete')
+                                    ->whereNotNull('billed_hours')
+                                    ->avg('billed_hours') ?? 0,
+        ];
+
+        // Get technicians for filter
+        $technicians = User::where('role', 'technician')
+                           ->orderBy('name')
+                           ->get();
+
+        return view('admin.calllogs.completed', compact('callLogs', 'stats', 'technicians'));
+    }
+
+public function pending(Request $request)
 {
-    // Get current user
-    $user = Auth::user();
-    
-    // Check if user is a technician
-    if (!$user->hasRole('technician')) {
-        return redirect()->route('admin.call-logs.index')
-            ->with('error', 'Access denied. Only technicians can view their jobs.');
+    // Base query: only pending
+    $query = CallLog::with('assignedTo')
+                    ->where('status', 'pending');
+
+    // Filter: job type
+    if ($request->filled('type')) {
+        $query->where('type', $request->type);
     }
-    
-    // Query jobs assigned to this user
-    $query = CallLog::where('assigned_to', $user->id);
-    
-    // Apply filters if provided
-    if ($status = $request->input('status')) {
-        $query->where('status', $status);
+
+    // Filter: technician (assigned_to user id)
+    if ($request->filled('technician')) {
+        $query->where('assigned_to', $request->technician);
     }
-    
-    if ($type = $request->input('type')) {
-        $query->where('type', $type);
-    }
-    
-    if ($dateRange = $request->input('date_range')) {
-        switch($dateRange) {
+
+    // Filter: date range
+    if ($request->filled('date_range')) {
+        switch ($request->date_range) {
             case 'today':
-                $query->whereDate('date_booked', today());
+                $query->whereDate('date_booked', Carbon::today());
+                break;
+            case 'yesterday':
+                $query->whereDate('date_booked', Carbon::yesterday());
                 break;
             case 'this_week':
-                $query->whereBetween('date_booked', [now()->startOfWeek(), now()->endOfWeek()]);
+                $query->whereBetween('date_booked', [
+                    Carbon::now()->startOfWeek(),
+                    Carbon::now()->endOfWeek()
+                ]);
+                break;
+            case 'last_week':
+                $query->whereBetween('date_booked', [
+                    Carbon::now()->subWeek()->startOfWeek(),
+                    Carbon::now()->subWeek()->endOfWeek()
+                ]);
                 break;
             case 'this_month':
-                $query->whereMonth('date_booked', now()->month)->whereYear('date_booked', now()->year);
+                $query->whereMonth('date_booked', Carbon::now()->month);
                 break;
         }
     }
-    
-    $callLogs = $query->orderBy('date_booked', 'desc')->paginate(15)->withQueryString();
-    
-    // Calculate statistics for this technician
-    $stats = [
-        'total' => CallLog::where('assigned_to', $user->id)->count(),
-        'assigned' => CallLog::where('assigned_to', $user->id)->where('status', 'assigned')->count(),
-        'in_progress' => CallLog::where('assigned_to', $user->id)->where('status', 'in_progress')->count(),
-        'complete' => CallLog::where('assigned_to', $user->id)
-            ->where('status', 'complete')
-            ->whereMonth('date_resolved', now()->month)
-            ->count(),
-    ];
-    
-    return view('admin.calllogs.my-jobs', compact('callLogs', 'stats'));
+
+    // Paginate
+    $callLogs = $query->orderBy('date_booked','desc')->paginate(20);
+
+    // Get technicians for filter
+    $technicians = User::where('role','technician')
+                       ->orderBy('name')
+                       ->get();
+
+    return view('admin.calllogs.pending', compact('callLogs', 'technicians'));
 }
 
 
-    public function inProgress()
-    {
-        $callLogs = CallLog::where('status', 'in_progress')
-            ->orderBy('date_booked', 'desc')
-            ->paginate(15);
-        
-        return view('admin.calllogs.in-progress', compact('callLogs'));
-    }
 
-    public function completed()
-    {
-        $callLogs = CallLog::where('status', 'complete')
-            ->orderBy('date_resolved', 'desc')
-            ->paginate(15);
-        
-        return view('admin.calllogs.completed', compact('callLogs'));
-    }
-
-   public function pending()
-{
-    $callLogs = CallLog::where('status', 'pending')->paginate(15);
-    
-    // Calculate statistics using Collection methods
-    $stats = [
-        'total_pending' => $callLogs->total(),
-        'unassigned' => $callLogs->getCollection()->filter(function($job) {
-            return empty($job->engineer);
-        })->count(),
-        'emergency' => $callLogs->getCollection()->where('type', 'emergency')->count(),
-        'overdue' => $callLogs->getCollection()->filter(function($job) {
-            return \Carbon\Carbon::parse($job->date_booked)->diffInHours() > 24;
-        })->count(),
-    ];
-    
-    return view('admin.calllogs.pending', compact('callLogs', 'stats'));
-}
 
 public function unassigned(Request $request)
 {
-    // Query for jobs with no assigned technician
-    $query = CallLog::whereNull('assigned_to');
+    // Start with unassigned jobs
+    $query = CallLog::whereNull('assigned_to')->with('approver');
     
-    // Apply filters
+    // Filter by job type if specified
     if ($type = $request->input('type')) {
         $query->where('type', $type);
     }
     
+    // Filter by date range if specified
     if ($dateRange = $request->input('date_range')) {
         switch($dateRange) {
             case 'today':
@@ -308,6 +462,7 @@ public function unassigned(Request $request)
         }
     }
     
+    // Filter by amount range if specified
     if ($amountRange = $request->input('amount_range')) {
         switch($amountRange) {
             case 'low':
@@ -322,9 +477,28 @@ public function unassigned(Request $request)
         }
     }
     
-    $callLogs = $query->orderBy('date_booked', 'desc')->paginate(15)->withQueryString();
+    // Get paginated results (15 per page by default)
+    $callLogs = $query->orderBy('date_booked', 'desc')
+                     ->paginate(15)
+                     ->withQueryString();
     
-    return view('admin.calllogs.unassigned', compact('callLogs'));
+    // Get available technicians for assignment dropdown
+    $technicians = User::whereIn('role', ['technician', 'manager'])
+        ->select(['id', 'name'])
+        ->orderBy('name')
+        ->get();
+
+    // Calculate some stats for the view
+    $stats = [
+        'total' => $callLogs->total(),
+        'emergency' => $callLogs->getCollection()->where('type', 'emergency')->count(),
+        'overdue' => $callLogs->getCollection()->filter(function($job) {
+            return $job->date_booked->diffInHours(now()) > 24;
+        })->count(),
+        'high_value' => $callLogs->getCollection()->where('amount_charged', '>', 500)->count(),
+    ];
+
+    return view('admin.calllogs.unassigned', compact('callLogs', 'technicians', 'stats'));
 }
 
 
@@ -348,52 +522,62 @@ public function unassigned(Request $request)
     }
 
     public function assign(Request $request, CallLog $callLog)
-    {
-        $request->validate([
-            'engineer' => 'required|string|max:255'
-        ]);
-
-        $callLog->update([
-            'engineer' => $request->engineer,
-            'status' => 'assigned'
-        ]);
-
-        return response()->json(['success' => true, 'message' => 'Job assigned successfully.']);
-    }
-
-  public function updateStatus(Request $request, CallLog $callLog)
 {
     $request->validate([
-        'status' => 'required|in:pending,assigned,in_progress,complete,cancelled'
+        'engineer' => 'required|exists:users,id',
+        'assignment_notes' => 'nullable|string|max:500'
     ]);
 
-    if ($request->status === 'complete') {
-        $requiredFields = [
-            'job_card', 'company_name', 'fault_description', 'type',
-            'amount_charged', 'approved_by', 'customer_name', 'customer_email'
-        ];
+    try {
+        $engineer = User::findOrFail($request->engineer);
+        
+        $callLog->update([
+            'assigned_to' => $engineer->id,
+            'engineer' => $engineer->name,
+            'status' => 'assigned',
+            'engineer_comments' => $request->assignment_notes ?? null
+        ]);
 
-        foreach ($requiredFields as $field) {
-            if (empty($callLog->$field)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'All required fields must be filled before marking as complete.'
-                ], 422);
-            }
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Job successfully assigned to ' . $engineer->name
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to assign job: ' . $e->getMessage()
+        ], 500);
     }
-
-    $updateData = ['status' => $request->status];
-
-    if ($request->status === 'complete') {
-        $updateData['date_resolved'] = now()->format('Y-m-d');
-    }
-
-    $callLog->update($updateData);
-
-    return response()->json(['success' => true, 'message' => 'Job status updated successfully.']);
 }
 
+    public function updateStatus(Request $request, CallLog $callLog)
+    {
+        // Ensure the user can only update their own jobs
+        if ($callLog->assigned_to !== auth::user()->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'status' => 'required|in:pending,in_progress,complete'
+        ]);
+
+        $updateData = ['status' => $request->status];
+
+        // Auto-set timestamps based on status
+        if ($request->status === 'in_progress' && $request->time_start) {
+            $updateData['time_start'] = $request->time_start;
+        }
+
+        if ($request->status === 'complete') {
+            $updateData['date_resolved'] = $request->date_resolved ?? now();
+            $updateData['time_finish'] = $request->time_finish ?? now()->format('H:i');
+        }
+
+        $callLog->update($updateData);
+
+        return response()->json(['success' => true, 'message' => 'Job status updated successfully']);
+    }
 
     public function complete(CallLog $callLog)
     {
@@ -436,7 +620,6 @@ public function unassigned(Request $request)
             'avg_completion_time' => $callLogs->where('status', 'complete')->avg('billed_hours'),
         ];
 
-        // Engineer statistics
         $engineerStats = $callLogs->groupBy('engineer')->map(function ($jobs, $engineer) {
             return [
                 'total' => $jobs->count(),
@@ -447,7 +630,6 @@ public function unassigned(Request $request)
             ];
         });
 
-        // Daily statistics
         $dailyStats = $callLogs->groupBy(function ($job) {
             return $job->date_booked;
         })->map(function ($jobs, $date) {
@@ -460,7 +642,6 @@ public function unassigned(Request $request)
             ];
         });
 
-        // Job type statistics
         $jobTypeStats = $callLogs->groupBy('type')->map(function ($jobs, $type) use ($callLogs) {
             return [
                 'count' => $jobs->count(),
@@ -470,7 +651,6 @@ public function unassigned(Request $request)
             ];
         });
 
-        // Company statistics
         $companyStats = $callLogs->groupBy('company_name')->map(function ($jobs, $company) {
             return [
                 'total' => $jobs->count(),
@@ -486,22 +666,7 @@ public function unassigned(Request $request)
         ));
     }
 
-    public function export(Request $request)
-    {
-        $format = $request->get('format', 'csv');
-        $dateFrom = $request->get('date_from', now()->startOfMonth()->format('Y-m-d'));
-        $dateTo = $request->get('date_to', now()->format('Y-m-d'));
-
-        $callLogs = CallLog::whereBetween('date_booked', [$dateFrom, $dateTo])
-            ->orderBy('date_booked', 'desc')
-            ->get();
-
-        if ($format === 'csv') {
-            return $this->exportToCsv($callLogs);
-        }
-
-        return redirect()->back()->with('error', 'Invalid export format');
-    }
+   
 
     private function exportToCsv($callLogs)
     {
@@ -548,4 +713,198 @@ public function unassigned(Request $request)
 
         return response()->stream($callback, 200, $headers);
     }
+
+    // Add this method to your CallLogController
+public function all(Request $request)
+{
+    $query = CallLog::with(['assignedTo', 'approver']);
+    
+    // Search functionality
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('customer_name', 'like', "%{$search}%")
+              ->orWhere('job_card', 'like', "%{$search}%")
+              ->orWhere('fault_description', 'like', "%{$search}%")
+              ->orWhere('zimra_ref', 'like', "%{$search}%")
+              ->orWhere('customer_email', 'like', "%{$search}%")
+              ->orWhere('customer_phone', 'like', "%{$search}%");
+        });
+    }
+    
+    // Status filter
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+    
+    // Type filter
+    if ($request->filled('type')) {
+        $query->where('type', $request->type);
+    }
+    
+    // Technician filter
+    if ($request->filled('technician')) {
+        $query->where('assigned_to', $request->technician);
+    }
+    
+    // Date range filter
+    if ($request->filled('date_range')) {
+        $this->applyDateFilter($query, $request->date_range);
+    }
+    
+    // Custom date range
+    if ($request->filled('start_date') && $request->filled('end_date')) {
+        $query->whereBetween('date_booked', [
+            Carbon::parse($request->start_date)->startOfDay(),
+            Carbon::parse($request->end_date)->endOfDay()
+        ]);
+    }
+    
+    // Amount range filter
+    if ($request->filled('min_amount')) {
+        $query->where('amount_charged', '>=', $request->min_amount);
+    }
+    
+    if ($request->filled('max_amount')) {
+        $query->where('amount_charged', '<=', $request->max_amount);
+    }
+    
+    // Sort options
+    $sortField = $request->get('sort', 'date_booked');
+    $sortDirection = $request->get('direction', 'desc');
+    
+    $allowedSorts = ['date_booked', 'customer_name', 'status', 'amount_charged', 'created_at'];
+    if (in_array($sortField, $allowedSorts)) {
+        $query->orderBy($sortField, $sortDirection);
+    }
+    
+    // Pagination
+    $perPage = $request->get('per_page', 25);
+    $allowedPerPage = [10, 25, 50, 100];
+    if (!in_array($perPage, $allowedPerPage)) {
+        $perPage = 25;
+    }
+    
+    $callLogs = $query->paginate($perPage)->withQueryString();
+    
+    // Get filter options
+    $technicians = User::whereIn('role', ['technician', 'manager'])
+        ->select(['id', 'name'])
+        ->orderBy('name')
+        ->get();
+        
+    $statuses = ['pending', 'assigned', 'in_progress', 'complete', 'cancelled'];
+    $types = ['normal', 'emergency', 'maintenance', 'repair', 'installation', 'consultation'];
+    
+    // Statistics for the current filter
+    $stats = [
+        'total' => $query->count(),
+        'pending' => (clone $query)->where('status', 'pending')->count(),
+        'in_progress' => (clone $query)->where('status', 'in_progress')->count(),
+        'completed' => (clone $query)->where('status', 'complete')->count(),
+        'total_revenue' => (clone $query)->where('status', 'complete')->sum('amount_charged'),
+    ];
+
+    return view('admin.calllogs.all', compact(
+        'callLogs', 'technicians', 'statuses', 'types', 'stats'
+    ));
+
+    
+}
+
+private function applyDateFilter($query, $dateRange)
+{
+    $now = now();
+    
+    switch ($dateRange) {
+        case 'today':
+            $query->whereDate('date_booked', $now->toDateString());
+            break;
+        case 'yesterday':
+            $query->whereDate('date_booked', $now->subDay()->toDateString());
+            break;
+        case 'this_week':
+            $query->whereBetween('date_booked', [
+                $now->startOfWeek()->toDateString(),
+                $now->endOfWeek()->toDateString()
+            ]);
+            break;
+        case 'last_week':
+            $query->whereBetween('date_booked', [
+                $now->subWeek()->startOfWeek()->toDateString(),
+                $now->subWeek()->endOfWeek()->toDateString()
+            ]);
+            break;
+        case 'this_month':
+            $query->whereMonth('date_booked', $now->month)
+                  ->whereYear('date_booked', $now->year);
+            break;
+        case 'last_month':
+            $lastMonth = $now->copy()->subMonth();
+            $query->whereMonth('date_booked', $lastMonth->month)
+                  ->whereYear('date_booked', $lastMonth->year);
+            break;
+        case 'this_year':
+            $query->whereYear('date_booked', $now->year);
+            break;
+        case 'last_year':
+            $query->whereYear('date_booked', $now->subYear()->year);
+            break;
+    }
+ }
+
+ public function export(Request $request)
+{
+    try {
+        // Apply the same filters as the main view
+        $query = CallLog::with(['assignedTo', 'approver']);
+        
+        // Apply all filters from request
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                  ->orWhere('job_card', 'like', "%{$search}%")
+                  ->orWhere('fault_description', 'like', "%{$search}%")
+                  ->orWhere('zimra_ref', 'like', "%{$search}%");
+            });
+        }
+        
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+        
+        if ($request->filled('technician')) {
+            $query->where('assigned_to', $request->technician);
+        }
+        
+        if ($request->filled('date_range')) {
+            $this->applyDateFilter($query, $request->date_range);
+        }
+        
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('date_booked', [
+                Carbon::parse($request->start_date)->startOfDay(),
+                Carbon::parse($request->end_date)->endOfDay()
+            ]);
+        }
+        
+        // Get all filtered records
+        $callLogs = $query->orderBy('date_booked', 'desc')->get();
+        
+        // Generate filename with timestamp
+        $filename = 'job_cards_export_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+        
+        return Excel::download(new CallLogsExport($callLogs), $filename);
+        
+    } catch (\Exception $e) {
+        return back()->with('error', 'Export failed: ' . $e->getMessage());
+    }
+}
+
+    
 }

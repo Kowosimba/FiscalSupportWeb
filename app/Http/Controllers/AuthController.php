@@ -69,6 +69,6 @@ public function showRegister()
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         
-        return redirect()->route('show.login')->with('success', 'Logout successful');
+        return redirect()->route('home')->with('success', 'Logout successful');
     }
 }

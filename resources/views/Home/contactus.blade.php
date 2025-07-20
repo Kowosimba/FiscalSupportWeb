@@ -31,6 +31,7 @@
                                     <h3 class="ct-info-heading">Call Us</h3>
                                     <p class="ct-info-text">Main Office: <a href="tel:+263292270666" class="ct-link">+263292270666/70668</a></p>
                                     <p class="ct-info-text">Support Line: <a href="tel:+263775622934" class="ct-link">+263 775 622 934</a></p>
+                                    <p class="ct-info-text mb-0"><strong>WhatsApp:</strong> <a href="https://wa.me/263780526944" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" class="ct-link text-decoration-none"><i class="fab fa-whatsapp me-1"></i>+263 780 526 944</a></p>
                                 </div>
                             </div>
 

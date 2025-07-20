@@ -1,8 +1,35 @@
 @extends('components.homelayout')
 @section('home-content')
 
+<style>
+    .swiper-slide::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 100%);
+    z-index: 1;
+}
 
+.hero-style1 {
+    position: relative;
+    z-index: 2;
+}
 
+.hero-style1 .sub-title,
+.hero-style1 .hero-title,
+.hero-style1 .hero-text {
+    color: #ffffff !important;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.hero-style1 .sub-title span {
+    color: #00ff88 !important; /* Keep your brand accent color for "Welcome!" */
+}
+
+</style>
 <div class="tg-header-contact-info d-lg-block d-none">
     <div class="container">
         <div class="info-card-wrap style3">
@@ -11,8 +38,7 @@
                     <i class="fas fa-envelope"></i>
                 </div>
                 <div class="info-card_content">
-                    <p class="info-card_text">Mail Anytime</p>
-                    <a href="mailto:sales2@fiscalsupportservices.com" class="info-card_link">sales@fiscalsupportservices.com</a>
+                    <a href="mailto:sales@fiscalsupportservices.com" class="info-card_link">sales@fiscalsupportservices.com</a>
                 </div>
             </div>
             <div class="divider"></div>
@@ -21,7 +47,6 @@
                     <i class="fas fa-phone-alt"></i>
                 </div>
                 <div class="info-card_content">
-                    <p class="info-card_text">Free To Call</p>
                     <a href="tel:+263292270666" class="info-card_link">+263292270666</a>
                 </div>
             </div>
@@ -31,7 +56,6 @@
                     <i class="fas fa-clock"></i>
                 </div>
                 <div class="info-card_content">
-                    <p class="info-card_text">Service Hours</p>
                     <p class="info-card_link">Mon-Fri: 8:00-17:00</p>
                 </div>
             </div>
@@ -41,13 +65,13 @@
                     <i class="fas fa-map-marker-alt"></i>
                 </div>
                 <div class="info-card_content">
-                    <p class="info-card_text">Our Locations</p>
                     <p class="info-card_link">36 East Road, Harare.</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 
 <div class="offCanvas__info">
     <div class="offCanvas__close-icon menu-close">
@@ -263,7 +287,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                 </div>
                 <div class="slider-pagination2"></div>
             </div>
         </div>

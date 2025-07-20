@@ -13,6 +13,16 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+    toastr.options = {
+        "closeButton": true,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "timeOut": "5000"
+    };
+</script>
     <style>
         /* Base Variables - Green Theme */
         :root {
@@ -73,6 +83,55 @@
             --shadow-hover: 0 20px 25px -5px rgba(6, 78, 59, 0.25), 0 8px 10px -6px rgba(6, 78, 59, 0.1);
             --shadow: var(--shadow-lg);
         }
+
+        /* Form styling */
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.form-control, .form-select {
+    border-radius: 0.25rem;
+    border: 1px solid #ced4da;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.border-success {
+    border-color: #28a745 !important;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+/* Section headers */
+h6.border-bottom {
+    font-weight: 600;
+}
+
+/* Input group styling */
+.input-group-text {
+    background-color: #f8f9fa;
+}
 
         * {
             box-sizing: border-box;

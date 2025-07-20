@@ -704,7 +704,7 @@
                     <ul class="list-wrap">
                         <li><i class="fas fa-envelope"></i> <a href="mailto:sales@fiscalsupportservices.com">sales@fiscalsupportservices.com</a></li>
                         <li><i class="fas fa-phone"></i> <a href="tel:+263292270666">+263 292 270666</a></li>
-                        <li><i class="fas fa-map-marker-alt"></i> 123 Business Park, Harare, Zimbabwe</li>
+                        <li><i class="fas fa-map-marker-alt"></i> 36 East Road, Belgravia, Harare</li>
                     </ul>
                 </div>
                 <div class="social-links">
@@ -714,7 +714,7 @@
                         <li><a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
                         <li><a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></li>
                         <li><a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
-                        <li><a href="https://wa.me/263772123456" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a></li>
+                        <li><a href="https://wa.me/263780526944" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a></li>
                     </ul>
                 </div>
             </div>

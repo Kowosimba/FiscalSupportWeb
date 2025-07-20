@@ -11,7 +11,7 @@ class AdminUserController extends Controller
     public function index()
     {
         $users = User::orderBy('name')->get();
-        $roles = ['admin', 'manager', 'technician', 'accountant', 'user'];
+        $roles = ['admin', 'manager', 'technician', 'accounts', 'user'];
         return view('admin.users.users', compact('users', 'roles'));
     }
 
@@ -19,7 +19,7 @@ class AdminUserController extends Controller
     public function assignRole(Request $request, User $user)
     {
         $request->validate([
-            'role' => 'required|in:admin,manager,technician,accountant,user',
+            'role' => 'required|in:admin,manager,technician,accounts,user',
         ]);
         $user->role = $request->role === 'user' ? null : $request->role; // null means plain user
         $user->save();

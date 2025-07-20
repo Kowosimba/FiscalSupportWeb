@@ -22,6 +22,7 @@ class CallLog extends Model
         'amount_charged',
         'status',
         'approved_by',
+        'approved_by_name',
         'assigned_to',
         'engineer_comments',
         'customer_name',
@@ -31,19 +32,15 @@ class CallLog extends Model
     ];
 
     protected $casts = [
-        'date_booked' => 'date',
-        'date_resolved' => 'date',
-        'time_start' => 'datetime:H:i',
-        'time_finish' => 'datetime:H:i',
-        'billed_hours' => 'decimal:2',
-        'amount_charged' => 'decimal:2'
-    ];
+    'date_booked' => 'datetime',
+    'date_resolved' => 'datetime',
+    'time_start' => 'datetime',
+    'time_finish' => 'datetime',
+    'billed_hours' => 'decimal:2',
+    'amount_charged' => 'decimal:2'
+];
 
     // Relationships
-    public function approvedBy()
-    {
-        return $this->belongsTo(User::class, 'approved_by');
-    }
 
     public function assignedTo()
     {
@@ -60,4 +57,12 @@ class CallLog extends Model
     {
         return $query->where('status', $status);
     }
+
+    // app/Models/CallLog.php
+
+public function approver()
+{
+    return $this->belongsTo(User::class, 'approved_by');
+}
+    
 }
