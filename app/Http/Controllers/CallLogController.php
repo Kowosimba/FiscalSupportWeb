@@ -75,7 +75,7 @@ class CallLogController extends Controller
             ->select(['id', 'name'])
             ->get();
 
-        return view('admin.calllogs.index', compact('callLogs', 'stats', 'technicians'));
+        return view('admin.calllogs.Index', compact('callLogs', 'stats', 'technicians'));
     }
 
 public function create()
@@ -112,8 +112,8 @@ public function store(Request $request)
 
     CallLog::create($validated);
 
-    return redirect()->route('admin.call-logs.index')
-        ->with('success', 'Job card created successfully.');
+    return redirect()->route('admin.call-logs.Index')
+        ->with('success', 'Job created successfully.');
 }
 
     public function show(CallLog $callLog)
@@ -150,16 +150,16 @@ public function store(Request $request)
 
         $callLog->update($data);
 
-        return redirect()->route('admin.call-logs.index')
-            ->with('success', 'Job card updated successfully.');
+        return redirect()->route('admin.call-logs.Index')
+            ->with('success', 'Job updated successfully.');
     }
 
     public function destroy(CallLog $callLog)
     {
         $callLog->delete();
-        
-        return redirect()->route('admin.call-logs.index')
-            ->with('success', 'Job card deleted successfully.');
+
+        return redirect()->route('admin.call-logs.Index')
+            ->with('success', 'Job deleted successfully.');
     }
 
     public function dashboard()
@@ -173,8 +173,8 @@ public function store(Request $request)
             'completed_jobs' => CallLog::where('status', 'complete')->count(),
             'emergency_jobs' => CallLog::where('type', 'emergency')->count(),
         ];
-        
-        return view('admin.calllogs.index', compact('callLogs', 'stats'));
+
+        return view('admin.calllogs.Index', compact('callLogs', 'stats'));
     }
 
   public function myJobs(Request $request)
