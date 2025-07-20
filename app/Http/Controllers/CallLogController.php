@@ -75,7 +75,7 @@ class CallLogController extends Controller
             ->select(['id', 'name'])
             ->get();
 
-        return view('admin.calllogs.Index', compact('callLogs', 'stats', 'technicians'));
+        return view('admin.calllogs.index', compact('callLogs', 'stats', 'technicians'));
     }
 
 public function create()
@@ -112,7 +112,7 @@ public function store(Request $request)
 
     CallLog::create($validated);
 
-    return redirect()->route('admin.call-logs.Index')
+    return redirect()->route('admin.call-logs.index')
         ->with('success', 'Job created successfully.');
 }
 
@@ -150,7 +150,7 @@ public function store(Request $request)
 
         $callLog->update($data);
 
-        return redirect()->route('admin.call-logs.Index')
+        return redirect()->route('admin.call-logs.index')
             ->with('success', 'Job updated successfully.');
     }
 
@@ -158,7 +158,7 @@ public function store(Request $request)
     {
         $callLog->delete();
 
-        return redirect()->route('admin.call-logs.Index')
+        return redirect()->route('admin.call-logs.index')
             ->with('success', 'Job deleted successfully.');
     }
 
@@ -174,7 +174,7 @@ public function store(Request $request)
             'emergency_jobs' => CallLog::where('type', 'emergency')->count(),
         ];
 
-        return view('admin.calllogs.Index', compact('callLogs', 'stats'));
+        return view('admin.calllogs.index', compact('callLogs', 'stats'));
     }
 
   public function myJobs(Request $request)
