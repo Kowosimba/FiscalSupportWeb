@@ -225,47 +225,97 @@
 
     <!-- Assignment Modals -->
     @foreach($tickets as $ticket)
-        @can('assign tickets')
-            <div class="modal fade" id="assignModal{{ $ticket->id }}" tabindex="-1" 
-                 aria-labelledby="assignModalLabel{{ $ticket->id }}" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="assignModalLabel{{ $ticket->id }}">
-                                Assign Ticket #{{ $ticket->id }}
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <form method="POST" action="{{ route('admin.tickets.assign', $ticket->id) }}"
->
-                            @csrf
-                            @method('PUT')
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label for="assigned_to{{ $ticket->id }}" class="form-label">Select Technician</label>
-                                    <select name="assigned_to" id="assigned_to{{ $ticket->id }}" class="form-select" required>
-                                        <option value="" selected disabled>Select technician...</option>
-                                        @foreach($technicians as $tech)
-                                            <option value="{{ $tech->id }}" {{ old('assigned_to') == $tech->id ? 'selected' : '' }}>
-                                                {{ $tech->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('assigned_to')
-                                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                                    @enderror
+    @can('assign tickets')
+        <div class="modal fade" id="assignModal{{ $ticket->id }}" tabindex="-1" 
+             aria-labelledby="assignModalLabel{{ $ticket->id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="assignModalLabel{{ $ticket->id }}">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Assign Ticket #{{ $ticket->id }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    
+                    <!-- Fixed form with proper action and method -->
+                    <form method="POST" action="{{ route('admin.tickets.assign', $ticket->id) }}" 
+                          onsubmit="return handleAssignment(event, {{ $ticket->id }})">
+                        @csrf
+                        @method('PUT')
+                        
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="assigned_to{{ $ticket->id }}" class="form-label fw-semibold">
+                                            Select Technician
+                                        </label>
+                                        <select name="assigned_to" id="assigned_to{{ $ticket->id }}" 
+                                                class="form-select form-select-enhanced" required>
+                                            <option value="" selected disabled>Choose a technician...</option>
+                                            @foreach($technicians as $tech)
+                                                <option value="{{ $tech->id }}" {{ old('assigned_to') == $tech->id ? 'selected' : '' }}>
+                                                    {{ $tech->name }}
+                                                    @if($tech->email)
+                                                        <small>({{ $tech->email }})</small>
+                                                    @endif
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('assigned_to')
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="assignment_notes{{ $ticket->id }}" class="form-label fw-semibold">
+                                            Assignment Notes (Optional)
+                                        </label>
+                                        <textarea name="assignment_notes" id="assignment_notes{{ $ticket->id }}" 
+                                                  class="form-control form-control-enhanced" 
+                                                  rows="3" 
+                                                  placeholder="Add any special instructions or notes for the technician...">{{ old('assignment_notes') }}</textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="ticket-summary bg-light p-3 rounded">
+                                        <h6 class="fw-bold mb-3">Ticket Summary</h6>
+                                        <div class="summary-item">
+                                            <strong>Subject:</strong><br>
+                                            <small>{{ Str::limit($ticket->subject, 40) }}</small>
+                                        </div>
+                                        <div class="summary-item mt-2">
+                                            <strong>Company:</strong><br>
+                                            <small>{{ $ticket->company_name }}</small>
+                                        </div>
+                                        <div class="summary-item mt-2">
+                                            <strong>Priority:</strong><br>
+                                            <span class="badge bg-{{ $ticket->priority === 'high' ? 'danger' : ($ticket->priority === 'medium' ? 'warning' : 'secondary') }}">
+                                                {{ ucfirst($ticket->priority ?? 'low') }}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="submit" class="btn btn-success">Assign</button>
-                            </div>
-                        </form>
-                    </div>
+                        </div>
+                        
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </button>
+                            <button type="submit" class="btn btn-success btn-assign">
+                                <i class="fas fa-user-plus me-2"></i>Assign Technician
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-        @endcan
-    @endforeach
+        </div>
+    @endcan
+@endforeach
+
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {

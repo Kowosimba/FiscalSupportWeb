@@ -46,8 +46,6 @@ Route::controller(HomeController::class)->group(function () {
 Route::post('/send-email', [MailController::class, 'sendMail'])->name('send_email');
 Route::post('/submit-ticket', [SupportTicketController::class, 'store'])->name('submit.ticket');
 
-
-
 // Blog Routes
 Route::prefix('blog')->name('blog.')->controller(BlogController::class)->group(function () {
     Route::get('/', 'frontIndex')->name('index');
@@ -73,6 +71,9 @@ Route::prefix('newsletter')->name('newsletter.')->group(function () {
     Route::get('/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])->name('unsubscribe');
 });
 
+// Public FAQ listing
+Route::get('/faqs', [FaqController::class, 'index'])->name('faqs');
+
 // =============================================================================
 // GUEST ROUTES (Authentication)
 // =============================================================================
@@ -97,26 +98,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/{notification}/read', 'markAsRead')->name('read');
         Route::post('/read-all', 'markAllAsRead')->name('read-all');
+        Route::get('/{notification}/redirect', 'redirect')->name('redirect');
     });
 });
-
-// Public FAQ listing
-Route::get('/faqs', [FaqController::class, 'index'])->name('faqs');
-
-// Admin FAQ Management
-Route::prefix('admin')->name('admin.')->group(function () {
-    // Admin FAQ listing (custom)
-    Route::get('faqs', [FaqController::class, 'adminIndex'])->name('faqs.index');
-
-    // Admin CRUD routes (optional, but best to avoid resourceful route if you have custom methods)
-    // Instead, define them manually to avoid confusion:
-    Route::get('faqs/create', [FaqController::class, 'create'])->name('faqs.create');
-    Route::post('faqs', [FaqController::class, 'store'])->name('faqs.store');
-    Route::get('faqs/{faq}/edit', [FaqController::class, 'edit'])->name('faqs.edit');
-    Route::put('faqs/{faq}', [FaqController::class, 'update'])->name('faqs.update');
-    Route::delete('faqs/{faq}', [FaqController::class, 'destroy'])->name('faqs.destroy');
-});
-
 
 // =============================================================================
 // ADMIN ROUTES (Authenticated + Role-Based Access)
@@ -125,6 +109,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [SupportTicketController::class, 'index'])->name('index');
+
+    // FAQ Management
+    Route::prefix('faqs')->name('faqs.')->group(function () {
+        Route::get('/', [FaqController::class, 'adminIndex'])->name('index');
+        Route::get('/create', [FaqController::class, 'create'])->name('create');
+        Route::post('/', [FaqController::class, 'store'])->name('store');
+        Route::get('/{faq}/edit', [FaqController::class, 'edit'])->name('edit');
+        Route::put('/{faq}', [FaqController::class, 'update'])->name('update');
+        Route::delete('/{faq}', [FaqController::class, 'destroy'])->name('destroy');
+    });
 
     // FAQ Category Management
     Route::resource('faq-categories', FaqCategoryController::class)->except(['show']);
@@ -143,20 +137,18 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     // Admin Tickets Management
     Route::prefix('tickets')->name('tickets.')->controller(SupportTicketController::class)->group(function () {
-        // Ticket Listing Views
-        Route::get('/', 'index')->name('index'); // Default view
+        // Static routes first
+        Route::get('/', 'index')->name('index');
         Route::get('/all', 'allTickets')->name('all');
         Route::get('/open', 'openTickets')->name('open');
         Route::get('/solved', 'solvedTickets')->name('solved');
         Route::get('/pending', 'pendingTickets')->name('pending');
         Route::get('/unassigned', 'unassignedTickets')->name('unassigned');
-        Route::get('/my-tickets', 'myTickets')->name('mine'); // Technicians' assigned tickets
-
-        // Ticket Creation
+        Route::get('/my-tickets', 'myTickets')->name('mine');
         Route::get('/create', 'create')->name('create');
         Route::post('/', 'adminStore')->name('store');
 
-        // Single Ticket Operations
+        // Dynamic routes with parameters
         Route::prefix('{ticket}')->group(function () {
             Route::get('/', 'show')->name('show');
             Route::get('/reopen', 'reopen')->name('reopen');
@@ -191,52 +183,70 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/', 'index')->name('index');
         Route::delete('/{subscriber}', 'destroy')->name('destroy');
     });
+    
     Route::resource('newsletters', NewsletterCampaignController::class)->except(['destroy']);
     Route::post('newsletters/{newsletter}/send', [NewsletterCampaignController::class, 'send'])->name('newsletters.send');
 
     // Contact Management
     Route::resource('contacts', CustomerContactController::class);
-// Call Logs Management
-Route::prefix('call-logs')->name('call-logs.')->controller(CallLogController::class)->group(function () {
-    // Static routes (should come first)
-    Route::get('/', 'index')->name('index');
-    Route::get('/create', 'create')->name('create');
-    Route::post('/', 'store')->name('store');
-    Route::get('/dashboard', 'dashboard')->name('dashboard');
-    Route::get('/reports', 'reports')->name('reports');
-    Route::get('/export', 'export')->name('export');
+
+    // =============================================================================
+    // CALL LOGS MANAGEMENT (Properly Ordered)
+    // =============================================================================
     
-    // Status-based listing routes
-    Route::get('/my-jobs', 'myJobs')->name('my-jobs');
-    Route::get('/in-progress', 'inProgress')->name('in-progress');
-    Route::get('/completed', 'completed')->name('completed');
-    Route::get('/pending', 'pending')->name('pending');
-    Route::get('/unassigned', 'unassigned')->name('unassigned');
-    Route::get('/assigned', 'assigned')->name('assigned');
-    Route::get('/cancelled', 'cancelled')->name('cancelled');
-    
-    // Resource routes with parameters (should come last)
-    Route::get('/{callLog}', 'show')->name('show');
-    Route::get('/{callLog}/edit', 'edit')->name('edit');
-    Route::put('/{callLog}', 'update')->name('update');
-    Route::delete('/{callLog}', 'destroy')->name('destroy');
-    Route::post('/{callLog}/assign', 'assign')->name('assign');
-    Route::patch('/{callLog}/status', 'updateStatus')->name('update-status');
-    Route::post('/{callLog}/complete', 'complete')->name('complete');
+    Route::prefix('call-logs')->name('call-logs.')->controller(CallLogController::class)->group(function () {
+        // Static routes MUST come first (before any parameterized routes)
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/dashboard', 'dashboard')->name('dashboard');
+        Route::get('/reports', 'reports')->name('reports');
+        Route::get('/export', 'export')->name('export');
+        
+        // Status-based listing routes (all static)
+        Route::get('/all', 'all')->name('all');
+        Route::get('/my-jobs', 'myJobs')->name('my-jobs');
+        Route::get('/in-progress', 'inProgress')->name('in-progress');
+        Route::get('/completed', 'completed')->name('completed');
+        Route::get('/pending', 'pending')->name('pending');
+        Route::get('/unassigned', 'unassigned')->name('unassigned');
+        Route::get('/assigned', 'assigned')->name('assigned');
+        Route::get('/cancelled', 'cancelled')->name('cancelled');
+
+        // Parameterized routes MUST come last
+        Route::prefix('{callLog}')->group(function () {
+            Route::get('/', 'show')->name('show');
+            Route::get('/edit', 'edit')->name('edit');
+            Route::put('/', 'update')->name('update');
+            Route::delete('/', 'destroy')->name('destroy');
+            Route::post('/assign', 'assign')->name('assign');
+            Route::patch('/status', 'updateStatus')->name('update-status');
+            Route::post('/complete', 'complete')->name('complete');
+        });
+         Route::post('/{callLog}/notify-customer', 'notifyCustomer')->name('notify-customer');
+    });
+
+    // Call Reports Management (Legacy)
+    Route::prefix('call-reports')->name('call-reports.')->controller(CallReportController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/export', 'export')->name('export');
+        Route::post('/generate', 'generate')->name('generate');
+    });
+});
+Route::middleware('auth')->group(function () {
+    Route::prefix('notifications')->name('notifications.')->controller(NotificationController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/{notification}/read', 'markAsRead')->name('read');
+        Route::post('/read-all', 'markAllAsRead')->name('read-all');
+        Route::get('/{notification}/redirect', 'redirect')->name('redirect');
+        Route::delete('/{notification}', 'destroy')->name('destroy');
+        
+        // API routes for the dropdown
+        Route::get('/api/unread-count', 'getUnreadCount')->name('api.unread-count');
+        Route::get('/api/recent', 'getRecent')->name('api.recent');
+    });
 });
 
-// Call Reports Management (Legacy)
-Route::prefix('call-reports')->name('call-reports.')->controller(CallReportController::class)->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/export', 'export')->name('export');
-    Route::post('/generate', 'generate')->name('generate');
-});
-});
-
-Route::get('/notifications/{notification}/redirect', [NotificationController::class, 'redirect'])
-    ->name('notifications.redirect');
-
-   // In web.php
-Route::get('/admin/call-logs/all', [CallLogController::class, 'all'])->name('admin.call-logs.all');
-
-    Route::get('/admin/call-logs/export', [CallLogController::class, 'export'])->name('admin.call-logs.export');
+Route::get('/admin/{any}', function () {
+    return view('admin.app');
+})->where('any', '.*')->middleware('auth'); // Or your admin middleware

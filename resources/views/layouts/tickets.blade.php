@@ -1427,81 +1427,337 @@
 
             <ul class="navbar-nav ms-auto align-items-center flex-row gap-3">
                 
-                <!-- Notifications -->
-<li class="nav-item dropdown">
-    <a class="nav-link notification-link" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="fas fa-bell"></i>
-        @auth
-            @php
-                $unreadCount = auth()->user()->unreadNotifications()->count();
-            @endphp
-            @if($unreadCount > 0)
-                <span class="notification-badge-red">{{ $unreadCount }}</span>
-            @endif
-        @endauth
-    </a>
-    <ul class="dropdown-menu dropdown-menu-end dropdown-notifications" aria-labelledby="notificationsDropdown">
-        @auth
-            @php
-                $notifications = auth()->user()->unreadNotifications()
-                    ->latest()
-                    ->take(5)
-                    ->get();
-            @endphp
+               <!-- Add this to your navigation/header section -->
+<div class="notification-wrapper">
+    <div class="notification-dropdown position-relative">
+        <button class="btn btn-link notification-trigger p-2" id="notificationTrigger" type="button">
+            <i class="fas fa-bell fs-5"></i>
+            <span class="notification-badge position-absolute translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">
+                0
+            </span>
+        </button>
+        
+        <div class="notification-dropdown-menu position-absolute end-0 mt-2 shadow-lg bg-white rounded-3 border" id="notificationDropdown" style="display: none; width: 400px; max-height: 500px; z-index: 1050;">
+            <div class="notification-header d-flex justify-content-between align-items-center p-3 border-bottom">
+                <h6 class="mb-0 fw-bold">Recent Notifications</h6>
+                <div class="notification-actions">
+                    <button class="btn btn-sm btn-outline-primary me-2" id="markAllReadBtn">
+                        <i class="fas fa-check-double me-1"></i>
+                        Mark All Read
+                    </button>
+                    <a href="{{ route('notifications.index') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-list me-1"></i>
+                        View All
+                    </a>
+                </div>
+            </div>
             
-            @forelse($notifications as $notification)
-                <li>
-                    <div class="dropdown-item d-flex align-items-start py-2">
-                        <div class="flex-shrink-0 me-2 text-danger">
-                            <i class="fas fa-ticket-alt fa-fw"></i>
+            <div class="notification-list" id="notificationList" style="max-height: 400px; overflow-y: auto;">
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Styles -->
+<style>
+.notification-trigger {
+    border: none !important;
+    color: #6c757d;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.notification-trigger:hover {
+    color: #495057;
+}
+
+.notification-badge {
+    top: 8px;
+    left: 20px;
+    font-size: 0.75rem;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-dropdown-menu {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.notification-item {
+    padding: 1rem;
+    border-bottom: 1px solid #f8f9fa;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item.unread {
+    background-color: #f8f9ff;
+    border-left: 3px solid #0d6efd;
+}
+
+.notification-item.high {
+    border-left: 3px solid #dc3545;
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-title {
+    font-weight: 600;
+    color: #212529;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.notification-message {
+    color: #6c757d;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.notification-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.no-notifications {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.no-notifications i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+@media (max-width: 576px) {
+    .notification-dropdown-menu {
+        width: 320px !important;
+        right: -100px !important;
+    }
+    
+    .notification-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .notification-actions .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+</style>
+
+<!-- Notification JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const trigger = document.getElementById('notificationTrigger');
+    const dropdown = document.getElementById('notificationDropdown');
+    const badge = document.getElementById('notificationBadge');
+    const list = document.getElementById('notificationList');
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+    
+    let isDropdownOpen = false;
+    
+    // Load initial data
+    loadNotificationCount();
+    loadRecentNotifications();
+    
+    // Refresh every 30 seconds
+    setInterval(() => {
+        loadNotificationCount();
+        if (isDropdownOpen) {
+            loadRecentNotifications();
+        }
+    }, 30000);
+    
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        isDropdownOpen = !isDropdownOpen;
+        dropdown.style.display = isDropdownOpen ? 'block' : 'none';
+        
+        if (isDropdownOpen) {
+            loadRecentNotifications();
+        }
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            isDropdownOpen = false;
+            dropdown.style.display = 'none';
+        }
+    });
+    
+    // Mark all as read
+    markAllReadBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        markAllAsRead();
+    });
+    
+    function loadNotificationCount() {
+        fetch('{{ route("notifications.api.unread-count") }}')
+            .then(response => response.json())
+            .then(data => {
+                badge.textContent = data.count;
+                badge.style.display = data.count > 0 ? 'flex' : 'none';
+            })
+            .catch(error => console.error('Error loading notification count:', error));
+    }
+    
+    function loadRecentNotifications() {
+        list.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        
+        fetch('{{ route("notifications.api.recent") }}')
+            .then(response => response.json())
+            .then(notifications => {
+                list.innerHTML = '';
+                
+                if (notifications.length === 0) {
+                    list.innerHTML = `
+                        <div class="no-notifications">
+                            <i class="fas fa-bell-slash"></i>
+                            <div>No new notifications</div>
                         </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <a href="{{ route('notifications.redirect', $notification->id) }}" class="text-decoration-none text-dark">
-                                    <div class="mb-1">
-                                        {{ $notification->data['message'] ?? 'New ticket notification' }}
-                                    </div>
-                                    <small class="text-muted">
-                                        {{ $notification->created_at->diffForHumans() }}
-                                    </small>
-                                </a>
+                    `;
+                    return;
+                }
+                
+                notifications.forEach(notification => {
+                    const item = document.createElement('div');
+                    item.className = `notification-item ${notification.read_at ? 'read' : 'unread'} ${notification.priority || ''}`;
+                    
+                    item.innerHTML = `
+                        <div class="notification-icon">
+                            ${getNotificationIcon(notification.type)}
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">${notification.title}</div>
+                            <div class="notification-message">${notification.message}</div>
+                            <div class="notification-meta">
+                                <span class="notification-time">${notification.created_at}</span>
+                                ${notification.job_card ? `<span class="badge bg-secondary">${notification.job_card}</span>` : ''}
                             </div>
                         </div>
-                    </div>
-                </li>
-                @if(!$loop->last)
-                    <li><hr class="dropdown-divider my-1"></li>
-                @endif
-            @empty
-                <li>
-                    <div class="dropdown-item text-muted py-2">
-                        No new notifications
-                    </div>
-                </li>
-            @endforelse
-            
-            @if(Route::has('notifications.index') && $unreadCount > 0)
-                <li><hr class="dropdown-divider my-1"></li>
-                <li>
-                    <div class="text-center py-1">
-                        <a href="{{ route('notifications.index') }}" class="small">
-                            View all notifications
-                        </a>
-                        @if(Route::has('notifications.read-all'))
-                        <span class="mx-2">•</span>
-                        <form action="{{ route('notifications.read-all') }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-link p-0 small text-danger">
-                                Mark all as read
-                            </button>
-                        </form>
-                        @endif
-                    </div>
-                </li>
-            @endif
-        @endauth
-    </ul>
-</li>
+                    `;
+                    
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.location.href = notification.url;
+                    });
+                    
+                    list.appendChild(item);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                list.innerHTML = '<div class="text-center p-4 text-danger">Error loading notifications</div>';
+            });
+    }
+    
+    function markAllAsRead() {
+        fetch('{{ route("notifications.read-all") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadNotificationCount();
+                loadRecentNotifications();
+                showToast('All notifications marked as read', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error marking notifications as read:', error);
+            showToast('Error marking notifications as read', 'error');
+        });
+    }
+    
+    function getNotificationIcon(type) {
+        const icons = {
+            'job_assigned': '<i class="fas fa-user-plus text-primary"></i>',
+            'job_status_updated': '<i class="fas fa-sync-alt text-info"></i>',
+            'job_completed': '<i class="fas fa-check-circle text-success"></i>',
+            'ticket_created': '<i class="fas fa-ticket-alt text-warning"></i>',
+            'ticket_updated': '<i class="fas fa-edit text-info"></i>'
+        };
+        return icons[type] || '<i class="fas fa-bell text-secondary"></i>';
+    }
+    
+    function showToast(message, type = 'info') {
+        // Simple toast notification
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                <span>${message}</span>
+                <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+
 
 
                 <!-- User Dropdown -->

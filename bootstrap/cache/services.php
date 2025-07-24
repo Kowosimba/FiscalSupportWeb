@@ -32,8 +32,9 @@
     28 => 'Carbon\\Laravel\\ServiceProvider',
     29 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
     30 => 'Termwind\\Laravel\\TermwindServiceProvider',
-    31 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
-    32 => 'App\\Providers\\AppServiceProvider',
+    31 => 'Rap2hpoutre\\FastExcel\\Providers\\FastExcelServiceProvider',
+    32 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
+    33 => 'App\\Providers\\AppServiceProvider',
   ),
   'eager' => 
   array (
@@ -52,8 +53,9 @@
     12 => 'Carbon\\Laravel\\ServiceProvider',
     13 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
     14 => 'Termwind\\Laravel\\TermwindServiceProvider',
-    15 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
-    16 => 'App\\Providers\\AppServiceProvider',
+    15 => 'Rap2hpoutre\\FastExcel\\Providers\\FastExcelServiceProvider',
+    16 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
+    17 => 'App\\Providers\\AppServiceProvider',
   ),
   'deferred' => 
   array (

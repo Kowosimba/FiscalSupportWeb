@@ -33,7 +33,7 @@
                                 <option value="">All Status</option>
                                 <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                                 <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                                <option value="complete" {{ request('status') == 'complete' ? 'selected' : '' }}>Complete</option>
+                                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
                             </select>
                         </div>
                     </form>
@@ -100,7 +100,7 @@
                             <i class="fas fa-check-circle"></i>
                         </div>
                         <div class="stat-content">
-                            <h3 class="stat-number">{{ $stats['complete'] }}</h3>
+                            <h3 class="stat-number">{{ $stats['completed'] }}</h3>
                             <p class="stat-label">Completed</p>
                         </div>
                     </div>
@@ -172,7 +172,7 @@
                                         <span class="badge bg-warning">
                                             <i class="fas fa-clock me-1"></i>Pending
                                         </span>
-                                    @elseif($job->status === 'complete')
+                                    @elseif($job->status === 'completed')
                                         <span class="badge bg-success">
                                             <i class="fas fa-check me-1"></i>Complete
                                         </span>
@@ -199,11 +199,14 @@
                                     @endif
                                 </td>
                                 <td class="fw-bold">
-                                    ${{ number_format($job->amount_charged, 2) }}
-                                    @if($job->billed_hours)
-                                        <br><small class="text-muted">${{ number_format($job->amount_charged / $job->billed_hours, 2) }}/hr</small>
-                                    @endif
-                                </td>
+    ${{ number_format($job->amount_charged ?? 0, 2) }}
+    @if($job->billed_hours && is_numeric($job->billed_hours) && $job->billed_hours > 0)
+        <br><small class="text-muted">${{ number_format($job->amount_charged / $job->billed_hours, 2) }}/hr</small>
+    @elseif($job->billed_hours)
+        <br><small class="text-muted">{{ $job->billed_hours }}</small>
+    @endif
+</td>
+
                                 <td>
                                     <div class="btn-group" role="group">
                                         <a href="{{ route('admin.call-logs.show', $job) }}" 
@@ -222,7 +225,7 @@
                                             </button>
                                         @elseif($job->status === 'in_progress')
                                             <button class="btn btn-sm btn-outline-success" 
-                                                    onclick="updateStatus({{ $job->id }}, 'complete')"
+                                                    onclick="updateStatus({{ $job->id }}, 'completed')"
                                                     title="Complete Job">
                                                 <i class="fas fa-check"></i>
                                             </button>
@@ -252,7 +255,7 @@
     function updateStatus(jobId, newStatus) {
         const statusMessages = {
             'in_progress': 'start this job',
-            'complete': 'mark this job as complete',
+            'completed': 'mark this job as complete',
             'pending': 'move this job to pending'
         };
         
@@ -270,8 +273,8 @@
             body: JSON.stringify({ 
                 status: newStatus,
                 time_start: newStatus === 'in_progress' ? new Date().toTimeString().slice(0, 5) : null,
-                time_finish: newStatus === 'complete' ? new Date().toTimeString().slice(0, 5) : null,
-                date_resolved: newStatus === 'complete' ? new Date().toISOString().split('T')[0] : null
+                time_finish: newStatus === 'completed' ? new Date().toTimeString().slice(0, 5) : null,
+                date_resolved: newStatus === 'completed' ? new Date().toISOString().split('T')[0] : null
             })
         })
         .then(response => response.json())

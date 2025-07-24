@@ -13,6 +13,14 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('tickets:remind-technicians')->hourly();
+          // Send daily unassigned jobs report every day at 8:00 AM
+        $schedule->command('jobs:send-daily-report')
+                 ->dailyAt('06:00')
+                 ->timezone(config('app.timezone', 'UTC'))
+                 ->emailOutputOnFailure(config('mail.from.address'))
+                 ->onFailure(function () {
+                     \Log::error('Daily unassigned jobs report failed to run');
+                 });
     }
 
     /**
@@ -23,5 +31,14 @@ class Kernel extends ConsoleKernel
         $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
+
+          $this->load(__DIR__.'/Commands');
+
+        require base_path('routes/console.php');
     }
+
+
+    
+
+   
 }

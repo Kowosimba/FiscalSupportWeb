@@ -4,41 +4,71 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Ticket extends Model
 {
-    use HasFactory, Notifiable;
+    use HasFactory;
+
+    protected $table = 'tickets'; // If your table is named support_tickets
 
     protected $fillable = [
-        'company_name',
-        'contact_details',
-        'email',
         'subject',
-        'message',
-        'service',
+        'description',
         'priority',
         'status',
+        'company_name',
+        'customer_name',
+        'customer_email',
+        'customer_phone',
         'assigned_to',
-        'attachment',
+        'resolved_at',
+        'customer_rating'
     ];
 
-    protected $attributes = [
-        'priority' => 'low',
+    protected $casts = [
+        'resolved_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    public function assignedTechnician()
+    /**
+     * Get the user assigned to this ticket
+     */
+    public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
-    public function comments()
+    /**
+     * Get the customer contact for this ticket
+     */
+    public function customer(): BelongsTo
     {
-        return $this->hasMany(Comment::class);
+        return $this->belongsTo(CustomerContact::class, 'customer_email', 'email');
     }
 
-    public function routeNotificationForMail($notification)
+    /**
+     * Get tickets by status
+     */
+    public function scopeByStatus($query, $status)
     {
-        return $this->email;
+        return $query->where('status', $status);
+    }
+
+    /**
+     * Get tickets by priority
+     */
+    public function scopeByPriority($query, $priority)
+    {
+        return $query->where('priority', $priority);
+    }
+
+    /**
+     * Get unassigned tickets
+     */
+    public function scopeUnassigned($query)
+    {
+        return $query->whereNull('assigned_to');
     }
 }
