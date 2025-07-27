@@ -2,171 +2,178 @@
 
 namespace App\Http\Controllers;
 
-use App\Notifications\JobAssigned;
-use App\Notifications\JobStatusUpdated;
-use App\Notifications\JobCompleted;
-use Illuminate\Routing\Controller;
+use App\Mail\JobAssignedNotificationToCustomer;
+use App\Mail\JobAssignedToTechnician;
+use App\Mail\JobCompletionNotification;
 use App\Models\CallLog;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
-use Illuminate\Support\Str;
-use Rap2hpoutre\FastExcel\FastExcel;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\JobAssignedToTechnician;
-use App\Mail\JobAssignedNotificationToCustomer;
-use App\Mail\JobCompletionNotification;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
+use Rap2hpoutre\FastExcel\FastExcel;
 
 class CallLogController extends Controller
 {
-    // Enhanced constants with descriptions
+    // Job statuses and descriptions
     private const JOB_STATUSES = [
         'pending' => 'Pending',
         'assigned' => 'Assigned',
-        'in_progress' => 'In Progress', 
+        'in_progress' => 'In Progress',
         'completed' => 'Completed',
-        'cancelled' => 'Cancelled'
+        'cancelled' => 'Cancelled',
     ];
 
+    // Job types and descriptions
     private const JOB_TYPES = [
         'normal' => 'Normal',
         'emergency' => 'Emergency',
         'maintenance' => 'Maintenance',
         'repair' => 'Repair',
         'installation' => 'Installation',
-        'consultation' => 'Consultation'
+        'consultation' => 'Consultation',
     ];
 
-    private const CACHE_TTL = 300; // 5 minutes cache
+    private const CACHE_TTL = 300; // seconds (5 minutes)
     private const DEFAULT_PAGINATION = 25;
     private const MAX_ASSIGNMENT_NOTES = 500;
     private const MAX_ENGINEER_COMMENTS = 200;
+    private const ENGINEER_OVERLOAD_THRESHOLD = 10;
 
     /**
-     * Display paginated call logs with advanced filtering and caching
+     * Display paginated call logs with advanced filtering and caching.
      */
     public function index(Request $request): View
     {
         $cacheKey = 'call_logs_' . md5(serialize($request->all()));
-        
+
         $data = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($request) {
             $query = CallLog::with(['assignedTo:id,name,email', 'approver:id,name'])
-                ->select(['id', 'customer_name', 'company_name', 'job_card', 'fault_description', 
-                         'status', 'type', 'amount_charged', 'date_booked', 'assigned_to', 'approved_by', 'created_at']);
+                ->select([
+                    'id',
+                    'customer_name',
+                    'company_name',
+                    'job_card',
+                    'fault_description',
+                    'status',
+                    'type',
+                    'amount_charged',
+                    'date_booked',
+                    'assigned_to',
+                    'approved_by',
+                    'created_at',
+                ]);
 
             $this->applyFiltersToQuery($query, $request);
-            
-            // Enhanced sorting with validation
+
             $sortField = $this->validateSortField($request->get('sort', 'date_booked'));
-            $sortDirection = in_array($request->get('direction'), ['asc', 'desc']) 
-                ? $request->get('direction') 
-                : 'desc';
-            
+            $sortDirection = in_array($request->get('direction'), ['asc', 'desc']) ? $request->get('direction') : 'desc';
+
             $query->orderBy($sortField, $sortDirection);
 
-            $perPage = $this->validatePerPage($request->get('per_page', self::DEFAULT_PAGINATION));
-            
+            $perPage = $this->validatePerPage((int)$request->get('per_page', self::DEFAULT_PAGINATION));
+
             return [
                 'callLogs' => $query->paginate($perPage)->withQueryString(),
                 'technicians' => $this->getCachedTechnicians(),
-                'stats' => $this->calculateStats($query)
+                'stats' => $this->calculateStats($query),
             ];
         });
 
         return view('admin.calllogs.index', array_merge($data, [
             'statuses' => self::JOB_STATUSES,
-            'types' => self::JOB_TYPES
+            'types' => self::JOB_TYPES,
         ]));
     }
 
     /**
-     * Show create form with cached technicians
+     * Show the create call log form.
      */
     public function create(): View
     {
         return view('admin.calllogs.create', [
             'technicians' => $this->getCachedTechnicians(),
-            'types' => self::JOB_TYPES
+            'types' => self::JOB_TYPES,
         ]);
     }
 
     /**
-     * Store new call log with enhanced validation and error handling
+     * Store a new call log.
      */
     public function store(Request $request): RedirectResponse
     {
-        $validated = $this->validateCallLogData($request);
-        
-        if (!in_array(auth::user()->role, ['admin', 'accounts'])) {
-        return redirect()->back()
-            ->with('toastr', [
+        if (!in_array(Auth::user()->role, ['admin', 'accounts'])) {
+            return redirect()->back()->with('toastr', [
                 'type' => 'error',
-                'message' => 'You do not have permission to create a new job'
+                'message' => 'You do not have permission to create a new job.',
             ]);
-    }
+        }
 
-        // Set system defaults
+        $validated = $this->validateCallLogData($request);
+
+        // Defaults for new jobs
         $validated = array_merge($validated, [
             'status' => 'pending',
             'approved_by' => Auth::id(),
             'approved_by_name' => Auth::user()->name,
             'booked_by' => Auth::user()->name,
-            'date_booked' => $validated['date_booked'] ?? now()->format('Y-m-d')
+            'date_booked' => $validated['date_booked'] ?? now()->format('Y-m-d'),
         ]);
 
         DB::beginTransaction();
-        
+
         try {
             $callLog = CallLog::create($validated);
-            
-            // Clear related caches
+
             $this->clearCallLogCaches();
-            
+
             DB::commit();
-            
+
             return redirect()
                 ->route('admin.call-logs.show', $callLog)
-                ->with('toastr_success', 'Job created successfully! Job ID: ' . $callLog->id);
-                
+                ->with('toastr', [
+                    'type' => 'success',
+                    'message' => 'Job created successfully! Job ID: ' . $callLog->id,
+                ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             Log::error('Failed to create job', [
                 'error' => $e->getMessage(),
                 'user_id' => Auth::id(),
-                'data' => $validated
+                'data' => $validated,
             ]);
-            
-            return back()
-                ->withInput()
-                ->with('toastr_error', 'Failed to create job. Please try again.');
+
+            return redirect()->back()->withInput()->with('toastr', [
+                'type' => 'error',
+                'message' => 'Failed to create job. Please try again.',
+            ]);
         }
     }
 
     /**
-     * Display specific call log with relationships
+     * Display a specific call log.
      */
     public function show(CallLog $callLog): View
     {
         $callLog->load(['assignedTo:id,name,email', 'approver:id,name']);
-        
+
         return view('admin.calllogs.show', [
             'callLog' => $callLog,
             'canEdit' => $this->canEditJob($callLog),
-            'canAssign' => $this->canAssignJob($callLog)
+            'canAssign' => $this->canAssignJob($callLog),
         ]);
     }
 
     /**
-     * Show edit form with cached data
+     * Show edit form for existing call log.
      */
     public function edit(CallLog $callLog): View
     {
@@ -178,101 +185,112 @@ class CallLogController extends Controller
             'callLog' => $callLog,
             'technicians' => $this->getCachedTechnicians(),
             'statuses' => self::JOB_STATUSES,
-            'types' => self::JOB_TYPES
+            'types' => self::JOB_TYPES,
         ]);
     }
 
     /**
-     * Update call log with comprehensive validation
+     * Update existing call log.
      */
     public function update(Request $request, CallLog $callLog): RedirectResponse
     {
         if (!$this->canEditJob($callLog)) {
             return redirect()
                 ->route('admin.call-logs.show', $callLog)
-                ->with('toastr_error', 'Unauthorized to edit this job.');
+                ->with('toastr', [
+                    'type' => 'error',
+                    'message' => 'Unauthorized to edit this job.',
+                ]);
         }
 
         $validated = $this->validateCallLogData($request, $callLog->id);
-        
-        // Handle completion requirements
+
         if ($request->status === 'completed') {
             $completionValidation = $this->validateJobCompletion($request);
             if ($completionValidation !== true) {
-                return back()
-                    ->withInput()
-                    ->with('toastr_error', $completionValidation);
+                return redirect()->back()->withInput()->with('toastr', [
+                    'type' => 'error',
+                    'message' => $completionValidation,
+                ]);
             }
-            
+
             $validated['date_resolved'] = $validated['date_resolved'] ?? now()->format('Y-m-d');
         }
 
         DB::beginTransaction();
-        
+
         try {
             $oldStatus = $callLog->status;
             $callLog->update($validated);
-            
-            // Handle status change notifications
+
             if ($oldStatus !== $validated['status']) {
                 $this->handleStatusChangeNotifications($callLog, $oldStatus, $validated['status']);
             }
-            
+
             $this->clearCallLogCaches();
-            
+
             DB::commit();
-            
+
             return redirect()
                 ->route('admin.call-logs.show', $callLog)
-                ->with('toastr_success', 'Job updated successfully!');
-
+                ->with('toastr', [
+                    'type' => 'success',
+                    'message' => 'Job updated successfully!',
+                ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             Log::error('Failed to update job', [
                 'error' => $e->getMessage(),
                 'job_id' => $callLog->id,
-                'user_id' => Auth::id()
+                'user_id' => Auth::id(),
             ]);
 
-            return back()
-                ->withInput()
-                ->with('toastr_error', 'Failed to update job. Please try again.');
+            return redirect()->back()->withInput()->with('toastr', [
+                'type' => 'error',
+                'message' => 'Failed to update job. Please try again.',
+            ]);
         }
     }
 
     /**
-     * Delete call log with soft delete support
+     * Delete (soft delete) a call log.
      */
     public function destroy(CallLog $callLog): RedirectResponse
     {
         if (!$this->canDeleteJob($callLog)) {
-            return back()->with('toastr_error', 'Unauthorized to delete this job.');
+            return redirect()->back()->with('toastr', [
+                'type' => 'error',
+                'message' => 'Unauthorized to delete this job.',
+            ]);
         }
 
         try {
             $jobId = $callLog->id;
             $callLog->delete();
-            
+
             $this->clearCallLogCaches();
-            
-            return redirect()
-                ->route('admin.call-logs.index')
-                ->with('toastr_success', "Job #{$jobId} deleted successfully.");
-                
+
+            return redirect()->route('admin.call-logs.index')->with('toastr', [
+                'type' => 'success',
+                'message' => "Job #{$jobId} deleted successfully.",
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to delete job', [
                 'error' => $e->getMessage(),
                 'job_id' => $callLog->id,
-                'user_id' => Auth::id()
+                'user_id' => Auth::id(),
             ]);
-            
-            return back()->with('toastr_error', 'Failed to delete job. Please try again.');
+
+            return redirect()->back()->with('toastr', [
+                'type' => 'error',
+                'message' => 'Failed to delete job. Please try again.',
+            ]);
         }
     }
 
     /**
-     * Enhanced dashboard with cached statistics
+     * Display dashboard with cached stats.
      */
     public function dashboard(): View
     {
@@ -287,7 +305,7 @@ class CallLogController extends Controller
                 'monthly_revenue' => CallLog::where('status', 'completed')
                     ->whereMonth('date_resolved', now()->month)
                     ->whereYear('date_resolved', now()->year)
-                    ->sum('amount_charged')
+                    ->sum('amount_charged'),
             ];
         });
 
@@ -302,9 +320,9 @@ class CallLogController extends Controller
         $technicianStats = Cache::remember('technician_stats', self::CACHE_TTL, function () {
             return User::where('role', 'technician')
                 ->withCount([
-                    'assignedJobs as pending_jobs' => fn($query) => $query->where('status', 'pending'),
-                    'assignedJobs as in_progress_jobs' => fn($query) => $query->where('status', 'in_progress'),
-                    'assignedJobs as completed_jobs' => fn($query) => $query->where('status', 'completed')
+                    'assignedJobs as pending_jobs' => fn($q) => $q->where('status', 'pending'),
+                    'assignedJobs as in_progress_jobs' => fn($q) => $q->where('status', 'in_progress'),
+                    'assignedJobs as completed_jobs' => fn($q) => $q->where('status', 'completed'),
                 ])
                 ->get();
         });
@@ -313,7 +331,7 @@ class CallLogController extends Controller
     }
 
     /**
-     * Optimized job assignment with better error handling
+     * Assign job to engineer with validation.
      */
     public function assign(Request $request, CallLog $callLog): JsonResponse
     {
@@ -321,41 +339,39 @@ class CallLogController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized to assign this job.',
-                'toastr_type' => 'error'
+                'toastr_type' => 'error',
             ], 403);
         }
 
         $validated = $request->validate([
             'engineer' => 'required|exists:users,id',
-            'assignment_notes' => 'nullable|string|max:' . self::MAX_ASSIGNMENT_NOTES
+            'assignment_notes' => 'nullable|string|max:' . self::MAX_ASSIGNMENT_NOTES,
         ]);
 
         DB::beginTransaction();
-        
+
         try {
             $engineer = User::findOrFail($validated['engineer']);
-            
-            // Check if engineer is available (not overloaded)
+
             if ($this->isEngineerOverloaded($engineer)) {
                 return response()->json([
                     'success' => false,
                     'message' => "Engineer {$engineer->name} has too many active assignments.",
-                    'toastr_type' => 'warning'
+                    'toastr_type' => 'warning',
                 ]);
             }
-            
+
             $callLog->update([
                 'assigned_to' => $engineer->id,
                 'status' => 'assigned',
-                'engineer_comments' => $validated['assignment_notes'],
-                'assigned_at' => now()
+                'engineer_comments' => $validated['assignment_notes'] ?? null,
+                'assigned_at' => now(),
             ]);
 
-            // Send notifications asynchronously
             $this->sendJobAssignmentNotifications($callLog, $engineer);
-            
+
             $this->clearCallLogCaches();
-            
+
             DB::commit();
 
             return response()->json([
@@ -363,29 +379,28 @@ class CallLogController extends Controller
                 'message' => "Job #{$callLog->id} assigned to {$engineer->name} successfully!",
                 'toastr_type' => 'success',
                 'engineer_name' => $engineer->name,
-                'job_id' => $callLog->id
+                'job_id' => $callLog->id,
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             Log::error('Job assignment failed', [
                 'job_id' => $callLog->id,
                 'engineer_id' => $validated['engineer'] ?? null,
                 'error' => $e->getMessage(),
-                'user_id' => Auth::id()
+                'user_id' => Auth::id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Assignment failed. Please try again.',
-                'toastr_type' => 'error'
+                'toastr_type' => 'error',
             ], 500);
         }
     }
 
     /**
-     * Update job status via AJAX with enhanced validation
+     * Update job status via AJAX with validation.
      */
     public function updateStatus(Request $request, CallLog $callLog): JsonResponse
     {
@@ -393,7 +408,7 @@ class CallLogController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized to update this job status.',
-                'toastr_type' => 'error'
+                'toastr_type' => 'error',
             ], 403);
         }
 
@@ -402,37 +417,32 @@ class CallLogController extends Controller
             'time_start' => 'nullable|date_format:H:i',
             'time_finish' => 'nullable|date_format:H:i',
             'date_resolved' => 'nullable|date',
-            'engineer_comments' => 'nullable|string|max:' . self::MAX_ENGINEER_COMMENTS
+            'engineer_comments' => 'nullable|string|max:' . self::MAX_ENGINEER_COMMENTS,
         ]);
 
-        // Validate status transition
         if (!$this->isValidStatusTransition($callLog->status, $validated['status'])) {
             return response()->json([
                 'success' => false,
                 'message' => "Invalid status transition from {$callLog->status} to {$validated['status']}.",
-                'toastr_type' => 'warning'
+                'toastr_type' => 'warning',
             ]);
         }
 
         DB::beginTransaction();
-        
+
         try {
             $updateData = ['status' => $validated['status']];
 
             // Handle status-specific updates
-            switch ($validated['status']) {
-                case 'in_progress':
-                    if ($request->filled('time_start')) {
-                        $updateData['time_start'] = $validated['time_start'];
-                    }
-                    break;
-                    
-                case 'completed':
-                    $updateData['date_resolved'] = $validated['date_resolved'] ?? now()->format('Y-m-d');
-                    if ($request->filled('time_finish')) {
-                        $updateData['time_finish'] = $validated['time_finish'];
-                    }
-                    break;
+            if ($validated['status'] === 'in_progress' && $request->filled('time_start')) {
+                $updateData['time_start'] = $validated['time_start'];
+            }
+
+            if ($validated['status'] === 'completed') {
+                $updateData['date_resolved'] = $validated['date_resolved'] ?? now()->format('Y-m-d');
+                if ($request->filled('time_finish')) {
+                    $updateData['time_finish'] = $validated['time_finish'];
+                }
             }
 
             if ($request->filled('engineer_comments')) {
@@ -441,12 +451,11 @@ class CallLogController extends Controller
 
             $oldStatus = $callLog->status;
             $callLog->update($updateData);
-            
-            // Handle notifications for status changes
+
             $this->handleStatusChangeNotifications($callLog, $oldStatus, $validated['status']);
-            
+
             $this->clearCallLogCaches();
-            
+
             DB::commit();
 
             return response()->json([
@@ -454,29 +463,28 @@ class CallLogController extends Controller
                 'message' => 'Status updated successfully!',
                 'toastr_type' => 'success',
                 'new_status' => $validated['status'],
-                'status_label' => self::JOB_STATUSES[$validated['status']]
+                'status_label' => self::JOB_STATUSES[$validated['status']],
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             Log::error('Failed to update job status', [
                 'error' => $e->getMessage(),
                 'job_id' => $callLog->id,
                 'new_status' => $validated['status'],
-                'user_id' => Auth::id()
+                'user_id' => Auth::id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Status update failed. Please try again.',
-                'toastr_type' => 'error'
+                'toastr_type' => 'error',
             ], 500);
         }
     }
 
     /**
-     * Enhanced export with progress tracking
+     * Export filtered call logs to Excel.
      */
     public function export(Request $request)
     {
@@ -487,7 +495,10 @@ class CallLogController extends Controller
             $callLogs = $query->orderBy('date_booked', 'desc')->get();
 
             if ($callLogs->isEmpty()) {
-                return back()->with('toastr_warning', 'No jobs found matching your criteria.');
+                return redirect()->back()->with('toastr', [
+                    'type' => 'warning',
+                    'message' => 'No jobs found matching your criteria.',
+                ]);
             }
 
             $filename = 'job_cards_export_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
@@ -515,22 +526,24 @@ class CallLogController extends Controller
                     'Engineer Comments' => $job->engineer_comments ?: 'N/A',
                     'Booked By' => $job->booked_by ?: 'N/A',
                     'Created At' => $job->created_at->format('Y-m-d H:i:s'),
-                    'Updated At' => $job->updated_at->format('Y-m-d H:i:s')
+                    'Updated At' => $job->updated_at->format('Y-m-d H:i:s'),
                 ];
             });
-
         } catch (\Exception $e) {
             Log::error('Export failed', [
                 'error' => $e->getMessage(),
-                'user_id' => Auth::id()
+                'user_id' => Auth::id(),
             ]);
-            
-            return back()->with('toastr_error', 'Export failed. Please try again.');
+
+            return redirect()->back()->with('toastr', [
+                'type' => 'error',
+                'message' => 'Export failed. Please try again.',
+            ]);
         }
     }
 
     /**
-     * Send job completion notification to customer
+     * Send job completion notification email to customer.
      */
     public function notifyCustomer(Request $request, CallLog $callLog): JsonResponse
     {
@@ -538,15 +551,15 @@ class CallLogController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized to send notifications for this job.',
-                'toastr_type' => 'error'
+                'toastr_type' => 'error',
             ], 403);
         }
 
-        if (!$callLog->customer_email) {
+        if (empty($callLog->customer_email)) {
             return response()->json([
                 'success' => false,
                 'message' => 'No customer email address found for this job.',
-                'toastr_type' => 'warning'
+                'toastr_type' => 'warning',
             ]);
         }
 
@@ -554,77 +567,67 @@ class CallLogController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Job must be completed before sending notification.',
-                'toastr_type' => 'warning'
+                'toastr_type' => 'warning',
             ]);
         }
 
         try {
             Mail::to($callLog->customer_email)->send(new JobCompletionNotification($callLog));
 
-            // Log the notification
             Log::info('Job completion notification sent', [
                 'job_id' => $callLog->id,
                 'customer_email' => $callLog->customer_email,
-                'sent_by' => Auth::user()->name
+                'sent_by' => Auth::user()->name,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => "Completion notification sent to {$callLog->customer_email} successfully!",
-                'toastr_type' => 'success'
+                'toastr_type' => 'success',
             ]);
-
         } catch (\Exception $e) {
             Log::error('Failed to send customer notification', [
                 'job_id' => $callLog->id,
                 'customer_email' => $callLog->customer_email,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send notification. Please try again.',
-                'toastr_type' => 'error'
+                'toastr_type' => 'error',
             ], 500);
         }
     }
 
-    // Specialized view methods with optimized queries
+    // ----------------- Specialized Views -------------------
+
     public function unassigned(Request $request): View
     {
-        return $this->buildFilteredView($request, [
-            'assigned_to' => null
-        ], 'admin.calllogs.unassigned', 'Unassigned Jobs');
+        return $this->buildFilteredView($request, ['assigned_to' => null], 'admin.calllogs.unassigned', 'Unassigned Jobs');
     }
 
     public function assigned(Request $request): View
     {
-        return $this->buildFilteredView($request, [
-            'status' => 'assigned'
-        ], 'admin.calllogs.assigned', 'Assigned Jobs');
+        return $this->buildFilteredView($request, ['status' => 'assigned'], 'admin.calllogs.assigned', 'Assigned Jobs');
     }
 
     public function pending(Request $request): View
     {
-        return $this->buildFilteredView($request, [
-            'status' => 'pending'
-        ], 'admin.calllogs.pending', 'Pending Jobs');
+        return $this->buildFilteredView($request, ['status' => 'pending'], 'admin.calllogs.pending', 'Pending Jobs');
     }
 
     public function inProgress(Request $request): View
     {
-        return $this->buildFilteredView($request, [
-            'status' => 'in_progress'
-        ], 'admin.calllogs.in-progress', 'In Progress Jobs');
+        return $this->buildFilteredView($request, ['status' => 'in_progress'], 'admin.calllogs.in-progress', 'In Progress Jobs');
     }
 
-public function completed(Request $request)
+    public function completed(Request $request): View
 {
     try {
-        // Build the query
-        $query = CallLog::where('status', 'completed'); // Note: 'completed' not 'complete'
+        $query = CallLog::where('status', 'completed');
 
-        // Apply date_range filter after $query is defined
+        // Apply filters for date range
         if ($request->filled('date_range')) {
             switch ($request->date_range) {
                 case 'today':
@@ -650,138 +653,126 @@ public function completed(Request $request)
             }
         }
 
-        // Apply filters
+        // Additional filters
         if ($request->filled('engineer')) {
             $query->where('assigned_to', $request->engineer);
         }
-        
-        // Filter by job type (using 'type' column from your migration)
+
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
-        
+
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('customer_name', 'like', "%{$search}%")
-                  ->orWhere('customer_email', 'like', "%{$search}%")
-                  ->orWhere('fault_description', 'like', "%{$search}%")
-                  ->orWhere('job_card', 'like', "%{$search}%");
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_name', 'ilike', "%{$search}%")
+                  ->orWhere('customer_email', 'ilike', "%{$search}%")
+                  ->orWhere('fault_description', 'ilike', "%{$search}%")
+                  ->orWhere('job_card', 'ilike', "%{$search}%");
             });
         }
-        
+
         if ($request->filled('date_from')) {
             $query->whereDate('date_resolved', '>=', $request->date_from);
         }
-        
+
         if ($request->filled('date_to')) {
             $query->whereDate('date_resolved', '<=', $request->date_to);
         }
-        
-        // Get paginated results
+
+        // Paginate results, preserving query string for filters
         $callLogs = $query->with(['assignedTo', 'approvedBy'])
-            ->orderBy('date_resolved', 'desc')
-            ->paginate(15)
-            ->appends($request->query());
+                          ->orderBy('date_resolved', 'desc')
+                          ->paginate(15)
+                          ->appends($request->query());
 
-        // Get filter data
-        $technicians = \App\Models\User::whereIn('role', ['technician', 'engineer', 'admin'])
-            ->orderBy('name')
-            ->get();
-            
-        // Get job types from the enum values
-        $jobTypes = collect(['normal', 'emergency']);
+        // Fetch needed reference data
+        $technicians = User::whereIn('role', ['technician', 'engineer', 'admin'])
+                           ->orderBy('name')
+                           ->get();
 
-        // Calculate comprehensive statistics
+        $jobTypes = collect(array_keys(self::JOB_TYPES));
+
+        // Stats with proper numeric casting on billed_hours
         $baseQuery = CallLog::where('status', 'completed');
-        
-        // Revenue calculations using correct column name
-        $totalRevenue = (clone $baseQuery)->sum('amount_charged') ?? 0;
-        $avgRevenue = (clone $baseQuery)->avg('amount_charged') ?? 0;
-        
-        // Duration calculations using billed_hours
-        $avgDuration = (clone $baseQuery)->avg('billed_hours') ?? 0;
-        $totalDuration = (clone $baseQuery)->sum('billed_hours') ?? 0;
-        
+
+        $totalRevenue = $baseQuery->sum('amount_charged') ?? 0;
+        $avgRevenue = $baseQuery->avg('amount_charged') ?? 0;
+        $avgDuration = $baseQuery->selectRaw("AVG(billed_hours::numeric) as avg_billed_hours")
+                                 ->value('avg_billed_hours') ?? 0;
+        $totalDuration = $baseQuery->selectRaw("SUM(billed_hours::numeric) as total_billed_hours")
+                                   ->value('total_billed_hours') ?? 0;
+
         $stats = [
-            'total_completed' => (clone $baseQuery)->count(),
-            'this_month' => (clone $baseQuery)->whereMonth('date_resolved', now()->month)
-                ->whereYear('date_resolved', now()->year)->count(),
-            'this_week' => (clone $baseQuery)->whereBetween('date_resolved', 
-                [now()->startOfWeek(), now()->endOfWeek()])->count(),
-            'today' => (clone $baseQuery)->whereDate('date_resolved', today())->count(),
+            'total_completed' => $baseQuery->count(),
+            'this_month' => $baseQuery->whereMonth('date_resolved', now()->month)
+                                     ->whereYear('date_resolved', now()->year)
+                                     ->count(),
+            'this_week' => $baseQuery->whereBetween('date_resolved', [now()->startOfWeek(), now()->endOfWeek()])
+                                     ->count(),
+            'today' => $baseQuery->whereDate('date_resolved', today())->count(),
+
             'total_revenue' => $totalRevenue,
             'avg_revenue' => $avgRevenue,
-            'monthly_revenue' => (clone $baseQuery)->whereMonth('date_resolved', now()->month)
-                ->whereYear('date_resolved', now()->year)->sum('amount_charged') ?? 0,
-            'weekly_revenue' => (clone $baseQuery)->whereBetween('date_resolved', 
-                [now()->startOfWeek(), now()->endOfWeek()])->sum('amount_charged') ?? 0,
+            'monthly_revenue' => $baseQuery->whereMonth('date_resolved', now()->month)
+                                           ->whereYear('date_resolved', now()->year)
+                                           ->sum('amount_charged') ?? 0,
+            'weekly_revenue' => $baseQuery->whereBetween('date_resolved', [now()->startOfWeek(), now()->endOfWeek()])
+                                          ->sum('amount_charged') ?? 0,
+
             'avg_duration' => $avgDuration,
             'total_duration' => $totalDuration,
         ];
 
-        return view('admin.calllogs.completed', compact(
-            'callLogs', 
-            'stats', 
-            'technicians',
-            'jobTypes'
-        ));
-        
+        // Make sure your Blade path here matches your actual views folder structure
+        return view('admin.calllogs.partials.completed', compact('callLogs', 'stats', 'technicians', 'jobTypes'));
     } catch (\Exception $e) {
-        \Log::error('Error loading completed jobs: ' . $e->getMessage());
-        
-        return redirect()->back()
-            ->with('error', 'Error loading completed jobs. Please try again.');
+        Log::error('Error loading completed jobs: ' . $e->getMessage());
+
+        return view('admin.calllogs.partials.completed', [
+            'callLogs' => collect(),
+            'stats' => [],
+            'technicians' => collect(),
+            'jobTypes' => collect(),
+            'error' => 'Error loading completed jobs. Please try again.',
+        ]);
     }
 }
-
 
 
     public function cancelled(Request $request): View
     {
-        return $this->buildFilteredView($request, [
-            'status' => 'cancelled'
-        ], 'admin.calllogs.cancelled', 'Cancelled Jobs');
+        return $this->buildFilteredView($request, ['status' => 'cancelled'], 'admin.calllogs.cancelled', 'Cancelled Jobs');
     }
 
-public function myJobs(Request $request): View
-{
-    // Calculate stats for the authenticated user
-    $stats = [
-        'pending' => CallLog::where('assigned_to', Auth::id())
-                           ->where('status', 'pending')
-                           ->count(),
-        'in_progress' => CallLog::where('assigned_to', Auth::id())
-                               ->where('status', 'in_progress')
-                               ->count(),
-        'completed' => CallLog::where('assigned_to', Auth::id())
-                             ->where('status', 'completed')
-                             ->count(),
-    ];
+    public function myJobs(Request $request): View
+    {
+        $userId = Auth::id();
+        $stats = [
+            'pending' => CallLog::where('assigned_to', $userId)->where('status', 'pending')->count(),
+            'in_progress' => CallLog::where('assigned_to', $userId)->where('status', 'in_progress')->count(),
+            'completed' => CallLog::where('assigned_to', $userId)->where('status', 'completed')->count(),
+        ];
 
-    // Get the filtered view (assuming this returns a View instance)
-    $view = $this->buildFilteredView($request, [
-        'assigned_to' => Auth::id()
-    ], 'admin.calllogs.my-jobs', 'My Jobs');
+        $view = $this->buildFilteredView($request, ['assigned_to' => $userId], 'admin.calllogs.my-jobs', 'My Jobs');
 
-    // Add stats to the view data
-    $view->with('stats', $stats);
-
-    return $view;
-}
+        return $view->with('stats', $stats);
+    }
 
     public function all(Request $request): View
     {
         return $this->buildFilteredView($request, [], 'admin.calllogs.alljobs', 'All Jobs');
     }
 
-    // Private helper methods
+    // ---------------------- PRIVATE HELPERS ---------------------- //
 
-    private function buildFilteredView(Request $request, array $baseFilters, string $view, string $title): View
+    /**
+     * Builds a filtered view with base filters and applies request filters.
+     */
+    private function buildFilteredView(Request $request, array $baseFilters, string $viewPath, string $title): View
     {
         $query = CallLog::with(['assignedTo:id,name,email', 'approver:id,name']);
-        
-        // Apply base filters
+
         foreach ($baseFilters as $field => $value) {
             if ($value === null) {
                 $query->whereNull($field);
@@ -789,21 +780,86 @@ public function myJobs(Request $request): View
                 $query->where($field, $value);
             }
         }
-        
+
         $this->applyFiltersToQuery($query, $request);
-        
+
         $callLogs = $query->orderBy('created_at', 'desc')
             ->paginate(15)
             ->withQueryString();
 
         $stats = $this->calculateFilteredStats($baseFilters);
-        
-        return view($view, [
+
+        return view($viewPath, [
             'callLogs' => $callLogs,
             'technicians' => $this->getCachedTechnicians(),
             'stats' => $stats,
-            'title' => $title
+            'title' => $title,
         ]);
+    }
+
+    private function applyFiltersToQuery($query, Request $request): void
+    {
+        // Search filter using ILIKE (PostgreSQL case-insensitive)
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_name', 'ilike', "%{$search}%")
+                    ->orWhere('company_name', 'ilike', "%{$search}%")
+                    ->orWhere('job_card', 'ilike', "%{$search}%")
+                    ->orWhere('fault_description', 'ilike', "%{$search}%")
+                    ->orWhere('zimra_ref', 'ilike', "%{$search}%")
+                    ->orWhere('customer_email', 'ilike', "%{$search}%")
+                    ->orWhere('customer_phone', 'ilike', "%{$search}%");
+            });
+        }
+
+        // Filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+        if ($request->filled('technician') || $request->filled('engineer')) {
+            $technicianId = $request->technician ?: $request->engineer;
+            $query->where('assigned_to', $technicianId);
+        }
+        if ($request->filled('date_range')) {
+            $this->applyDateFilter($query, $request->date_range);
+        }
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('date_booked', [
+                Carbon::parse($request->start_date)->startOfDay(),
+                Carbon::parse($request->end_date)->endOfDay(),
+            ]);
+        }
+        if ($request->filled('min_amount')) {
+            $query->where('amount_charged', '>=', $request->min_amount);
+        }
+        if ($request->filled('max_amount')) {
+            $query->where('amount_charged', '<=', $request->max_amount);
+        }
+    }
+
+    private function applyDateFilter($query, string $dateRange): void
+    {
+        $now = now();
+
+        $ranges = [
+            'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
+            'yesterday' => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()],
+            'this_week' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+            'last_week' => [$now->copy()->subWeek()->startOfWeek(), $now->copy()->subWeek()->endOfWeek()],
+            'this_month' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+            'last_month' => [$now->copy()->subMonth()->startOfMonth(), $now->copy()->subMonth()->endOfMonth()],
+            'this_year' => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
+            'last_year' => [$now->copy()->subYear()->startOfYear(), $now->copy()->subYear()->endOfYear()],
+        ];
+
+        if (isset($ranges[$dateRange])) {
+            [$start, $end] = $ranges[$dateRange];
+            $query->whereBetween('date_booked', [$start, $end]);
+        }
     }
 
     private function validateCallLogData(Request $request, ?int $excludeId = null): array
@@ -818,11 +874,11 @@ public function myJobs(Request $request): View
             'type' => ['required', Rule::in(array_keys(self::JOB_TYPES))],
             'amount_charged' => 'required|numeric|min:0|max:999999.99',
             'date_booked' => 'required|date|after_or_equal:' . now()->subYear()->format('Y-m-d'),
-            'assigned_to' => 'nullable|exists:users,id'
+            'assigned_to' => 'nullable|exists:users,id',
         ];
 
         if ($request->status === 'completed') {
-            $rules['job_card'] = 'required|string|max:50|unique:call_logs,job_card' . ($excludeId ? ",{$excludeId}" : '');
+            $rules['job_card'] = ['required', 'string', 'max:50', Rule::unique('call_logs')->ignore($excludeId)];
             $rules['time_start'] = 'required|date_format:H:i';
             $rules['time_finish'] = 'required|date_format:H:i|after:time_start';
             $rules['billed_hours'] = 'required|string|max:10';
@@ -856,18 +912,16 @@ public function myJobs(Request $request): View
 
     private function validateSortField(string $field): string
     {
-        $allowedSorts = [
-            'date_booked', 'customer_name', 'status', 'amount_charged', 
-            'created_at', 'type', 'assigned_to'
-        ];
-        
-        return in_array($field, $allowedSorts) ? $field : 'date_booked';
+        $allowedSorts = ['date_booked', 'customer_name', 'status', 'amount_charged', 'created_at', 'type', 'assigned_to'];
+
+        return in_array($field, $allowedSorts, true) ? $field : 'date_booked';
     }
 
     private function validatePerPage(int $perPage): int
     {
         $allowedPerPage = [10, 25, 50, 100];
-        return in_array($perPage, $allowedPerPage) ? $perPage : self::DEFAULT_PAGINATION;
+
+        return in_array($perPage, $allowedPerPage, true) ? $perPage : self::DEFAULT_PAGINATION;
     }
 
     private function getCachedTechnicians()
@@ -883,7 +937,7 @@ public function myJobs(Request $request): View
     private function calculateStats($query): array
     {
         $baseQuery = clone $query;
-        
+
         return [
             'total' => $baseQuery->count(),
             'pending' => (clone $baseQuery)->where('status', 'pending')->count(),
@@ -896,7 +950,7 @@ public function myJobs(Request $request): View
     private function calculateFilteredStats(array $baseFilters): array
     {
         $query = CallLog::query();
-        
+
         foreach ($baseFilters as $field => $value) {
             if ($value === null) {
                 $query->whereNull($field);
@@ -908,120 +962,46 @@ public function myJobs(Request $request): View
         return [
             'total' => $query->count(),
             'emergency' => (clone $query)->where('type', 'emergency')->count(),
-            'overdue' => (clone $query)->where('date_booked', '<', now())
-                ->whereNotIn('status', ['completed', 'cancelled'])->count(),
+            'overdue' => (clone $query)
+                ->where('date_booked', '<', now())
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->count(),
         ];
-    }
-
-    private function applyFiltersToQuery($query, Request $request): void
-    {
-        // Search filter with optimized LIKE queries
-        if ($request->filled('search')) {
-            $search = trim($request->search);
-            $query->where(function($q) use ($search) {
-                $q->where('customer_name', 'like', "%{$search}%")
-                  ->orWhere('company_name', 'like', "%{$search}%")
-                  ->orWhere('job_card', 'like', "%{$search}%")
-                  ->orWhere('fault_description', 'like', "%{$search}%")
-                  ->orWhere('zimra_ref', 'like', "%{$search}%")
-                  ->orWhere('customer_email', 'like', "%{$search}%")
-                  ->orWhere('customer_phone', 'like', "%{$search}%");
-            });
-        }
-        
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        
-        // Type filter
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
-        }
-        
-        // Technician filter
-        if ($request->filled('technician') || $request->filled('engineer')) {
-            $technicianId = $request->technician ?: $request->engineer;
-            $query->where('assigned_to', $technicianId);
-        }
-        
-        // Date range filter
-        if ($request->filled('date_range')) {
-            $this->applyDateFilter($query, $request->date_range);
-        }
-        
-        // Custom date range
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('date_booked', [
-                Carbon::parse($request->start_date)->startOfDay(),
-                Carbon::parse($request->end_date)->endOfDay()
-            ]);
-        }
-        
-        // Amount filters
-        if ($request->filled('min_amount')) {
-            $query->where('amount_charged', '>=', $request->min_amount);
-        }
-        
-        if ($request->filled('max_amount')) {
-            $query->where('amount_charged', '<=', $request->max_amount);
-        }
-    }
-
-    private function applyDateFilter($query, string $dateRange): void
-    {
-        $now = now();
-        
-        $ranges = [
-            'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
-            'yesterday' => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()],
-            'this_week' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
-            'last_week' => [$now->copy()->subWeek()->startOfWeek(), $now->copy()->subWeek()->endOfWeek()],
-            'this_month' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
-            'last_month' => [$now->copy()->subMonth()->startOfMonth(), $now->copy()->subMonth()->endOfMonth()],
-            'this_year' => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
-            'last_year' => [$now->copy()->subYear()->startOfYear(), $now->copy()->subYear()->endOfYear()]
-        ];
-
-        if (isset($ranges[$dateRange])) {
-            [$start, $end] = $ranges[$dateRange];
-            $query->whereBetween('date_booked', [$start, $end]);
-        }
     }
 
     private function canEditJob(CallLog $callLog): bool
     {
         $user = Auth::user();
-        
-        return in_array($user->role, ['admin', 'manager']) || 
-               $callLog->assigned_to === $user->id ||
-               $callLog->approved_by === $user->id;
+
+        return in_array($user->role, ['admin', 'manager'], true) ||
+            $callLog->assigned_to === $user->id ||
+            $callLog->approved_by === $user->id;
     }
 
     private function canAssignJob(CallLog $callLog): bool
     {
-        return in_array(Auth::user()->role, ['admin', 'manager']);
+        return in_array(Auth::user()->role, ['admin', 'manager'], true);
     }
 
     private function canDeleteJob(CallLog $callLog): bool
     {
-        return in_array(Auth::user()->role, ['admin', 'manager']);
+        return in_array(Auth::user()->role, ['admin', 'manager'], true);
     }
 
     private function canUpdateJobStatus(CallLog $callLog): bool
     {
         $user = Auth::user();
-        
-        return in_array($user->role, ['admin', 'manager']) || 
-               $callLog->assigned_to === $user->id;
+
+        return in_array($user->role, ['admin', 'manager'], true) ||
+            $callLog->assigned_to === $user->id;
     }
 
     private function canNotifyCustomer(CallLog $callLog): bool
     {
         $user = Auth::user();
-        
-        return in_array($user->role, ['admin', 'manager']) || 
-               $callLog->assigned_to === $user->id;
+
+        return in_array($user->role, ['admin', 'manager'], true) ||
+            $callLog->assigned_to === $user->id;
     }
 
     private function isValidStatusTransition(string $currentStatus, string $newStatus): bool
@@ -1030,11 +1010,11 @@ public function myJobs(Request $request): View
             'pending' => ['assigned', 'cancelled'],
             'assigned' => ['in_progress', 'cancelled', 'pending'],
             'in_progress' => ['completed', 'assigned'],
-            'completed' => [], // Completed jobs cannot be changed
-            'cancelled' => ['pending'] // Cancelled jobs can be reactivated
+            'completed' => [], // completed jobs are final
+            'cancelled' => ['pending'], // reactivation
         ];
 
-        return in_array($newStatus, $validTransitions[$currentStatus] ?? []);
+        return in_array($newStatus, $validTransitions[$currentStatus] ?? [], true);
     }
 
     private function isEngineerOverloaded(User $engineer): bool
@@ -1043,18 +1023,16 @@ public function myJobs(Request $request): View
             ->whereIn('status', ['assigned', 'in_progress'])
             ->count();
 
-        return $activeJobsCount >= 10; // Configurable threshold
+        return $activeJobsCount >= self::ENGINEER_OVERLOAD_THRESHOLD;
     }
 
     private function sendJobAssignmentNotifications(CallLog $callLog, User $engineer): void
     {
         try {
-            // Send to technician
             if ($engineer->email) {
                 Mail::to($engineer->email)->send(new JobAssignedToTechnician($callLog, $engineer));
             }
 
-            // Send to customer if email exists
             if ($callLog->customer_email) {
                 Mail::to($callLog->customer_email)->send(new JobAssignedNotificationToCustomer($callLog, $engineer));
             }
@@ -1062,38 +1040,34 @@ public function myJobs(Request $request): View
             Log::error('Failed to send assignment notifications', [
                 'job_id' => $callLog->id,
                 'engineer_id' => $engineer->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
 
     private function handleStatusChangeNotifications(CallLog $callLog, string $oldStatus, string $newStatus): void
     {
-        // Only send notifications for significant status changes
-        $notifiableChanges = [
-            'assigned' => 'in_progress',
-            'in_progress' => 'completed'
-        ];
+        $significantTransitions = ['assigned' => 'in_progress', 'in_progress' => 'completed'];
 
-        if (isset($notifiableChanges[$oldStatus]) && $notifiableChanges[$oldStatus] === $newStatus) {
+        if (isset($significantTransitions[$oldStatus]) && $significantTransitions[$oldStatus] === $newStatus) {
             try {
-                if ($callLog->customer_email) {
-                    // Send appropriate notification based on new status
-                    if ($newStatus === 'completed') {
-                        Mail::to($callLog->customer_email)->send(new JobCompletionNotification($callLog));
-                    }
+                if ($callLog->customer_email && $newStatus === 'completed') {
+                    Mail::to($callLog->customer_email)->send(new JobCompletionNotification($callLog));
                 }
             } catch (\Exception $e) {
                 Log::error('Failed to send status change notification', [
                     'job_id' => $callLog->id,
                     'old_status' => $oldStatus,
                     'new_status' => $newStatus,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
     }
 
+    /**
+     * Clear cache keys related to call logs.
+     */
     private function clearCallLogCaches(): void
     {
         $keys = [
@@ -1101,15 +1075,14 @@ public function myJobs(Request $request): View
             'dashboard_stats',
             'recent_jobs',
             'technician_stats',
-            'technicians_list'
+            'technicians_list',
         ];
 
-        foreach ($keys as $pattern) {
-            if (str_contains($pattern, '*')) {
-                // Clear pattern-based cache keys
+        foreach ($keys as $key) {
+            if (str_contains($key, '*')) {
                 Cache::tags(['call_logs'])->flush();
             } else {
-                Cache::forget($pattern);
+                Cache::forget($key);
             }
         }
     }

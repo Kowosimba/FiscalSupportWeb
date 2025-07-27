@@ -33,7 +33,7 @@ class FaqController extends Controller
     public function create()
 {
     $categories = FaqCategory::all(); // Fetch categories for dropdown
-    return view('admin.contents.faqsform', compact('categories'));
+    return view('admin.Contents.faqsform', compact('categories'));
 }
 public function store(Request $request)
 {

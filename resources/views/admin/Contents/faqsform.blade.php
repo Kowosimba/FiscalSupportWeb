@@ -275,7 +275,7 @@
     --warning: #F59E0B;
     --danger: #DC2626;
     --secondary: #1c5c3f;
-    --secondary-dark: #4b6354;
+    --secondary-dark: #2e563d;
     --info: #0EA5E9;
     --white: #FFFFFF;
     --gray-50: #F9FAFB;
