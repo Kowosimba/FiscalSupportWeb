@@ -122,4 +122,37 @@ public function isBilledHoursPercentage()
     {
         return $this->belongsTo(CustomerContact::class, 'customer_email', 'email');
     }
+
+     /**
+     * Get the user who approved this call log
+     */
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+
+    /**
+     * Scope for completed jobs
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    /**
+     * Scope for pending jobs
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope for in progress jobs
+     */
+    public function scopeInProgress($query)
+    {
+        return $query->where('status', 'in_progress');
+    }
 }

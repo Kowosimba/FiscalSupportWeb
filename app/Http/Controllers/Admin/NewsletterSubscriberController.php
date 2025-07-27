@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\NewsletterSubscriber;
+use Illuminate\Validation\Rule;
 
 class NewsletterSubscriberController extends Controller
 {
@@ -18,51 +19,104 @@ class NewsletterSubscriberController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('newsletter_subscribers', 'email')
+            ],
+            'name' => 'nullable|string|max:255',
+            'is_active' => 'boolean'
+        ]);
+
+        // Set default active status if not provided
+        $validated['is_active'] = $request->has('is_active') ? true : false;
+
+        try {
+            NewsletterSubscriber::create($validated);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Subscriber added successfully!'
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Subscriber added successfully!');
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error adding subscriber. Please try again.'
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Error adding subscriber. Please try again.');
+        }
     }
 
     /**
-     * Display the specified resource.
+     * Toggle subscriber status
      */
-    public function show(string $id)
+    public function toggle(NewsletterSubscriber $subscriber)
     {
-        //
-    }
+        try {
+            $subscriber->update([
+                'is_active' => !$subscriber->is_active
+            ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+            $status = $subscriber->is_active ? 'activated' : 'deactivated';
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Subscriber {$status} successfully!"
+                ]);
+            }
+
+            return redirect()->back()->with('success', "Subscriber {$status} successfully!");
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error updating subscriber status.'
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Error updating subscriber status.');
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-      public function destroy(NewsletterSubscriber $subscriber)
+    public function destroy(NewsletterSubscriber $subscriber)
     {
-        $subscriber->delete();
-        return back()->with('success', 'Subscriber removed successfully');
+        try {
+            $subscriber->delete();
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Subscriber removed successfully!'
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Subscriber removed successfully!');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error deleting subscriber.'
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Error deleting subscriber.');
+        }
     }
 }

@@ -183,6 +183,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/', 'index')->name('index');
         Route::delete('/{subscriber}', 'destroy')->name('destroy');
     });
+
+     Route::resource('subscribers', NewsletterSubscriberController::class)->except(['show', 'create', 'edit', 'update']);
     
     Route::resource('newsletters', NewsletterCampaignController::class)->except(['destroy']);
     Route::post('newsletters/{newsletter}/send', [NewsletterCampaignController::class, 'send'])->name('newsletters.send');

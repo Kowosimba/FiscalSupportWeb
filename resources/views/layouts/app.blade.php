@@ -11,6 +11,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
 
     <style>
         :root {
@@ -787,6 +788,455 @@
             color: var(--warning);
             border-left-color: var(--warning);
         }
+
+        /* Tickets View - Modern Styling */
+.tickets-view {
+    padding: 0;
+    max-width: 100%;
+}
+
+/* Enhanced Filter Card */
+.filter-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.filter-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.filter-header {
+    padding: 1rem 1.5rem;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filter-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.filter-body {
+    padding: 1.5rem;
+}
+
+.filter-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Enhanced Select */
+.enhanced-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem !important;
+}
+
+.select-wrapper {
+    position: relative;
+}
+
+.select-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--gray-500);
+}
+
+/* Enhanced Search Input */
+.search-wrapper {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-500);
+    font-size: 0.9rem;
+}
+
+.enhanced-input {
+    padding-left: 2.5rem !important;
+    transition: var(--transition);
+}
+
+.enhanced-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+/* Tickets Table */
+.tickets-table-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.table-header {
+    padding: 1rem 1.5rem;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.table-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.table-meta {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.enhanced-tickets-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 800px;
+}
+
+.enhanced-tickets-table thead th {
+    background: var(--gray-50);
+    color: var(--gray-700);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.enhanced-tickets-table tbody tr {
+    transition: var(--transition);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.enhanced-tickets-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.enhanced-tickets-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+.enhanced-tickets-table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    font-size: 0.85rem;
+}
+
+/* Ticket ID Badge */
+.ticket-id-badge {
+    font-family: 'Monaco', 'Menlo', monospace;
+    background: var(--primary);
+    color: var(--white);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* Priority Badges */
+.priority-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.priority-high {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.priority-medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.priority-low {
+    background: rgba(5, 150, 105, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(5, 150, 105, 0.2);
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-open {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.status-resolved {
+    background: rgba(5, 150, 105, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(5, 150, 105, 0.2);
+}
+
+.status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-closed {
+    background: rgba(107, 114, 128, 0.1);
+    color: var(--gray-600);
+    border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+/* Update Time */
+.update-time {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--gray-600);
+    font-size: 0.8rem;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    color: var(--gray-600);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.action-btn:hover {
+    background: var(--gray-100);
+    color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.view-btn {
+    color: var(--primary);
+}
+
+/* Empty State */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-content i {
+    font-size: 2.5rem;
+    color: var(--gray-300);
+    margin-bottom: 1rem;
+}
+
+.empty-content h4 {
+    color: var(--gray-700);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.empty-content p {
+    color: var(--gray-600);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Pagination */
+.pagination-wrapper {
+    padding: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.page-item.active .page-link {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.page-link {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius) !important;
+    border: 1px solid var(--gray-300);
+    color: var(--gray-700);
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.page-link:hover {
+    background: var(--gray-100);
+    color: var(--primary);
+}
+
+/* Dark Mode Adjustments */
+body.dark-mode {
+    .filter-card,
+    .tickets-table-card {
+        background: var(--dark-surface);
+        border-color: var(--dark-surface-light);
+    }
+    
+    .filter-header,
+    .table-header {
+        background: var(--dark-surface-light);
+        border-color: var(--dark-surface-light);
+    }
+    
+    .enhanced-tickets-table thead th {
+        background: var(--dark-surface-light);
+        color: var(--dark-text);
+    }
+    
+    .enhanced-tickets-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .priority-badge,
+    .status-badge {
+        opacity: 0.9;
+    }
+    
+    .page-link {
+        background: var(--dark-surface);
+        border-color: var(--dark-surface-light);
+        color: var(--dark-text);
+    }
+    
+    .page-link:hover {
+        background: var(--dark-surface-light);
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .filter-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        justify-content: flex-start;
+    }
+    
+    .table-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 576px) {
+    .filter-header,
+    .table-header {
+        padding: 1rem;
+    }
+    
+    .filter-body {
+        padding: 1rem;
+    }
+    
+    .enhanced-tickets-table tbody td {
+        padding: 0.75rem;
+    }
+    
+    .action-buttons {
+        gap: 0.25rem;
+    }
+    
+    .action-btn {
+        width: 28px;
+        height: 28px;
+    }
+}
     </style>
 
     @stack('styles')
@@ -800,7 +1250,7 @@
             </button>
             <a href="{{ route('admin.index') }}" class="navbar-brand">
                 <span class="navbar-brand-logo">H</span>
-                <span class="d-none d-md-inline">@yield('brand-title', 'Helpdesk Pro')</span>
+                <span class="d-none d-md-inline">@yield('brand-title', 'Helpdesk')</span>
             </a>
         </div>
         

@@ -87,341 +87,132 @@ class SupportTicketController extends Controller
     }
 
     public function index(Request $request)
-    {
-        // Calculate date ranges for percentage changes
-        $currentWeekStart = Carbon::now()->startOfWeek();
-        $lastWeekStart = Carbon::now()->subWeek()->startOfWeek();
-        $lastWeekEnd = Carbon::now()->subWeek()->endOfWeek();
+{
+    // Get period from request (fall back to 'week' as default)
+    $period = $request->input('period', 'week');
 
-        // ==================== TICKETS DATA ====================
-        
-        try {
-            // Check if tickets table exists and has required columns
-            if (Schema::hasTable('tickets') || Schema::hasTable('support_tickets')) {
-                $ticketTable = Schema::hasTable('tickets') ? 'tickets' : 'support_tickets';
-                
-                // Get ticket status counts for current week
-                $currentTicketCounts = collect();
-                $lastWeekTicketCounts = collect();
-                
-                if (Schema::hasColumn($ticketTable, 'status')) {
-                    $currentTicketCounts = Ticket::select('status', DB::raw('count(*) as count'))
-                        ->where('created_at', '>=', $currentWeekStart)
-                        ->groupBy('status')
-                        ->pluck('count', 'status');
+    // Calculate date ranges based on period
+    $now = Carbon::now();
+    $startDate = match ($period) {
+        'today' => $now->copy()->startOfDay(),
+        'week'  => $now->copy()->startOfWeek(),
+        'month' => $now->copy()->startOfMonth(),
+        'quarter' => $now->copy()->firstOfQuarter(),
+        default => $now->copy()->startOfWeek(),
+    };
 
-                    $lastWeekTicketCounts = Ticket::select('status', DB::raw('count(*) as count'))
-                        ->whereBetween('created_at', [$lastWeekStart, $lastWeekEnd])
-                        ->groupBy('status')
-                        ->pluck('count', 'status');
-                }
+    // For percentage changes: always compare with previous period
+    $previousStartDate = $startDate->copy()->sub(1, str_replace('this_', '', $period));
+    $previousEndDate = $startDate->copy()->subSecond();
 
-                // Calculate status counts with defaults
-                $statusCounts = (object) [
-                    'in_progress' => Schema::hasColumn($ticketTable, 'status') ? 
-                        Ticket::where('status', 'in_progress')->count() : 0,
-                    'resolved' => Schema::hasColumn($ticketTable, 'status') ? 
-                        Ticket::where('status', 'resolved')->count() : 0,
-                    'pending' => Schema::hasColumn($ticketTable, 'status') ? 
-                        Ticket::where('status', 'pending')->count() : 0,
-                    'unassigned' => Schema::hasColumn($ticketTable, 'assigned_to') ? 
-                        Ticket::whereNull('assigned_to')->count() : 0,
-                ];
+    // ==================== TICKETS DATA ====================
+    $statusCounts = (object) [
+        'in_progress' => 0,
+        'resolved' => 0,
+        'pending' => 0,
+        'unassigned' => 0,
+    ];
+    $percentageChanges = [
+        'in_progress' => 0,
+        'resolved' => 0,
+        'pending' => 0,
+        'unassigned' => 0,
+    ];
+    $tickets = collect();
 
-                // Calculate percentage changes
-                $percentageChanges = [];
-                foreach (['in_progress', 'resolved', 'pending', 'unassigned'] as $status) {
-                    $current = $currentTicketCounts->get($status, 0);
-                    $previous = $lastWeekTicketCounts->get($status, 0);
-                    
-                    if ($previous > 0) {
-                        $percentageChanges[$status] = round((($current - $previous) / $previous) * 100, 1);
-                    } else {
-                        $percentageChanges[$status] = $current > 0 ? 100 : 0;
-                    }
-                }
+    if (Schema::hasTable('tickets') || Schema::hasTable('support_tickets')) {
+        $ticketTable = Schema::hasTable('tickets') ? 'tickets' : 'support_tickets';
 
-                // Get recent tickets with relationships
-                $ticketsQuery = Ticket::query();
-                if (Schema::hasColumn($ticketTable, 'assigned_to')) {
-                    $ticketsQuery->with(['assignedTo']);
-                }
-                $tickets = $ticketsQuery->orderBy('updated_at', 'desc')->paginate(10);
-                
+        // For period filter: filter tickets by $startDate
+        $ticketsQuery = Ticket::query();
+        if (Schema::hasColumn($ticketTable, 'created_at')) {
+            $ticketsQuery->where('created_at', '>=', $startDate);
+        }
+        if (Schema::hasColumn($ticketTable, 'assigned_to')) {
+            $ticketsQuery->with(['assignedTo']);
+        }
+        // For dashboard, get only 5 most recent
+        $tickets = $ticketsQuery->orderBy('updated_at', 'desc')->take(5)->get();
+
+        // Get current period status counts (stats cards)
+        if (Schema::hasColumn($ticketTable, 'status')) {
+            $currentTicketCounts = Ticket::select('status', DB::raw('count(*) as count'))
+                ->where('created_at', '>=', $startDate)
+                ->groupBy('status')
+                ->pluck('count', 'status');
+
+            $statusCounts = (object) array_merge([
+                'in_progress' => $currentTicketCounts->get('in_progress', 0),
+                'resolved'    => $currentTicketCounts->get('resolved', 0),
+                'pending'     => $currentTicketCounts->get('pending', 0),
+                // Unassigned logic
+                'unassigned'  => Schema::hasColumn($ticketTable, 'assigned_to') 
+                    ? Ticket::whereNull('assigned_to')->where('created_at', '>=', $startDate)->count()
+                    : 0,
+            ]);
+        }
+
+        // Get previous period status counts (for % change calculation)
+        if (Schema::hasColumn($ticketTable, 'status') && Schema::hasColumn($ticketTable, 'created_at')) {
+            $previousTicketCounts = Ticket::select('status', DB::raw('count(*) as count'))
+                ->whereBetween('created_at', [$previousStartDate, $previousEndDate])
+                ->groupBy('status')
+                ->pluck('count', 'status');
+        }
+
+        // Calculate percentage changes
+        foreach (['in_progress', 'resolved', 'pending', 'unassigned'] as $status) {
+            $current = $statusCounts->$status;
+            $previous = isset($previousTicketCounts) ? ($previousTicketCounts->get($status, 0)) : 0;
+            if ($previous > 0) {
+                $percentageChanges[$status] = round((($current - $previous) / $previous) * 100, 1);
             } else {
-                // Default values if table doesn't exist
-                $statusCounts = (object) [
-                    'in_progress' => 0,
-                    'resolved' => 0,
-                    'pending' => 0,
-                    'unassigned' => 0,
-                ];
-                $percentageChanges = [
-                    'in_progress' => 0,
-                    'resolved' => 0,
-                    'pending' => 0,
-                    'unassigned' => 0,
-                ];
-                $tickets = new \Illuminate\Pagination\LengthAwarePaginator(
-                    collect(), 0, 10, 1, ['path' => request()->url()]
-                );
+                $percentageChanges[$status] = $current > 0 ? 100 : 0;
             }
-        } catch (\Exception $e) {
-            // Fallback values
-            $statusCounts = (object) [
-                'in_progress' => 0,
-                'resolved' => 0,
-                'pending' => 0,
-                'unassigned' => 0,
-            ];
-            $percentageChanges = [
-                'in_progress' => 0,
-                'resolved' => 0,
-                'pending' => 0,
-                'unassigned' => 0,
-            ];
-            $tickets = new \Illuminate\Pagination\LengthAwarePaginator(
-                collect(), 0, 10, 1, ['path' => request()->url()]
-            );
         }
-
-        // ==================== JOBS/CALL LOGS DATA ====================
-        
-        try {
-            if (Schema::hasTable('call_logs')) {
-                // Get job statistics
-                $stats = [
-                    'total_jobs' => CallLog::count(),
-                    'pending_jobs' => Schema::hasColumn('call_logs', 'status') ? 
-                        CallLog::where('status', 'pending')->count() : 0,
-                    'in_progress_jobs' => Schema::hasColumn('call_logs', 'status') ? 
-                        CallLog::where('status', 'in_progress')->count() : 0,
-                    'completed_jobs' => Schema::hasColumn('call_logs', 'status') ? 
-                        CallLog::where('status', 'complete')->count() : 0,
-                    'assigned_jobs' => Schema::hasColumn('call_logs', 'status') ? 
-                        CallLog::where('status', 'assigned')->count() : 0,
-                    'cancelled_jobs' => Schema::hasColumn('call_logs', 'status') ? 
-                        CallLog::where('status', 'cancelled')->count() : 0,
-                ];
-
-                // Get recent call logs with relationships
-                $callLogsQuery = CallLog::query();
-                if (Schema::hasColumn('call_logs', 'assigned_to')) {
-                    $callLogsQuery->with(['assignedTo']);
-                }
-                $callLogs = $callLogsQuery->orderBy('created_at', 'desc')->limit(10)->get();
-            } else {
-                $stats = [
-                    'total_jobs' => 0,
-                    'pending_jobs' => 0,
-                    'in_progress_jobs' => 0,
-                    'completed_jobs' => 0,
-                    'assigned_jobs' => 0,
-                    'cancelled_jobs' => 0,
-                ];
-                $callLogs = collect();
-            }
-        } catch (\Exception $e) {
-            $stats = [
-                'total_jobs' => 0,
-                'pending_jobs' => 0,
-                'in_progress_jobs' => 0,
-                'completed_jobs' => 0,
-                'assigned_jobs' => 0,
-                'cancelled_jobs' => 0,
-            ];
-            $callLogs = collect();
-        }
-
-        // ==================== CONTENT MANAGEMENT DATA ====================
-        
-        try {
-            if (Schema::hasTable('blogs')) {
-                // Blog statistics - check for different possible column names
-                $blogCount = Blog::count();
-                
-                // Check for status column variations
-                if (Schema::hasColumn('blogs', 'status')) {
-                    $publishedBlogCount = Blog::where('status', 'published')->count();
-                } elseif (Schema::hasColumn('blogs', 'is_published')) {
-                    $publishedBlogCount = Blog::where('is_published', true)->count();
-                } elseif (Schema::hasColumn('blogs', 'published_at')) {
-                    $publishedBlogCount = Blog::whereNotNull('published_at')
-                        ->where('published_at', '<=', now())
-                        ->count();
-                } else {
-                    $publishedBlogCount = $blogCount; // Assume all are published if no status field
-                }
-
-                // Get recent blogs with author relationship
-                $blogsQuery = Blog::query();
-                if (Schema::hasColumn('blogs', 'author_id')) {
-                    $blogsQuery->with('author');
-                }
-                $recentBlogs = $blogsQuery->orderBy('created_at', 'desc')->limit(10)->get();
-            } else {
-                $blogCount = 0;
-                $publishedBlogCount = 0;
-                $recentBlogs = collect();
-            }
-        } catch (\Exception $e) {
-            $blogCount = 0;
-            $publishedBlogCount = 0;
-            $recentBlogs = collect();
-        }
-
-        try {
-            if (Schema::hasTable('faqs')) {
-                // FAQ statistics  
-                $totalFaqCount = Faq::count();
-                $activeFaqCount = Schema::hasColumn('faqs', 'is_active') ? 
-                    Faq::where('is_active', true)->count() : $totalFaqCount;
-            } else {
-                $activeFaqCount = 0;
-                $totalFaqCount = 0;
-            }
-        } catch (\Exception $e) {
-            $activeFaqCount = 0;
-            $totalFaqCount = 0;
-        }
-
-        try {
-            if (Schema::hasTable('services')) {
-                // Service statistics
-                $serviceCount = Service::count();
-                $activeServiceCount = Schema::hasColumn('services', 'is_active') ? 
-                    Service::where('is_active', true)->count() : $serviceCount;
-            } else {
-                $serviceCount = 0;
-                $activeServiceCount = 0;
-            }
-        } catch (\Exception $e) {
-            $serviceCount = 0;
-            $activeServiceCount = 0;
-        }
-
-        try {
-            if (Schema::hasTable('newsletter_subscribers')) {
-                // Newsletter subscriber statistics
-                $totalSubscriberCount = NewsletterSubscriber::count();
-                $subscriberCount = Schema::hasColumn('newsletter_subscribers', 'is_active') ? 
-                    NewsletterSubscriber::where('is_active', true)->count() : $totalSubscriberCount;
-            } else {
-                $subscriberCount = 0;
-                $totalSubscriberCount = 0;
-            }
-        } catch (\Exception $e) {
-            $subscriberCount = 0;
-            $totalSubscriberCount = 0;
-        }
-
-        try {
-            if (Schema::hasTable('customer_contacts')) {
-                // Customer contact statistics
-                $contactCount = CustomerContact::count();
-                $recentContactCount = CustomerContact::where('created_at', '>=', Carbon::now()->subDays(7))->count();
-            } else {
-                $contactCount = 0;
-                $recentContactCount = 0;
-            }
-        } catch (\Exception $e) {
-            $contactCount = 0;
-            $recentContactCount = 0;
-        }
-
-        try {
-            if (Schema::hasTable('users')) {
-                // User statistics
-                $userCount = User::count();
-                $activeUserCount = Schema::hasColumn('users', 'is_active') ? 
-                    User::where('is_active', true)->count() : $userCount;
-            } else {
-                $userCount = 0;
-                $activeUserCount = 0;
-            }
-        } catch (\Exception $e) {
-            $userCount = 0;
-            $activeUserCount = 0;
-        }
-
-        // ==================== ADDITIONAL DASHBOARD DATA ====================
-        
-        // Recent activity summary
-        $recentActivity = [
-            'new_tickets_today' => 0,
-            'completed_jobs_today' => 0,
-            'new_blogs_this_week' => 0,
-            'new_subscribers_this_week' => 0,
-        ];
-
-        try {
-            if (Schema::hasTable('tickets') || Schema::hasTable('support_tickets')) {
-                $recentActivity['new_tickets_today'] = Ticket::whereDate('created_at', today())->count();
-            }
-            if (Schema::hasTable('call_logs') && Schema::hasColumn('call_logs', 'status')) {
-                $recentActivity['completed_jobs_today'] = CallLog::where('status', 'complete')
-                    ->whereDate('updated_at', today())->count();
-            }
-            if (Schema::hasTable('blogs')) {
-                $recentActivity['new_blogs_this_week'] = Blog::where('created_at', '>=', $currentWeekStart)->count();
-            }
-            if (Schema::hasTable('newsletter_subscribers')) {
-                $recentActivity['new_subscribers_this_week'] = NewsletterSubscriber::where('created_at', '>=', $currentWeekStart)->count();
-            }
-        } catch (\Exception $e) {
-            // Keep default values
-        }
-
-        // Priority ticket counts
-        $priorityCounts = [
-            'high' => 0,
-            'medium' => 0,
-            'low' => 0,
-        ];
-
-        try {
-            $ticketTable = Schema::hasTable('tickets') ? 'tickets' : 'support_tickets';
-            if (Schema::hasTable($ticketTable) && Schema::hasColumn($ticketTable, 'priority')) {
-                $priorityCounts = [
-                    'high' => Ticket::where('priority', 'high')->count(),
-                    'medium' => Ticket::where('priority', 'medium')->count(),
-                    'low' => Ticket::where('priority', 'low')->count(),
-                ];
-            }
-        } catch (\Exception $e) {
-            // Keep default values
-        }
-
-        return view('admin.index', compact(
-            // Ticket data
-            'statusCounts',
-            'percentageChanges', 
-            'tickets',
-            'priorityCounts',
-            
-            // Job/Call log data
-            'stats',
-            'callLogs',
-            
-            // Content management data
-            'blogCount',
-            'publishedBlogCount',
-            'recentBlogs',
-            'activeFaqCount',
-            'totalFaqCount',
-            'serviceCount',
-            'activeServiceCount',
-            'subscriberCount',
-            'totalSubscriberCount',
-            
-            // Additional data
-            'contactCount',
-            'recentContactCount',
-            'userCount',
-            'activeUserCount',
-            'recentActivity'
-        ));
     }
+
+    // ==================== JOBS DATA ====================
+    $jobStats = [
+        'pending_jobs' => 0,
+        'in_progress_jobs' => 0,
+        'completed_jobs' => 0,
+        'total_jobs' => 0,
+    ];
+    $callLogs = collect();
+
+    if (Schema::hasTable('call_logs')) {
+        // For the dashboard, get only 5 most recent, filtered by period
+        $callLogs = CallLog::query()
+            ->where('created_at', '>=', $startDate)
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+
+        // Stats for cards (all-time, or filter by period)
+        $jobStats = [
+            'pending_jobs'   => CallLog::where('status', 'pending')->where('created_at', '>=', $startDate)->count(),
+            'in_progress_jobs' => CallLog::where('status', 'in_progress')->where('created_at', '>=', $startDate)->count(),
+            'completed_jobs' => CallLog::where('status', 'completed')->where('created_at', '>=', $startDate)->count(),
+            'total_jobs'     => CallLog::where('created_at', '>=', $startDate)->count(),
+        ];
+    }
+
+    // ==================== RETURN TO VIEW ====================
+    return view('admin.index', [
+        'period' => $period,
+        'startDate' => $startDate, // Optional: display in view
+        'statusCounts' => $statusCounts,
+        'percentageChanges' => $percentageChanges,
+        'tickets' => $tickets,
+        'callLogs' => $callLogs,
+        'stats' => array_merge(
+            ['total_jobs' => $jobStats['total_jobs'] ?? 0],
+            $jobStats
+        ),
+    ]);
+}
+
 
     /**
      * Calculate average ticket resolution time in hours
@@ -514,42 +305,49 @@ class SupportTicketController extends Controller
     // Removed duplicate myTickets method to resolve duplicate symbol declaration error.
 
 
-    public function allTickets(Request $request)
-    {
-        $query = Ticket::with(['assignedTechnician:id,name'])
-            ->select(['id', 'subject', 'company_name', 'priority', 'status', 'updated_at', 'assigned_to']);
+   public function allTickets(Request $request)
+{
+    $query = Ticket::with(['assignedTo:id,name']) // Changed from 'assignedTechnician'
+        ->select(['id', 'subject', 'company_name', 'priority', 'status', 'updated_at', 'assigned_to']);
 
-        $this->applyFilters($query, $request);
+    $this->applyFilters($query, $request);
 
-        $tickets = $query->latest()->paginate(15)->withQueryString();
+    $tickets = $query->latest()->paginate(15)->withQueryString();
 
-        $technicians = User::whereIn('id', function($query) {
-                $query->select('assigned_to')->from('tickets')->whereNotNull('assigned_to');
-            })
-            ->select(['id', 'name'])
-            ->get();
+    $technicians = User::whereIn('id', function($query) {
+            $query->select('assigned_to')->from('tickets')->whereNotNull('assigned_to');
+        })
+        ->select(['id', 'name'])
+        ->get();
 
-        $statuses = ['in_progress', 'pending', 'resolved'];
-        $priorities = ['low', 'medium', 'high'];
+    $statuses = ['in_progress', 'pending', 'resolved'];
+    $priorities = ['low', 'medium', 'high'];
 
-        return view('admin.all-tickets', compact('tickets', 'technicians', 'statuses', 'priorities'));
-    }
+    return view('admin.all-tickets', compact('tickets', 'technicians', 'statuses', 'priorities'));
+}
 
-    public function show(Ticket $ticket)
-    {
-        $ticket->load([
-            'comments' => function($query) {
-                $query->latest()->limit(10)->with(['user:id,name']);
-            },
-            'assignedTechnician:id,name'
-        ]);
 
-        $technicians = User::where('role', 'technician')
-            ->select(['id', 'name'])
-            ->get();
+  public function show(Ticket $ticket)
+{
+    // Load the correct relationships that exist in your model
+    $ticket->load([
+        'assignedTo:id,name' // Use 'assignedTo' instead of 'assignedTechnician'
+    ]);
 
-        return view('admin.ticketshow', compact('ticket', 'technicians'));
-    }
+    // If you have comments, uncomment this after adding the relationship
+    // $ticket->load([
+    //     'comments' => function($query) {
+    //         $query->latest()->limit(10)->with(['user:id,name']);
+    //     }
+    // ]);
+
+    $technicians = User::where('role', 'technician')
+        ->select(['id', 'name'])
+        ->get();
+
+    return view('admin.ticketshow', compact('ticket', 'technicians'));
+}
+
 
     public function openTickets(Request $request)
     {
@@ -647,8 +445,9 @@ class SupportTicketController extends Controller
         return view('admin.unassigned-tickets', compact('tickets', 'technicians', 'statuses', 'priorities'));
     }
 
-    public function adminStore(Request $request)
-    {
+  public function adminStore(Request $request)
+{
+    try {
         $validated = $request->validate([
             'company_name' => 'required|string|max:255',
             'contact_details' => 'nullable|string|max:255',
@@ -661,29 +460,72 @@ class SupportTicketController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
         ]);
 
+        // Handle file upload
         if ($request->hasFile('attachment')) {
             $validated['attachment'] = $request->file('attachment')->store('attachments', 'public');
         }
 
+        // Set default status
         $validated['status'] = 'in_progress';
 
+        // Create the ticket
         $ticket = Ticket::create($validated);
 
+        // Send notification to assigned technician
         if ($ticket->assigned_to) {
             $technician = User::find($ticket->assigned_to);
             $technician->notify(new TicketAssignedNotification($ticket));
         }
 
-        if ($request->ajax()) {
+        // Return JSON for AJAX requests (toastr optimized)
+        if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
-                'ticket' => $ticket
+                'message' => 'Ticket created successfully!',
+                'ticket' => [
+                    'id' => $ticket->id,
+                    'subject' => $ticket->subject,
+                    'status' => $ticket->status,
+                    'priority' => $ticket->priority
+                ]
             ]);
         }
 
+        // Fallback redirect with session flash for toastr
         return redirect()->route('admin.tickets.unassigned')
-            ->with('message', 'Ticket created successfully!');
+            ->with('success', 'Ticket #' . $ticket->id . ' created successfully!');
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        // Handle validation errors for AJAX
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed. Please check your input.',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        // Re-throw for normal form submission
+        throw $e;
+
+    } catch (\Exception $e) {
+        \Log::error('Error creating ticket: ' . $e->getMessage());
+
+        // Handle general errors for AJAX
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating ticket. Please try again.'
+            ], 500);
+        }
+
+        // Fallback redirect with error
+        return redirect()->back()
+            ->with('error', 'Error creating ticket. Please try again.')
+            ->withInput();
     }
+}
+
 
     public function create()
     {

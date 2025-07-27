@@ -1,842 +1,1092 @@
-@extends('layouts.contents')
+@extends('layouts.app')
+
+@section('title', 'Blog Management')
 
 @section('content')
-
-    <div class="blog-management-container">
-        {{-- Page Header --}}
-        <div class="page-header-card mb-4">
-            <div class="page-header-content">
-                <div class="header-text">
-                    <h1 class="page-title">
-                        <i class="fa fa-newspaper me-2"></i>
-                        Blog Management
-                    </h1>
-                    <p class="page-subtitle">
-                        <i class="fa fa-info-circle me-2"></i>
-                        Manage your blog posts and content
-                    </p>
-                </div>
-                
-                <!-- Search and Actions -->
-                <div class="header-actions">
-                    <form method="GET" action="{{ route('admin.blogs.index') }}" class="search-form">
-                        <div class="search-wrapper">
-                            <i class="fa fa-search search-icon"></i>
-                            <input type="text" name="search" value="{{ request('search') }}"
-                                placeholder="Search posts..." 
-                                class="form-control search-input">
-                        </div>
-                    </form>
-                    
-                    <a href="{{ route('admin.blogs.create') }}" 
-                       class="btn btn-primary btn-enhanced">
-                        <i class="fa fa-plus me-2"></i>
-                        New Post
-                    </a>
-                </div>
+<div class="dashboard-container">
+    {{-- Compact Header --}}
+    <div class="dashboard-header mb-2">
+        <div class="header-content">
+            <h1 class="dashboard-title">
+                <i class="fas fa-newspaper me-2"></i>
+                Blog Management
+            </h1>
+            <div class="header-meta">
+                <span class="badge bg-secondary">{{ $blogs->total() }} posts</span>
+                <small class="text-muted">Updated: {{ now()->format('g:i a') }}</small>
             </div>
         </div>
+        <div class="header-actions">
+            <form method="GET" action="{{ route('admin.blogs.index') }}" class="search-form me-2">
+                <div class="search-input-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="search" 
+                           value="{{ request('search') }}"
+                           placeholder="Search posts..."
+                           class="form-control form-control-sm">
+                </div>
+            </form>
+            <button onclick="window.location.href='{{ route('admin.blogs.create') }}'" class="btn btn-sm btn-success me-2">
+                <i class="fas fa-plus me-1"></i>
+                New Post
+            </button>
+            <button id="refreshBlogs" class="btn btn-sm btn-secondary">
+                <i class="fas fa-sync-alt me-1"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
 
-        {{-- Stats Cards --}}
-        <div class="stats-grid mb-4">
-            <div class="stat-card">
-                <div class="stat-card-body">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);">
-                        <i class="fa fa-file-text"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3 class="stat-number">{{ $blogs->total() }}</h3>
-                        <p class="stat-label">Total Posts</p>
-                    </div>
-                </div>
+    {{-- Success & Error Alerts --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show mb-2">
+            <i class="fas fa-check-circle me-2"></i>
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show mb-2">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    {{-- Compact Stats Cards --}}
+    <div class="stats-row mb-2">
+        <div class="stat-item">
+            <div class="stat-icon total-posts">
+                <i class="fas fa-file-text"></i>
             </div>
-            
-            <div class="stat-card">
-                <div class="stat-card-body">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-green-dark) 0%, #0F3D0F 100%);">
-                        <i class="fa fa-check-circle"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3 class="stat-number">{{ $publishedCount }}</h3>
-                        <p class="stat-label">Published</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-card-body">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
-                        <i class="fa fa-edit"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3 class="stat-number">{{ $draftCount }}</h3>
-                        <p class="stat-label">Drafts</p>
-                    </div>
-                </div>
+            <div class="stat-info">
+                <span class="stat-number">{{ $blogs->total() }}</span>
+                <span class="stat-label">Total Posts</span>
             </div>
         </div>
+        
+        <div class="stat-item">
+            <div class="stat-icon published-posts">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-number">{{ $publishedCount }}</span>
+                <span class="stat-label">Published</span>
+            </div>
+        </div>
+        
+        <div class="stat-item">
+            <div class="stat-icon draft-posts">
+                <i class="fas fa-edit"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-number">{{ $draftCount }}</span>
+                <span class="stat-label">Drafts</span>
+            </div>
+        </div>
+    </div>
 
-        {{-- Blog Posts Table --}}
-        <div class="content-card">
-            <div class="content-card-header">
-                <h5 class="card-title">
-                    <i class="fa fa-table me-2"></i>
+    {{-- Blog Posts Table --}}
+    <div class="content-card">
+        <div class="content-card-header">
+            <div class="header-content">
+                <h4 class="card-title">
+                    <i class="fas fa-list me-2"></i>
                     Blog Posts
-                </h5>
+                </h4>
+                @if($blogs->count() > 0)
+                <p class="card-subtitle mb-0">
+                    Showing {{ $blogs->firstItem() }} to {{ $blogs->lastItem() }} of {{ $blogs->total() }} posts
+                </p>
+                @endif
             </div>
-            
-            <div class="content-card-body">
-                <div class="table-responsive">
-                    <table class="enhanced-table">
-                        <thead>
-                            <tr>
-                                <th>
-                                    <i class="fa fa-file-text me-2"></i>Post
-                                </th>
-                                <th>
-                                    <i class="fa fa-user me-2"></i>Author
-                                </th>
-                                <th>
-                                    <i class="fa fa-tag me-2"></i>Category
-                                </th>
-                                <th>
-                                    <i class="fa fa-circle me-2"></i>Status
-                                </th>
-                                <th>
-                                    <i class="fa fa-calendar me-2"></i>Published
-                                </th>
-                                <th>
-                                    <i class="fa fa-cog me-2"></i>Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($blogs as $blog)
-                            <tr>
-                                <td>
-                                    <div class="post-info">
-                                        <!-- Image Preview Button -->
-                                        @if($blog->image_url)
-                                        <button onclick="showImageModal('{{ $blog->image_url }}', '{{ $blog->title }}')" 
-                                                class="image-preview-btn" 
-                                                title="View Image">
-                                            <i class="fa fa-image"></i>
-                                        </button>
-                                        @else
-                                        <div class="image-placeholder">
-                                            <i class="fa fa-image"></i>
-                                        </div>
-                                        @endif
-                                        
-                                        <div class="post-details">
-                                            <div class="post-title">
-                                                <a href="{{ route('blog.details', $blog->slug) }}" 
-                                                   class="post-link" 
-                                                   target="_blank">
-                                                    {{ $blog->title }}
-                                                </a>
-                                            </div>
-                                            <div class="post-slug">
-                                                <i class="fa fa-link me-1"></i>/{{ $blog->slug }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="author-info">
-                                        <i class="fa fa-user me-2"></i>{{ $blog->author ?? 'Unknown' }}
-                                    </div>
-                                </td>
-                                <td>
-                                    @if($blog->category)
-                                    <span class="category-badge category-filled">
-                                        <i class="fa fa-tag me-1"></i>{{ $blog->category }}
-                                    </span>
+            <div class="header-actions">
+                <div class="d-flex gap-2">
+                    <span class="badge published-badge">
+                        <i class="fas fa-check-circle me-1"></i>
+                        {{ $publishedCount }} Published
+                    </span>
+                    <span class="badge draft-badge">
+                        <i class="fas fa-edit me-1"></i>
+                        {{ $draftCount }} Drafts
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-card-body">
+            <div class="table-responsive">
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>Post</th>
+                            <th>Author</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Published</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($blogs as $blog)
+                        <tr class="{{ !$blog->is_published ? 'draft-row' : '' }}">
+                            <td>
+                                <div class="post-info">
+                                    {{-- Image Preview Button --}}
+                                    @if($blog->image_url)
+                                    <button onclick="showImageModal('{{ $blog->image_url }}', '{{ addslashes($blog->title) }}')" 
+                                            class="image-preview-btn" 
+                                            title="View Image">
+                                        <i class="fas fa-image"></i>
+                                    </button>
                                     @else
-                                    <span class="category-badge category-empty">
-                                        <i class="fa fa-tag me-1"></i>Uncategorized
-                                    </span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($blog->is_published)
-                                        <span class="status-badge status-published">
-                                            <i class="fa fa-check-circle me-1"></i>
-                                            Published
-                                        </span>
-                                    @elseif($blog->published_at && $blog->published_at->isFuture())
-                                        <span class="status-badge status-scheduled">
-                                            <i class="fa fa-clock me-1"></i>
-                                            Scheduled
-                                        </span>
-                                    @else
-                                        <span class="status-badge status-draft">
-                                            <i class="fa fa-edit me-1"></i>
-                                            Draft
-                                        </span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="publish-date">
-                                        @if($blog->published_at)
-                                            <i class="fa fa-calendar me-1"></i>{{ $blog->formatted_published_at }}
-                                        @else
-                                            <span class="text-muted">Not set</span>
-                                        @endif
+                                    <div class="image-placeholder">
+                                        <i class="fas fa-image"></i>
                                     </div>
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a href="{{ route('admin.blogs.edit', $blog) }}" 
-                                            class="action-btn edit-btn"
-                                            title="Edit">
-                                                <i class="fa fa-edit"></i>
+                                    @endif
+                                    
+                                    <div class="post-details">
+                                        <div class="post-title">
+                                            <a href="{{ route('blog.details', $blog->slug) }}" 
+                                               class="post-link" 
+                                               target="_blank"
+                                               title="{{ $blog->title }}">
+                                                {{ Str::limit($blog->title, 40) }}
                                             </a>
-
-                                        <a href="{{ route('blog.details', $blog->slug) }}" 
-                                           target="_blank"
-                                           class="action-btn view-btn"
-                                           title="Preview">
-                                            <i class="fa fa-eye"></i>
-                                        </a>
-                                        <form action="{{ route('admin.blogs.destroy', $blog) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" 
-                                                        onclick="return confirm('Are you sure you want to delete this blog post?')"
-                                                        class="action-btn delete-btn"
-                                                        title="Delete">
-                                                    <i class="fa fa-trash"></i>
-                                                </button>
-                                            </form>
-
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="6" class="empty-state">
-                                    <div class="empty-content">
-                                        <div class="empty-icon">
-                                            <i class="fa fa-file-text"></i>
                                         </div>
-                                        <h5 class="empty-title">No blog posts found</h5>
-                                        <p class="empty-description">
-                                            Get started by creating your first blog post and share your thoughts with the world.
-                                        </p>
-                                        <a href="{{ route('admin.blogs.create') }}" 
-                                           class="btn btn-primary btn-enhanced">
-                                            <i class="fa fa-plus me-2"></i>
-                                            Create Blog Post
-                                        </a>
+                                        <div class="post-slug">
+                                            <i class="fas fa-link me-1"></i>/{{ Str::limit($blog->slug, 30) }}
+                                        </div>
                                     </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="author-info">
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar me-2" style="width: 24px; height: 24px; font-size: 0.7rem;">
+                                            {{ substr($blog->author ?? 'U', 0, 1) }}
+                                        </div>
+                                        <span>{{ Str::limit($blog->author ?? 'Unknown', 12) }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                @if($blog->category)
+                                    <span class="category-badge">
+                                        <i class="fas fa-tag me-1"></i>
+                                        {{ $blog->category }}
+                                    </span>
+                                @else
+                                    <span class="uncategorized-badge">
+                                        <i class="fas fa-folder-open me-1"></i>
+                                        Uncategorized
+                                    </span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($blog->is_published)
+                                    <span class="status-badge status-open">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        Published
+                                    </span>
+                                @elseif($blog->published_at && $blog->published_at->isFuture())
+                                    <span class="status-badge status-pending">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Scheduled
+                                    </span>
+                                @else
+                                    <span class="status-badge priority-medium">
+                                        <i class="fas fa-edit me-1"></i>
+                                        Draft
+                                    </span>
+                                @endif
+                            </td>
+                            <td>
+                                <div class="publish-date">
+                                    @if($blog->published_at)
+                                        <div class="date-main">{{ $blog->published_at->format('M d, Y') }}</div>
+                                        <small class="text-muted">{{ $blog->published_at->diffForHumans() }}</small>
+                                    @else
+                                        <span class="text-muted">Not set</span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button onclick="window.location.href='{{ route('admin.blogs.edit', $blog) }}'" 
+                                       class="action-btn edit-btn" 
+                                       title="Edit Post">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+                                    <button onclick="window.open('{{ route('blog.details', $blog->slug) }}', '_blank')"
+                                       class="action-btn view-btn"
+                                       title="Preview Post">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+
+                                    <button class="action-btn delete-btn" 
+                                            onclick="deleteBlog({{ $blog->id }}, '{{ addslashes(Str::limit($blog->title, 50)) }}')"
+                                            title="Delete Post">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="empty-state">
+                                <div class="empty-content">
+                                    <i class="fas fa-newspaper"></i>
+                                    <h6>No Blog Posts Found</h6>
+                                    <p>No blog posts match your search criteria.</p>
+                                    <button onclick="window.location.href='{{ route('admin.blogs.create') }}'" 
+                                            class="btn btn-success btn-sm mt-2">
+                                        <i class="fas fa-plus me-1"></i>
+                                        Create First Post
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
             
-            <!-- Pagination -->
             @if($blogs->hasPages())
-            <div class="pagination-footer">
-                <div class="pagination-info">
-                    <i class="fa fa-list me-1"></i>
-                    Showing <span class="fw-medium">{{ $blogs->firstItem() }}</span> to 
-                    <span class="fw-medium">{{ $blogs->lastItem() }}</span> of 
-                    <span class="fw-medium">{{ $blogs->total() }}</span> results
-                </div>
-                <div class="pagination-links">
-                    {{ $blogs->links() }}
-                </div>
+            <div class="pagination-wrapper">
+                {{ $blogs->withQueryString()->onEachSide(1)->links() }}
             </div>
             @endif
         </div>
     </div>
+</div>
 
-    <!-- Image Modal -->
-    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="imageModalLabel">
-                        <i class="fa fa-image me-2"></i>Featured Image
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <img id="modalImage" src="" alt="" class="img-fluid rounded">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fa fa-times me-1"></i>Close
-                    </button>
-                </div>
+{{-- Image Modal --}}
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--secondary); color: white;">
+                <h5 class="modal-title" id="imageModalLabel">
+                    <i class="fas fa-image me-2"></i>
+                    Featured Image
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="" class="img-fluid rounded">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Close
+                </button>
             </div>
         </div>
     </div>
-
-    <style>
-        /* Dashboard Navigation - Matching other pages */
-        .dashboard-nav-wrapper {
-            background: var(--white);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            padding: 0.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .panel-nav {
-            border: none;
-            gap: 0.5rem;
-        }
-
-        .panel-nav .nav-link {
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            color: var(--light-text);
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-        }
-
-        .panel-nav .nav-link:hover {
-            background: var(--hover-bg);
-            color: var(--medium-text);
-        }
-
-        .panel-nav .nav-link.active {
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
-            color: var(--white);
-            box-shadow: var(--shadow-hover);
-        }
-
-        /* Blog Management Container */
-        .blog-management-container {
-            padding: 0;
-        }
-
-        /* Page Header */
-        .page-header-card {
-            background: var(--white);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-        }
-
-        .page-header-content {
-            padding: 2rem;
-            background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 2rem;
-        }
-
-        .page-title {
-            font-size: 1.75rem;
-            font-weight: 600;
-            color: var(--primary-green-dark);
-            margin: 0;
-            display: flex;
-            align-items: center;
-        }
-
-        .page-subtitle {
-            color: var(--light-text);
-            margin: 0.5rem 0 0 0;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .search-form {
-            position: relative;
-        }
-
-        .search-wrapper {
-            position: relative;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--light-text);
-            z-index: 2;
-        }
-
-        .search-input {
-            padding-left: 2.5rem;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            width: 250px;
-            transition: all 0.3s ease;
-        }
-
-        .search-input:focus {
-            border-color: var(--primary-green);
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-            outline: none;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-
-        .stat-card {
-            background: var(--white);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .stat-card-body {
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .stat-icon i {
-            font-size: 1.25rem;
-            color: var(--white);
-        }
-
-        .stat-content {
-            flex: 1;
-        }
-
-        .stat-number {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--dark-text);
-            margin: 0;
-            line-height: 1;
-        }
-
-        .stat-label {
-            color: var(--light-text);
-            font-size: 0.85rem;
-            margin: 0.25rem 0;
-            font-weight: 500;
-        }
-
-        /* Content Cards */
-        .content-card {
-            background: var(--white);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .content-card-header {
-            padding: 1.5rem 2rem;
-            background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .content-card-header .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--primary-green);
-            margin: 0;
-            display: flex;
-            align-items: center;
-        }
-
-        .content-card-body {
-            padding: 0;
-        }
-
-        /* Enhanced Table */
-        .enhanced-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin: 0;
-        }
-
-        .enhanced-table thead th {
-            background: var(--ultra-light-green);
-            color: var(--primary-green);
-            font-weight: 600;
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 1rem 1.5rem;
-            border-bottom: 2px solid var(--light-green);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .enhanced-table tbody tr {
-            transition: all 0.2s ease;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .enhanced-table tbody tr:last-child {
-            border-bottom: none;
-        }
-
-        .enhanced-table tbody tr:hover {
-            background: var(--ultra-light-green);
-        }
-
-        .enhanced-table tbody td {
-            padding: 1rem 1.5rem;
-            vertical-align: middle;
-        }
-
-        /* Post Info */
-        .post-info {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .image-preview-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            border: 2px solid var(--primary-green);
-            background: var(--light-green);
-            color: var(--primary-green);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .image-preview-btn:hover {
-            background: var(--primary-green);
-            color: var(--white);
-        }
-
-        .image-placeholder {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            border: 2px solid var(--border-color);
-            background: var(--hover-bg);
-            color: var(--light-text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .post-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .post-title {
-            font-weight: 500;
-            margin-bottom: 0.25rem;
-        }
-
-        .post-link {
-            color: var(--dark-text);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .post-link:hover {
-            color: var(--primary-green);
-        }
-
-        .post-slug {
-            color: var(--light-text);
-            font-size: 0.8rem;
-            font-family: monospace;
-        }
-
-        .author-info {
-            color: var(--medium-text);
-            font-weight: 500;
-        }
-
-        /* Badges */
-        .category-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .category-filled {
-            background: var(--light-green);
-            color: var(--primary-green);
-            border: 1px solid var(--secondary-green);
-        }
-
-        .category-empty {
-            background: var(--hover-bg);
-            color: var(--light-text);
-            border: 1px solid var(--border-color);
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.375rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            width: fit-content;
-        }
-
-        .status-published {
-            background: var(--ultra-light-green);
-            color: var(--primary-green);
-            border: 1px solid var(--secondary-green);
-        }
-
-        .status-scheduled {
-            background: #EFF6FF;
-            color: #3B82F6;
-            border: 1px solid #BFDBFE;
-        }
-
-        .status-draft {
-            background: #FFFBEB;
-            color: #D97706;
-            border: 1px solid #fde68a;
-        }
-
-        .publish-date {
-            color: var(--light-text);
-            font-size: 0.875rem;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-        }
-
-        .edit-btn {
-            background: var(--light-green);
-            color: var(--primary-green-dark);
-        }
-
-        .edit-btn:hover {
-            background: var(--primary-green-dark);
-            color: var(--white);
-            transform: translateY(-1px);
-        }
-
-        .view-btn {
-            background: #EFF6FF;
-            color: #3B82F6;
-        }
-
-        .view-btn:hover {
-            background: #3B82F6;
-            color: var(--white);
-            transform: translateY(-1px);
-        }
-
-        .delete-btn {
-            background: #FEF2F2;
-            color: #DC2626;
-        }
-
-        .delete-btn:hover {
-            background: #DC2626;
-            color: var(--white);
-            transform: translateY(-1px);
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-        }
-
-        .empty-content {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .empty-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: var(--hover-bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1rem;
-        }
-
-        .empty-icon i {
-            font-size: 2rem;
-            color: var(--light-text);
-        }
-
-        .empty-title {
-            color: var(--dark-text);
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .empty-description {
-            color: var(--light-text);
-            margin-bottom: 1.5rem;
-        }
-
-        /* Enhanced Buttons */
-        .btn-enhanced {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border: none;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-        }
-
-        .btn-primary.btn-enhanced {
-            background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
-            color: var(--white);
-        }
-
-        .btn-primary.btn-enhanced:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        /* Pagination */
-        .pagination-footer {
-            padding: 1rem 2rem;
-            background: var(--ultra-light-green);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .pagination-info {
-            color: var(--light-text);
-            font-size: 0.875rem;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .page-header-content {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-
-            .header-actions {
-                width: 100%;
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-input {
-                width: 100%;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .content-card-header {
-                padding: 1rem;
-            }
-
-            .enhanced-table th,
-            .enhanced-table td {
-                padding: 0.75rem 1rem;
-            }
-
-            .pagination-footer {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .post-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-
-            .action-buttons {
-                flex-wrap: wrap;
-            }
-        }
-    </style>
-
-    <script>
-    function showImageModal(imageUrl, title) {
-        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-        const modalImage = document.getElementById('modalImage');
-        const modalTitle = document.getElementById('imageModalLabel');
-        
-        modalImage.src = imageUrl;
-        modalImage.alt = title;
-        modalTitle.innerHTML = '<i class="fa fa-image me-2"></i>' + title;
-        modal.show();
-    }
-    </script>
+</div>
+
+{{-- Delete Confirmation Modal --}}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--danger); color: white;">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-trash me-2"></i>
+                    Delete Blog Post
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">Are you sure?</h5>
+                    <p class="text-muted">You are about to delete the blog post:</p>
+                    <strong id="blogTitle" class="text-danger"></strong>
+                    <p class="text-muted mt-2">This action cannot be undone!</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-2"></i>Delete Post
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
+
+@push('styles')
+<style>
+/* Updated CSS Variables for Blog Management */
+:root {
+    --primary: #059669;
+    --primary-dark: #047857;
+    --success: #059669;
+    --warning: #F59E0B;
+    --danger: #DC2626;
+     --secondary: #1c5c3f;
+    --secondary-dark: #2e563d;
+    --info: #0EA5E9;
+    --white: #FFFFFF;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --border-radius: 8px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --transition: all 0.2s ease;
+}
+
+/* Compact Dashboard Styles */
+.dashboard-header {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: 0.5rem 0.75rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.dashboard-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.125rem;
+}
+
+.header-meta .badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.bg-secondary {
+    background: var(--secondary) !important;
+    color: white;
+}
+
+.header-meta small {
+    font-size: 0.7rem;
+    color: var(--gray-500);
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.header-actions .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    height: 28px;
+}
+
+/* Search Form */
+.search-form {
+    min-width: 200px;
+}
+
+.search-input-wrapper {
+    position: relative;
+}
+
+.search-input-wrapper i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-500);
+    font-size: 0.85rem;
+}
+
+.search-input-wrapper .form-control {
+    padding-left: 2.25rem;
+}
+
+.btn-secondary {
+    background: var(--secondary);
+    border-color: var(--secondary);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: var(--secondary-dark);
+    border-color: var(--secondary-dark);
+    color: white;
+}
+
+/* Alert Styles */
+.alert {
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+}
+
+.alert-success {
+    background: #F0FDF4;
+    color: #166534;
+    border: 1px solid #BBF7D0;
+}
+
+.alert-danger {
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+}
+
+/* Compact Stats Row */
+.stats-row {
+    display: flex;
+    gap: 1rem;
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.stat-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-icon i {
+    font-size: 1rem;
+    color: var(--white);
+}
+
+.total-posts {
+    background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+}
+
+.published-posts {
+    background: linear-gradient(135deg, var(--success), var(--primary-dark));
+}
+
+.draft-posts {
+    background: linear-gradient(135deg, var(--warning), #D97706);
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-number {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    line-height: 1;
+}
+
+.stat-label {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Content Card */
+.content-card {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.content-card-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.card-subtitle {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.content-card-body {
+    padding: 0;
+}
+
+/* Header Action Badges */
+.published-badge {
+    background: #F0FDF4 !important;
+    color: #166534 !important;
+    border: 1px solid #BBF7D0;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+}
+
+.draft-badge {
+    background: #FFFBEB !important;
+    color: #D97706 !important;
+    border: 1px solid #FDE68A;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+}
+
+/* Compact Table Styles */
+.compact-table {
+    width: 100%;
+    font-size: 0.85rem;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.compact-table th {
+    background: var(--gray-50);
+    color: var(--gray-700);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.compact-table td {
+    padding: 0.5rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.compact-table tr:last-child td {
+    border-bottom: none;
+}
+
+.compact-table tr:hover {
+    background: var(--gray-50);
+}
+
+/* Draft Row Styling */
+.draft-row {
+    background: #FFFBEB !important;
+    opacity: 0.8;
+}
+
+.draft-row:hover {
+    background: #FEF3C7 !important;
+    opacity: 0.9;
+}
+
+/* Post Info */
+.post-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.image-preview-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 2px solid var(--secondary);
+    background: var(--gray-100);
+    color: var(--secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    padding: 0;
+}
+
+.image-preview-btn:hover {
+    background: var(--secondary);
+    color: var(--white);
+}
+
+.image-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 2px solid var(--gray-300);
+    background: var(--gray-100);
+    color: var(--gray-400);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.post-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.post-title {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.post-link {
+    color: var(--gray-800);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.post-link:hover {
+    color: var(--secondary);
+    text-decoration: none;
+}
+
+.post-slug {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    font-family: 'Monaco', 'Menlo', monospace;
+}
+
+/* Author Info */
+.author-info {
+    font-size: 0.8rem;
+}
+
+.user-avatar {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: 0.7rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Category Badges */
+.category-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #F0FDF4;
+    color: #166534;
+    border: 1px solid #BBF7D0;
+}
+
+.uncategorized-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: 1px solid var(--gray-300);
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-open {
+    background: #F0FDF4;
+    color: #047857;
+    border: 1px solid #BBF7D0;
+}
+
+.status-pending {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+}
+
+.priority-medium {
+    background: #FFFBEB;
+    color: #D97706;
+    border: 1px solid #FDE68A;
+}
+
+/* Publish Date */
+.publish-date {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+}
+
+.date-main {
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+.publish-date small {
+    display: block;
+    margin-top: 0.15rem;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+    background: none;
+    padding: 0;
+}
+
+.edit-btn {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+}
+
+.edit-btn:hover {
+    background: #1D4ED8;
+    color: white;
+}
+
+.view-btn {
+    background: #F3F4F6;
+    color: #4B5563;
+    border: 1px solid #D1D5DB;
+}
+
+.view-btn:hover {
+    background: #4B5563;
+    color: white;
+}
+
+.delete-btn {
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+}
+
+.delete-btn:hover {
+    background: #DC2626;
+    color: white;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.empty-content i {
+    font-size: 1.5rem;
+    color: var(--gray-300);
+    margin-bottom: 0.5rem;
+}
+
+.empty-content h6 {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    margin-bottom: 0.25rem;
+}
+
+.empty-content p {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    margin: 0;
+}
+
+/* Pagination */
+.pagination-wrapper {
+    padding: 0.75rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+/* Override Bootstrap pagination colors */
+.pagination .page-link {
+    color: var(--secondary);
+    border-color: var(--gray-300);
+}
+
+.pagination .page-link:hover {
+    color: var(--secondary-dark);
+    background-color: var(--gray-50);
+    border-color: var(--gray-300);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--secondary);
+    border-color: var(--secondary);
+    color: white;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: var(--border-radius);
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+    
+    .search-form {
+        min-width: 150px;
+        flex: 1;
+    }
+    
+    .stats-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .compact-table {
+        font-size: 0.8rem;
+    }
+    
+    .compact-table th,
+    .compact-table td {
+        padding: 0.4rem 0.5rem;
+    }
+    
+    .content-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .content-card-header .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .post-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .post-details {
+        width: 100%;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+    
+    .status-badge,
+    .category-badge,
+    .uncategorized-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for success message and show toastr
+    @if(session('success'))
+        toastr.success("{{ session('success') }}", "Success!", {
+            closeButton: true,
+            progressBar: true,
+            timeOut: 5000,
+            extendedTimeOut: 2000,
+            positionClass: 'toast-top-right'
+        });
+    @endif
+    
+    // Check for error message and show toastr
+    @if(session('error'))
+        toastr.error("{{ session('error') }}", "Error!", {
+            closeButton: true,
+            progressBar: true,
+            timeOut: 5000,
+            extendedTimeOut: 2000,
+            positionClass: 'toast-top-right'
+        });
+    @endif
+    
+    // Refresh button functionality
+    const refreshBtn = document.getElementById('refreshBlogs');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            const originalContent = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing';
+            this.disabled = true;
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+        });
+    }
+    
+    // Auto-submit search form
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.closest('form').submit();
+            }, 500);
+        });
+    }
+});
+
+// Show image modal function
+function showImageModal(imageUrl, title) {
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    const modalImage = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('imageModalLabel');
+    
+    modalImage.src = imageUrl;
+    modalImage.alt = title;
+    modalTitle.innerHTML = '<i class="fas fa-image me-2"></i>' + title;
+    modal.show();
+}
+
+// Delete blog functionality with toastr
+function deleteBlog(blogId, blogTitle) {
+    document.getElementById('blogTitle').textContent = blogTitle;
+    document.getElementById('deleteForm').action = `/admin/blogs/${blogId}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+    
+    // Handle form submission with loading state and toastr
+    const deleteForm = document.getElementById('deleteForm');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    
+    deleteForm.onsubmit = function(e) {
+        e.preventDefault();
+        
+        const originalContent = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Deleting...';
+        confirmBtn.disabled = true;
+        
+        // Submit the form with fetch for better control
+        fetch(deleteForm.action, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            modal.hide();
+            
+            if (data.success || response.ok) {
+                toastr.success('Blog post deleted successfully!', 'Success!', {
+                    closeButton: true,
+                    progressBar: true,
+                    timeOut: 3000,
+                    positionClass: 'toast-top-right'
+                });
+                
+                // Reload page after short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                toastr.error('Error deleting blog post. Please try again.', 'Error!', {
+                    closeButton: true,
+                    progressBar: true,
+                    timeOut: 5000,
+                    positionClass: 'toast-top-right'
+                });
+            }
+        })
+        .catch(error => {
+            modal.hide();
+            toastr.error('Error deleting blog post. Please try again.', 'Error!', {
+                closeButton: true,
+                progressBar: true,
+                timeOut: 5000,
+                positionClass: 'toast-top-right'
+            });
+        })
+        .finally(() => {
+            // Restore button
+            confirmBtn.innerHTML = originalContent;
+            confirmBtn.disabled = false;
+        });
+    };
+}
+</script>
+@endpush

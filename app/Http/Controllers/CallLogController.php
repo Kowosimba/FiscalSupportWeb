@@ -618,12 +618,124 @@ class CallLogController extends Controller
         ], 'admin.calllogs.in-progress', 'In Progress Jobs');
     }
 
-    public function completed(Request $request): View
-    {
-        return $this->buildFilteredView($request, [
-            'status' => 'completed'
-        ], 'admin.calllogs.completed', 'Completed Jobs');
+public function completed(Request $request)
+{
+    try {
+        // Build the query
+        $query = CallLog::where('status', 'completed'); // Note: 'completed' not 'complete'
+
+        // Apply date_range filter after $query is defined
+        if ($request->filled('date_range')) {
+            switch ($request->date_range) {
+                case 'today':
+                    $query->whereDate('date_resolved', today());
+                    break;
+                case 'this_week':
+                    $query->whereBetween('date_resolved', [now()->startOfWeek(), now()->endOfWeek()]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('date_resolved', now()->month)
+                          ->whereYear('date_resolved', now()->year);
+                    break;
+                case 'last_month':
+                    $query->whereMonth('date_resolved', now()->subMonth()->month)
+                          ->whereYear('date_resolved', now()->subMonth()->year);
+                    break;
+                case 'last_3_months':
+                    $query->where('date_resolved', '>=', now()->subMonths(3));
+                    break;
+                case 'this_year':
+                    $query->whereYear('date_resolved', now()->year);
+                    break;
+            }
+        }
+
+        // Apply filters
+        if ($request->filled('engineer')) {
+            $query->where('assigned_to', $request->engineer);
+        }
+        
+        // Filter by job type (using 'type' column from your migration)
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+        
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                  ->orWhere('customer_email', 'like', "%{$search}%")
+                  ->orWhere('fault_description', 'like', "%{$search}%")
+                  ->orWhere('job_card', 'like', "%{$search}%");
+            });
+        }
+        
+        if ($request->filled('date_from')) {
+            $query->whereDate('date_resolved', '>=', $request->date_from);
+        }
+        
+        if ($request->filled('date_to')) {
+            $query->whereDate('date_resolved', '<=', $request->date_to);
+        }
+        
+        // Get paginated results
+        $callLogs = $query->with(['assignedTo', 'approvedBy'])
+            ->orderBy('date_resolved', 'desc')
+            ->paginate(15)
+            ->appends($request->query());
+
+        // Get filter data
+        $technicians = \App\Models\User::whereIn('role', ['technician', 'engineer', 'admin'])
+            ->orderBy('name')
+            ->get();
+            
+        // Get job types from the enum values
+        $jobTypes = collect(['normal', 'emergency']);
+
+        // Calculate comprehensive statistics
+        $baseQuery = CallLog::where('status', 'completed');
+        
+        // Revenue calculations using correct column name
+        $totalRevenue = (clone $baseQuery)->sum('amount_charged') ?? 0;
+        $avgRevenue = (clone $baseQuery)->avg('amount_charged') ?? 0;
+        
+        // Duration calculations using billed_hours
+        $avgDuration = (clone $baseQuery)->avg('billed_hours') ?? 0;
+        $totalDuration = (clone $baseQuery)->sum('billed_hours') ?? 0;
+        
+        $stats = [
+            'total_completed' => (clone $baseQuery)->count(),
+            'this_month' => (clone $baseQuery)->whereMonth('date_resolved', now()->month)
+                ->whereYear('date_resolved', now()->year)->count(),
+            'this_week' => (clone $baseQuery)->whereBetween('date_resolved', 
+                [now()->startOfWeek(), now()->endOfWeek()])->count(),
+            'today' => (clone $baseQuery)->whereDate('date_resolved', today())->count(),
+            'total_revenue' => $totalRevenue,
+            'avg_revenue' => $avgRevenue,
+            'monthly_revenue' => (clone $baseQuery)->whereMonth('date_resolved', now()->month)
+                ->whereYear('date_resolved', now()->year)->sum('amount_charged') ?? 0,
+            'weekly_revenue' => (clone $baseQuery)->whereBetween('date_resolved', 
+                [now()->startOfWeek(), now()->endOfWeek()])->sum('amount_charged') ?? 0,
+            'avg_duration' => $avgDuration,
+            'total_duration' => $totalDuration,
+        ];
+
+        return view('admin.calllogs.completed', compact(
+            'callLogs', 
+            'stats', 
+            'technicians',
+            'jobTypes'
+        ));
+        
+    } catch (\Exception $e) {
+        \Log::error('Error loading completed jobs: ' . $e->getMessage());
+        
+        return redirect()->back()
+            ->with('error', 'Error loading completed jobs. Please try again.');
     }
+}
+
+
 
     public function cancelled(Request $request): View
     {
@@ -632,16 +744,35 @@ class CallLogController extends Controller
         ], 'admin.calllogs.cancelled', 'Cancelled Jobs');
     }
 
-    public function myJobs(Request $request): View
-    {
-        return $this->buildFilteredView($request, [
-            'assigned_to' => Auth::id()
-        ], 'admin.calllogs.my-jobs', 'My Jobs');
-    }
+public function myJobs(Request $request): View
+{
+    // Calculate stats for the authenticated user
+    $stats = [
+        'pending' => CallLog::where('assigned_to', Auth::id())
+                           ->where('status', 'pending')
+                           ->count(),
+        'in_progress' => CallLog::where('assigned_to', Auth::id())
+                               ->where('status', 'in_progress')
+                               ->count(),
+        'completed' => CallLog::where('assigned_to', Auth::id())
+                             ->where('status', 'completed')
+                             ->count(),
+    ];
+
+    // Get the filtered view (assuming this returns a View instance)
+    $view = $this->buildFilteredView($request, [
+        'assigned_to' => Auth::id()
+    ], 'admin.calllogs.my-jobs', 'My Jobs');
+
+    // Add stats to the view data
+    $view->with('stats', $stats);
+
+    return $view;
+}
 
     public function all(Request $request): View
     {
-        return $this->buildFilteredView($request, [], 'admin.calllogs.all', 'All Jobs');
+        return $this->buildFilteredView($request, [], 'admin.calllogs.alljobs', 'All Jobs');
     }
 
     // Private helper methods

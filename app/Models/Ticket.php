@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Comment;
 
 class Ticket extends Model
 {
@@ -71,4 +72,25 @@ class Ticket extends Model
     {
         return $query->whereNull('assigned_to');
     }
+
+    /**
+     * If you need assignedTechnician as an alias
+     */
+
+    /**
+     * Add this only if you want comments functionality
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class, 'ticket_id');
+    }
+
+    /**
+     * Alias for assignedTo relationship - for backward compatibility
+     */
+    public function assignedTechnician()
+    {
+        return $this->assignedTo();
+    }
+ 
 }
