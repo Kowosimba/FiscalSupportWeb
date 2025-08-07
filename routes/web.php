@@ -125,6 +125,7 @@ Route::middleware('auth')->group(function () {
     });
 
 });
+Route::post('/{user}/toggle-activation', 'toggleActivation')->controller(AdminUserController::class)->name('toggle-activation');
 
 // =============================================================================
 // ADMIN ROUTES (Authenticated + Role-Based Access)
@@ -138,7 +139,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::prefix('users')->name('users.')->controller(AdminUserController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/{user}/assign-role', 'assignRole')->name('assign-role');
-        Route::post('/{user}/toggle-activation', 'toggleActivation')->name('toggle-activation');
+        
         Route::get('/activate/{token}', 'showActivationPage')->name('activate');
         Route::post('/activate', 'processActivation')->name('processActivation');
     });
@@ -278,16 +279,3 @@ Route::prefix('admin/contacts')->name('admin.contacts.')->middleware(['auth'])->
     Route::delete('/{contact}', [App\Http\Controllers\Admin\CustomerContactController::class, 'destroy'])->name('destroy');
 });
 
-// Add this to routes/web.php for testing
-Route::get('/test-email', function () {
-    try {
-        Mail::raw('Test email from FiscalSupportWeb', function ($message) {
-            $message->to('supporthre2@fiscalsupportservices.com')
-                   ->subject('Email Configuration Test');
-        });
-        
-        return 'Test email sent successfully!';
-    } catch (\Exception $e) {
-        return 'Email failed: ' . $e->getMessage();
-    }
-});
