@@ -607,15 +607,16 @@
                     'permission' => true
                 ],
                 [
-                    'key' => 'reports',
-                    'title' => 'Reports',
-                    'description' => 'View system reports',
-                    'icon' => 'fa-chart-line',
-                    'icon_class' => 'reports-icon',
-                    'route' => route('admin.call-reports.index'),
-                    'btn_class' => 'btn-warning',
-                    'btn_text' => 'View',
-                    'permission' => in_array(auth()->user()->role, ['admin', 'manager'])
+                    'key' => 'contacts',               // Changed from 'reports' to 'contacts' to match the context
+                    'title' => 'Contacts',
+                    'description' => 'Add New Contact',  // Describes the action properly
+                    'icon' => 'fa-address-book',          // Icon representing contacts
+                    'icon_class' => 'contacts-icon',      // Updated class to match new context
+                    // Use your route for creating a new contact; typically this is the 'create' route
+                    'route' => route('admin.contacts.create'),  
+                    'btn_class' => 'btn-success',          // Green button for creating something new
+                    'btn_text' => 'Add Contact',           // Clear call to action
+                    'permission' => true,                   // Keep as needed, or replace with actual permission check
                 ]
             ];
         @endphp

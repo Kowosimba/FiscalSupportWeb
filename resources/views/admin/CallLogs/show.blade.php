@@ -4,218 +4,253 @@
 
 @section('content')
 <div class="dashboard-container">
-    {{-- Page Header --}}
-    <div class="dashboard-header mb-4">
+    {{-- Compact Header --}}
+    <div class="dashboard-header mb-2">
         <div class="header-content">
-            <h1 class="dashboard-title mb-0">
+            <h1 class="dashboard-title">
                 <i class="fas fa-clipboard-check me-2"></i>
                 Job Card Details
             </h1>
-            <p class="dashboard-subtitle mb-0">{{ $callLog->job_card ?? 'TBD-' . $callLog->id }}</p>
-            <div class="period-indicator mt-1">
-                <span class="badge bg-primary">Created: {{ $callLog->created_at->format('M j, Y') }}</span>
-                <small class="text-muted ms-2">Last updated: {{ $callLog->updated_at->diffForHumans() }}</small>
-            </div>
-            <div class="status-indicator mt-2">
-                @include('admin.calllogs.partials.status-badge', ['status' => $callLog->status])
-                @include('admin.calllogs.partials.type-badge', ['type' => $callLog->type])
+            <div class="header-meta">
+                <span class="badge bg-secondary me-2">
+                    <i class="fas fa-hashtag me-1"></i>
+                    {{ $callLog->job_card ?? 'TBD-' . $callLog->id }}
+                </span>
+                <span class="badge bg-info me-2">
+                    <i class="fas fa-calendar me-1"></i>
+                    {{ $callLog->created_at->format('M j, Y') }}
+                </span>
+                <small class="text-muted">Last updated: {{ $callLog->updated_at->diffForHumans() }}</small>
             </div>
         </div>
         <div class="header-actions">
-            <div class="btn-group" role="group">
-                <a href="{{ route('admin.call-logs.all') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-arrow-left me-2"></i>
-                    Back to Jobs
-                </a>
-                @if(in_array(auth()->user()->role ?? 'user', ['admin', 'manager']) || 
-                    ($callLog->assigned_to == auth()->id()))
-                    <a href="{{ route('admin.call-logs.edit', $callLog) }}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-edit me-2"></i>
-                        Edit
-                    </a>
-                @endif
-                <div class="dropdown">
-                    <button class="btn btn-outline-info btn-sm dropdown-toggle" type="button" 
-                            data-bs-toggle="dropdown">
-                        <i class="fas fa-ellipsis-h me-2"></i>
-                        Actions
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a class="dropdown-item" href="#" onclick="printJobCard()">
-                                <i class="fas fa-print me-2"></i>Print Job Card
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#" onclick="exportToPdf()">
-                                <i class="fas fa-file-pdf me-2"></i>Export to PDF
-                            </a>
-                        </li>
-                        @if(in_array(auth()->user()->role ?? 'user', ['admin']))
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item text-danger" href="#" onclick="deleteJob()">
-                                    <i class="fas fa-trash me-2"></i>Delete Job
-                                </a>
-                            </li>
-                        @endif
-                    </ul>
-                </div>
+            <button onclick="window.location.href='{{ route('admin.call-logs.all') }}'" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to Jobs
+            </button>
+            @if(in_array(auth()->user()->role ?? 'user', ['admin', 'manager']) || ($callLog->assigned_to == auth()->id()))
+                <button onclick="window.location.href='{{ route('admin.call-logs.edit', $callLog) }}'" class="btn btn-sm btn-primary me-2">
+                    <i class="fas fa-edit me-1"></i>
+                    Edit
+                </button>
+            @endif
+            <div class="dropdown">
+                
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Main Job Information -->
-        <div class="col-xl-8 col-lg-7">
-            <!-- Basic Job Info -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Job Information
-                    </h5>
-                    <div class="job-priority">
-                        @if($callLog->type === 'emergency')
-                            <span class="badge bg-danger">
-                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                Emergency
-                            </span>
-                        @else
-                            <span class="badge bg-secondary">
-                                <i class="fas fa-clock me-1"></i>
-                                {{ ucfirst($callLog->type ?? 'Normal') }}
-                            </span>
-                        @endif
+    {{-- Status Overview --}}
+    <div class="status-overview mb-2">
+        <div class="status-item">
+            @php
+                $statusConfig = [
+                    'pending' => ['class' => 'status-pending', 'icon' => 'clock', 'label' => 'Pending'],
+                    'assigned' => ['class' => 'status-assigned', 'icon' => 'user-check', 'label' => 'Assigned'],
+                    'in_progress' => ['class' => 'status-progress', 'icon' => 'cog', 'label' => 'In Progress'],
+                    'complete' => ['class' => 'status-complete', 'icon' => 'check-circle', 'label' => 'Complete'],
+                    'cancelled' => ['class' => 'status-cancelled', 'icon' => 'times-circle', 'label' => 'Cancelled']
+                ];
+                $config = $statusConfig[$callLog->status] ?? ['class' => 'status-default', 'icon' => 'circle', 'label' => 'Unknown'];
+            @endphp
+            <span class="status-badge {{ $config['class'] }}">
+                <i class="fas fa-{{ $config['icon'] }} me-1"></i>
+                {{ $config['label'] }}
+            </span>
+        </div>
+        
+        <div class="status-item">
+            @if($callLog->type === 'emergency')
+                <span class="type-badge emergency">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Emergency
+                </span>
+            @else
+                <span class="type-badge normal">
+                    <i class="fas fa-clock me-1"></i>
+                    {{ ucfirst($callLog->type ?? 'Normal') }}
+                </span>
+            @endif
+        </div>
+        
+        <div class="status-item">
+            <span class="amount-badge">
+                <i class="fas fa-dollar-sign me-1"></i>
+                @if(isset($callLog->currency) && $callLog->currency === 'ZWG')
+                    ZWG {{ number_format($callLog->amount_charged ?? 0, 2) }}
+                @else
+                    ${{ number_format($callLog->amount_charged ?? 0, 2) }}
+                @endif
+            </span>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {{-- Main Content --}}
+        <div class="col-lg-8">
+            {{-- Job Information Card --}}
+            <div class="content-card mb-3">
+                <div class="content-card-header">
+                    <div class="header-content">
+                        <h4 class="card-title">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Job Information
+                        </h4>
+                        <p class="card-subtitle mb-0">
+                            Basic job details and customer information
+                        </p>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="row g-4">
+                
+                <div class="content-card-body" style="padding: 1rem;">
+                    <div class="row g-3">
+                        {{-- Customer Details --}}
                         <div class="col-md-6">
                             <div class="info-section">
-                                <h6 class="section-title">Job Details</h6>
+                                <h6 class="section-title">
+                                    <i class="fas fa-user me-2"></i>
+                                    Customer Details
+                                </h6>
                                 <div class="info-grid">
                                     <div class="info-item">
-                                        <span class="info-label">Job Card Number:</span>
-                                        <span class="info-value badge bg-primary">
-                                            {{ $callLog->job_card ?? 'TBD-' . $callLog->id }}
-                                        </span>
+                                        <div class="info-label">Customer Name</div>
+                                        <div class="info-value">{{ $callLog->customer_name ?? 'N/A' }}</div>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Customer Name:</span>
-                                        <span class="info-value">{{ $callLog->customer_name ?? 'N/A' }}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Customer Email:</span>
-                                        <span class="info-value">
+                                        <div class="info-label">Email Address</div>
+                                        <div class="info-value">
                                             @if($callLog->customer_email)
-                                                <a href="mailto:{{ $callLog->customer_email }}" class="text-primary">
+                                                <a href="mailto:{{ $callLog->customer_email }}" class="contact-link">
+                                                    <i class="fas fa-envelope me-1"></i>
                                                     {{ $callLog->customer_email }}
                                                 </a>
                                             @else
-                                                N/A
+                                                <span class="text-muted">Not provided</span>
                                             @endif
-                                        </span>
+                                        </div>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Customer Phone:</span>
-                                        <span class="info-value">
+                                        <div class="info-label">Phone Number</div>
+                                        <div class="info-value">
                                             @if($callLog->customer_phone)
-                                                <a href="tel:{{ $callLog->customer_phone }}" class="text-primary">
+                                                <a href="tel:{{ $callLog->customer_phone }}" class="contact-link">
+                                                    <i class="fas fa-phone me-1"></i>
                                                     {{ $callLog->customer_phone }}
                                                 </a>
                                             @else
-                                                N/A
+                                                <span class="text-muted">Not provided</span>
                                             @endif
-                                        </span>
+                                        </div>
                                     </div>
-                                    <div class="info-item">
-                                        <span class="info-label">ZIMRA Reference:</span>
-                                        <span class="info-value">{{ $callLog->zimra_ref ?? 'N/A' }}</span>
-                                    </div>
+                                    @if($callLog->customer_address)
+                                        <div class="info-item">
+                                            <div class="info-label">Customer Address</div>
+                                            <div class="info-value">{{ $callLog->customer_address }}</div>
+                                        </div>
+                                    @endif
+                                    @if($callLog->zimra_ref)
+                                        <div class="info-item">
+                                            <div class="info-label">ZIMRA Reference</div>
+                                            <div class="info-value">
+                                                <span class="reference-badge">
+                                                    <i class="fas fa-hashtag me-1"></i>
+                                                    {{ $callLog->zimra_ref }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
+
+                        {{-- Schedule & Billing --}}
                         <div class="col-md-6">
                             <div class="info-section">
-                                <h6 class="section-title">Schedule & Billing</h6>
+                                <h6 class="section-title">
+                                    <i class="fas fa-calendar-alt me-2"></i>
+                                    Schedule & Billing
+                                </h6>
                                 <div class="info-grid">
                                     <div class="info-item">
-                                        <span class="info-label">Date Booked:</span>
-                                        <span class="info-value">
+                                        <div class="info-label">Date Booked</div>
+                                        <div class="info-value">
                                             @if($callLog->date_booked)
-                                                <span class="badge bg-info">
+                                                <span class="date-badge">
                                                     <i class="fas fa-calendar me-1"></i>
                                                     {{ $callLog->date_booked->format('M j, Y') }}
                                                 </span>
-                                                <small class="text-muted d-block">
-                                                    {{ $callLog->date_booked->diffForHumans() }}
-                                                </small>
+                                                <small class="text-muted d-block">{{ $callLog->date_booked->diffForHumans() }}</small>
                                             @else
-                                                N/A
+                                                <span class="text-muted">Not set</span>
                                             @endif
-                                        </span>
+                                        </div>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Date Resolved:</span>
-                                        <span class="info-value">
+                                        <div class="info-label">Date Resolved</div>
+                                        <div class="info-value">
                                             @if($callLog->date_resolved)
-                                                <span class="badge bg-success">
+                                                <span class="date-badge resolved">
                                                     <i class="fas fa-check-circle me-1"></i>
                                                     {{ $callLog->date_resolved->format('M j, Y') }}
                                                 </span>
+                                                <small class="text-muted d-block">{{ $callLog->date_resolved->diffForHumans() }}</small>
                                             @else
                                                 <span class="text-muted">Not resolved yet</span>
                                             @endif
-                                        </span>
+                                        </div>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Time Start:</span>
-                                        <span class="info-value">
-                                            @if($callLog->time_start)
-                                                <span class="badge bg-info">
-                                                    <i class="fas fa-play me-1"></i>
-                                                    {{ $callLog->time_start->format('g:i A') }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">Not started</span>
-                                            @endif
-                                        </span>
+                                        <div class="info-label">Work Hours</div>
+                                        <div class="info-value">
+                                            <div class="time-range">
+                                                @if($callLog->time_start)
+                                                    <span class="time-badge start">
+                                                        <i class="fas fa-play me-1"></i>
+                                                        {{ $callLog->time_start->format('g:i A') }}
+                                                    </span>
+                                                @else
+                                                    <span class="time-badge placeholder">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        Not started
+                                                    </span>
+                                                @endif
+                                                
+                                                @if($callLog->time_finish)
+                                                    <span class="time-separator">→</span>
+                                                    <span class="time-badge finish">
+                                                        <i class="fas fa-stop me-1"></i>
+                                                        {{ $callLog->time_finish->format('g:i A') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Time Finish:</span>
-                                        <span class="info-value">
-                                            @if($callLog->time_finish)
-                                                <span class="badge bg-danger">
-                                                    <i class="fas fa-stop me-1"></i>
-                                                    {{ $callLog->time_finish->format('g:i A') }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">Not finished</span>
-                                            @endif
-                                        </span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Billed Hours:</span>
-                                        <span class="info-value">
+                                        <div class="info-label">Billed Hours</div>
+                                        <div class="info-value">
                                             @if($callLog->billed_hours)
-                                                <span class="badge bg-secondary">
+                                                <span class="billing-badge">
                                                     <i class="fas fa-clock me-1"></i>
-                                                    {{ $callLog->billed_hours }} hours
+                                                    {{ $callLog->billed_hours }}
                                                 </span>
                                             @else
                                                 <span class="text-muted">Not calculated</span>
                                             @endif
-                                        </span>
+                                        </div>
                                     </div>
-                                    <div class="info-item amount-highlight">
-                                        <span class="info-label">Amount Charged:</span>
-                                        <span class="info-value">
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-dollar-sign me-1"></i>
-                                                ${{ number_format($callLog->amount_charged ?? 0, 2) }}
+                                    <div class="info-item highlighted">
+                                        <div class="info-label">Amount Charged</div>
+                                        <div class="info-value">
+                                            <span class="amount-display">
+                                                @if(isset($callLog->currency) && $callLog->currency === 'ZWG')
+                                                    <i class="fas fa-coins me-1"></i>
+                                                    ZWG {{ number_format($callLog->amount_charged ?? 0, 2) }}
+                                                @else
+                                                    <i class="fas fa-dollar-sign me-1"></i>
+                                                    ${{ number_format($callLog->amount_charged ?? 0, 2) }}
+                                                @endif
                                             </span>
-                                        </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -224,37 +259,54 @@
                 </div>
             </div>
 
-            <!-- Fault Description -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-bug me-2"></i>
-                        Fault Description
-                    </h5>
+            {{-- Fault Description Card --}}
+            <div class="content-card mb-3">
+                <div class="content-card-header">
+                    <div class="header-content">
+                        <h4 class="card-title">
+                            <i class="fas fa-bug me-2"></i>
+                            Fault Description
+                        </h4>
+                        <p class="card-subtitle mb-0">
+                            Detailed description of the reported issue
+                        </p>
+                    </div>
                 </div>
-                <div class="card-body">
+                
+                <div class="content-card-body" style="padding: 1rem;">
                     <div class="fault-description">
-                        <p class="mb-0">{{ $callLog->fault_description ?: 'No fault description provided.' }}</p>
+                        <p class="fault-text">{{ $callLog->fault_description ?: 'No fault description provided.' }}</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Engineer Comments -->
+            {{-- Engineer Comments Card --}}
             @if($callLog->engineer_comments)
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title">
-                            <i class="fas fa-tools me-2"></i>
-                            Engineer Comments
-                        </h5>
+                <div class="content-card mb-3">
+                    <div class="content-card-header">
+                        <div class="header-content">
+                            <h4 class="card-title">
+                                <i class="fas fa-tools me-2"></i>
+                                Engineer Comments
+                            </h4>
+                            <p class="card-subtitle mb-0">
+                                Technical notes and resolution details
+                            </p>
+                        </div>
                     </div>
-                    <div class="card-body">
+                    
+                    <div class="content-card-body" style="padding: 1rem;">
                         <div class="engineer-comments">
                             <div class="comment-box">
                                 <div class="comment-header">
                                     <div class="comment-author">
-                                        <i class="fas fa-user-cog me-2"></i>
-                                        {{ optional($callLog->assignedTo)->name ?? $callLog->engineer ?? 'Engineer' }}
+                                        <div class="author-avatar">
+                                            <i class="fas fa-user-cog"></i>
+                                        </div>
+                                        <div class="author-details">
+                                            <div class="author-name">{{ optional($callLog->assignedTo)->name ?? $callLog->engineer ?? 'Engineer' }}</div>
+                                            <div class="author-role">Technical Engineer</div>
+                                        </div>
                                     </div>
                                     <div class="comment-date">
                                         <i class="fas fa-clock me-1"></i>
@@ -271,50 +323,54 @@
             @endif
         </div>
 
-        <!-- Sidebar -->
-        <div class="col-xl-4 col-lg-5">
-            <!-- Assignment Info -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-users me-2"></i>
-                        Assignment Information
-                    </h5>
+        {{-- Sidebar --}}
+        <div class="col-lg-4">
+            {{-- Assignment Information Card --}}
+            <div class="content-card mb-3">
+                <div class="content-card-header">
+                    <div class="header-content">
+                        <h4 class="card-title">
+                            <i class="fas fa-users me-2"></i>
+                            Assignment Information
+                        </h4>
+                        <p class="card-subtitle mb-0">
+                            Job assignment and approval details
+                        </p>
+                    </div>
                 </div>
-                <div class="card-body">
+                
+                <div class="content-card-body" style="padding: 1rem;">
                     <div class="assignment-info">
-                        <div class="assigned-to mb-3">
-                            <label class="assignment-label">Approved By:</label>
-                            <div class="user-info">
-                                <div class="user-avatar">
+                        {{-- Approved By --}}
+                        <div class="assignment-item">
+                            <div class="assignment-label">Approved By</div>
+                            <div class="user-card">
+                                <div class="user-avatar approver">
                                     <i class="fas fa-user-check"></i>
                                 </div>
                                 <div class="user-details">
-                                    <div class="user-name">
-                                        {{ optional($callLog->approver)->name ?? $callLog->approved_by ?? 'System' }}
-                                    </div>
+                                    <div class="user-name">{{ optional($callLog->approver)->name ?? $callLog->approved_by ?? 'System' }}</div>
                                     <div class="user-role">Approver</div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="assigned-to mb-3">
-                            <label class="assignment-label">Assigned Engineer:</label>
+                        {{-- Assigned Engineer --}}
+                        <div class="assignment-item">
+                            <div class="assignment-label">Assigned Engineer</div>
                             @if($callLog->assignedTo || $callLog->engineer)
-                                <div class="user-info">
+                                <div class="user-card">
                                     <div class="user-avatar engineer">
                                         <i class="fas fa-tools"></i>
                                     </div>
                                     <div class="user-details">
-                                        <div class="user-name">
-                                            {{ optional($callLog->assignedTo)->name ?? $callLog->engineer }}
-                                        </div>
-                                        <div class="user-role">Engineer</div>
+                                        <div class="user-name">{{ optional($callLog->assignedTo)->name ?? $callLog->engineer }}</div>
+                                        <div class="user-role">Technical Engineer</div>
                                         @if(optional($callLog->assignedTo)->email)
                                             <div class="user-contact">
-                                                <a href="mailto:{{ $callLog->assignedTo->email }}" class="text-primary">
+                                                <a href="mailto:{{ $callLog->assignedTo->email }}" class="contact-link">
                                                     <i class="fas fa-envelope me-1"></i>
-                                                    Email
+                                                    Email Engineer
                                                 </a>
                                             </div>
                                         @endif
@@ -328,16 +384,17 @@
                             @endif
                         </div>
 
+                        {{-- Booked By --}}
                         @if($callLog->booked_by)
-                            <div class="assigned-to">
-                                <label class="assignment-label">Booked By:</label>
-                                <div class="user-info">
+                            <div class="assignment-item">
+                                <div class="assignment-label">Booked By</div>
+                                <div class="user-card">
                                     <div class="user-avatar booker">
                                         <i class="fas fa-user-plus"></i>
                                     </div>
                                     <div class="user-details">
                                         <div class="user-name">{{ $callLog->booked_by }}</div>
-                                        <div class="user-role">Creator</div>
+                                        <div class="user-role">Job Creator</div>
                                     </div>
                                 </div>
                             </div>
@@ -346,28 +403,26 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-bolt me-2"></i>
-                        Quick Actions
-                    </h5>
+            {{-- Quick Actions Card --}}
+            <div class="content-card mb-3">
+                <div class="content-card-header">
+                    <div class="header-content">
+                        <h4 class="card-title">
+                            <i class="fas fa-bolt me-2"></i>
+                            Quick Actions
+                        </h4>
+                        <p class="card-subtitle mb-0">
+                            Common job management actions
+                        </p>
+                    </div>
                 </div>
-                <div class="card-body">
+                
+                <div class="content-card-body" style="padding: 1rem;">
                     <div class="action-buttons">
-                        @if(in_array(auth()->user()->role, ['admin', 'manager']))
-                            @if(!$callLog->assignedTo && !$callLog->engineer && $callLog->status !== 'complete')
-                                <button class="btn btn-success btn-sm w-100 mb-3" onclick="assignJobCard({{ $callLog->id }})">
-                                    <i class="fas fa-user-plus me-2"></i>
-                                    Assign Engineer
-                                </button>
-                            @endif
-                        @endif
                         
                         @if($callLog->assigned_to == auth()->id() || $callLog->engineer === auth()->user()->name)
                             @if($callLog->status === 'assigned' || $callLog->status === 'pending')
-                                <button class="btn btn-info btn-sm w-100 mb-3" onclick="updateStatus({{ $callLog->id }}, 'in_progress')">
+                                <button class="action-btn info w-100 mb-2" onclick="updateStatus({{ $callLog->id }}, 'in_progress')">
                                     <i class="fas fa-play me-2"></i>
                                     Start Work
                                 </button>
@@ -375,100 +430,92 @@
                         @endif
                         
                         @if($callLog->status === 'complete' && $callLog->customer_email)
-                            <button class="btn btn-outline-success btn-sm w-100 mb-3" onclick="notifyCustomer({{ $callLog->id }})">
+                            <button class="action-btn success w-100 mb-2" onclick="notifyCustomer({{ $callLog->id }})">
                                 <i class="fas fa-paper-plane me-2"></i>
                                 Notify Customer
                             </button>
                         @elseif($callLog->status === 'complete' && !$callLog->customer_email)
-                            <button class="btn btn-outline-secondary btn-sm w-100 mb-3" disabled title="No customer email available">
+                            <button class="action-btn secondary w-100 mb-2" disabled title="No customer email available">
                                 <i class="fas fa-paper-plane me-2"></i>
                                 Notify Customer
                             </button>
                         @endif
-                        
-                        @if(auth()->user()->role === 'admin')
-                            <button class="btn btn-outline-info btn-sm w-100" onclick="downloadReport()">
-                                <i class="fas fa-download me-2"></i>
-                                Generate Report
-                            </button>
-                        @endif
+                    
                     </div>
                 </div>
             </div>
 
-            <!-- Job Timeline -->
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-history me-2"></i>
-                        Job Timeline
-                    </h5>
+            {{-- Job Timeline Card --}}
+            <div class="content-card">
+                <div class="content-card-header">
+                    <div class="header-content">
+                        <h4 class="card-title">
+                            <i class="fas fa-history me-2"></i>
+                            Job Timeline
+                        </h4>
+                        <p class="card-subtitle mb-0">
+                            Progress tracking and milestones
+                        </p>
+                    </div>
                 </div>
-                <div class="card-body">
+                
+                <div class="content-card-body" style="padding: 1rem;">
                     <div class="timeline">
-                        <!-- Job Created -->
+                        {{-- Job Created --}}
                         <div class="timeline-item completed">
                             <div class="timeline-marker">
                                 <i class="fas fa-plus"></i>
                             </div>
                             <div class="timeline-content">
-                                <h6 class="timeline-title">Job Created</h6>
-                                <p class="timeline-date">
-                                    {{ $callLog->created_at->format('M j, Y g:i A') }}
-                                </p>
-                                <small class="timeline-description">
-                                    Created by {{ $callLog->booked_by ?? 'System' }}
-                                </small>
+                                <div class="timeline-title">Job Created</div>
+                                <div class="timeline-date">{{ $callLog->created_at->format('M j, Y g:i A') }}</div>
+                                <div class="timeline-description">Created by {{ $callLog->booked_by ?? 'System' }}</div>
                             </div>
                         </div>
                         
-                        <!-- Engineer Assigned -->
+                        {{-- Engineer Assigned --}}
                         @if($callLog->assignedTo || $callLog->engineer)
                             <div class="timeline-item completed">
                                 <div class="timeline-marker">
                                     <i class="fas fa-user-plus"></i>
                                 </div>
                                 <div class="timeline-content">
-                                    <h6 class="timeline-title">Engineer Assigned</h6>
-                                    <p class="timeline-date">
-                                        {{ $callLog->updated_at->format('M j, Y g:i A') }}
-                                    </p>
-                                    <small class="timeline-description">
-                                        Assigned to {{ optional($callLog->assignedTo)->name ?? $callLog->engineer }}
-                                    </small>
+                                    <div class="timeline-title">Engineer Assigned</div>
+                                    <div class="timeline-date">{{ $callLog->updated_at->format('M j, Y g:i A') }}</div>
+                                    <div class="timeline-description">Assigned to {{ optional($callLog->assignedTo)->name ?? $callLog->engineer }}</div>
                                 </div>
                             </div>
                         @endif
                         
-                        <!-- Work Started -->
+                        {{-- Work Started --}}
                         @if(in_array($callLog->status, ['in_progress', 'complete']))
                             <div class="timeline-item completed">
                                 <div class="timeline-marker">
                                     <i class="fas fa-play"></i>
                                 </div>
                                 <div class="timeline-content">
-                                    <h6 class="timeline-title">Work Started</h6>
-                                    <p class="timeline-date">
+                                    <div class="timeline-title">Work Started</div>
+                                    <div class="timeline-date">
                                         @if($callLog->time_start)
                                             {{ $callLog->date_booked->format('M j, Y') }} at {{ $callLog->time_start->format('g:i A') }}
                                         @else
                                             {{ $callLog->updated_at->format('M j, Y g:i A') }}
                                         @endif
-                                    </p>
-                                    <small class="timeline-description">Work began on site</small>
+                                    </div>
+                                    <div class="timeline-description">Work began on site</div>
                                 </div>
                             </div>
                         @endif
                         
-                        <!-- Work Completed -->
+                        {{-- Work Completed --}}
                         @if($callLog->status === 'complete')
                             <div class="timeline-item completed">
                                 <div class="timeline-marker">
                                     <i class="fas fa-check"></i>
                                 </div>
                                 <div class="timeline-content">
-                                    <h6 class="timeline-title">Job Completed</h6>
-                                    <p class="timeline-date">
+                                    <div class="timeline-title">Job Completed</div>
+                                    <div class="timeline-date">
                                         @if($callLog->date_resolved)
                                             {{ $callLog->date_resolved->format('M j, Y') }}
                                             @if($callLog->time_finish)
@@ -477,29 +524,27 @@
                                         @else
                                             {{ $callLog->updated_at->format('M j, Y g:i A') }}
                                         @endif
-                                    </p>
-                                    <small class="timeline-description">
+                                    </div>
+                                    <div class="timeline-description">
                                         Job completed successfully
                                         @if($callLog->billed_hours)
                                             ({{ $callLog->billed_hours }} hours)
                                         @endif
-                                    </small>
+                                    </div>
                                 </div>
                             </div>
                         @endif
-
-                        <!-- Job Cancelled -->
+                        
+                        {{-- Job Cancelled --}}
                         @if($callLog->status === 'cancelled')
                             <div class="timeline-item cancelled">
                                 <div class="timeline-marker">
                                     <i class="fas fa-times"></i>
                                 </div>
                                 <div class="timeline-content">
-                                    <h6 class="timeline-title">Job Cancelled</h6>
-                                    <p class="timeline-date">
-                                        {{ $callLog->updated_at->format('M j, Y g:i A') }}
-                                    </p>
-                                    <small class="timeline-description">Job was cancelled</small>
+                                    <div class="timeline-title">Job Cancelled</div>
+                                    <div class="timeline-date">{{ $callLog->updated_at->format('M j, Y g:i A') }}</div>
+                                    <div class="timeline-description">Job was cancelled</div>
                                 </div>
                             </div>
                         @endif
@@ -510,7 +555,7 @@
     </div>
 </div>
 
-<!-- Assignment Modal -->
+{{-- Assignment Modal --}}
 <div class="modal fade" id="assignJobCardModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -579,191 +624,813 @@
 
 @push('styles')
 <style>
-    /* Custom styles to match the dashboard layout */
-    .user-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        background: linear-gradient(135deg, var(--primary), var(--primary-light));
-        color: var(--white);
+/* Job Card Details Styles */
+:root {
+    --primary: #059669;
+    --primary-dark: #047857;
+    --success: #059669;
+    --warning: #F59E0B;
+    --danger: #DC2626;
+    --secondary: #6B7280;
+    --secondary-dark: #4B5563;
+    --info: #0EA5E9;
+    --white: #FFFFFF;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --border-radius: 8px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --transition: all 0.2s ease;
+}
+
+.dashboard-header {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: 0.5rem 0.75rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.dashboard-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.125rem;
+    flex-wrap: wrap;
+}
+
+.header-meta .badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.bg-secondary {
+    background: var(--secondary) !important;
+    color: white;
+}
+
+.bg-info {
+    background: var(--info) !important;
+    color: white;
+}
+
+.header-meta small {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.header-actions .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    height: 28px;
+}
+
+/* Status Overview */
+.status-overview {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: var(--white);
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.status-item {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-pending {
+    background: #FFFBEB;
+    color: #D97706;
+    border: 1px solid #FDE68A;
+}
+
+.status-assigned {
+    background: #F0F9FF;
+    color: #0284C7;
+    border: 1px solid #BAE6FD;
+}
+
+.status-progress {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+}
+
+.status-complete {
+    background: #F0FDF4;
+    color: #047857;
+    border: 1px solid #BBF7D0;
+}
+
+.status-cancelled {
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+}
+
+/* Type Badges */
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.type-badge.emergency {
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+}
+
+.type-badge.normal {
+    background: #F3F4F6;
+    color: #4B5563;
+    border: 1px solid #D1D5DB;
+}
+
+/* Amount Badge */
+.amount-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #F0FDF4;
+    color: #047857;
+    border: 1px solid #BBF7D0;
+    white-space: nowrap;
+}
+
+/* Content Card */
+.content-card {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.content-card-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.card-subtitle {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.content-card-body {
+    padding: 0;
+}
+
+/* Info Sections */
+.info-section {
+    height: 100%;
+}
+
+.section-title {
+    color: var(--gray-700);
+    font-weight: 600;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.section-title i {
+    color: var(--secondary);
+}
+
+.info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-item.highlighted {
+    background: var(--gray-50);
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--gray-200);
+}
+
+.info-label {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.info-value {
+    font-size: 0.875rem;
+    color: var(--gray-800);
+    font-weight: 500;
+}
+
+/* Contact Links */
+.contact-link {
+    color: var(--info);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: var(--transition);
+}
+
+.contact-link:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+/* Reference Badge */
+.reference-badge {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+/* Date Badges */
+.date-badge {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
+.date-badge.resolved {
+    background: #F0FDF4;
+    color: #047857;
+}
+
+/* Time Range */
+.time-range {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.time-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
+.time-badge.start {
+    background: #EFF6FF;
+    color: #1D4ED8;
+}
+
+.time-badge.finish {
+    background: #FEF2F2;
+    color: #DC2626;
+}
+
+.time-badge.placeholder {
+    background: var(--gray-100);
+    color: var(--gray-500);
+}
+
+.time-separator {
+    color: var(--gray-400);
+    font-weight: 600;
+}
+
+/* Billing Badge */
+.billing-badge {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Amount Display */
+.amount-display {
+    background: #F0FDF4;
+    color: #047857;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #BBF7D0;
+}
+
+/* Fault Description */
+.fault-description {
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--gray-200);
+}
+
+.fault-text {
+    padding: 1.25rem;
+    line-height: 1.6;
+    color: var(--gray-800);
+    margin: 0;
+    border-left: 4px solid var(--primary);
+    background: var(--white);
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+/* Engineer Comments */
+.comment-box {
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.comment-header {
+    background: var(--white);
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.comment-author {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.author-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+}
+
+.author-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.author-name {
+    font-weight: 600;
+    color: var(--gray-800);
+    font-size: 0.875rem;
+}
+
+.author-role {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+}
+
+.comment-date {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+}
+
+.comment-content {
+    padding: 1.25rem;
+    color: var(--gray-800);
+    line-height: 1.6;
+}
+
+/* Assignment Information */
+.assignment-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.assignment-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.assignment-label {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.user-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--gray-200);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.user-avatar.approver {
+    background: linear-gradient(135deg, var(--success) 0%, var(--primary-dark) 100%);
+}
+
+.user-avatar.engineer {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.user-avatar.booker {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.user-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--gray-800);
+    font-size: 0.875rem;
+}
+
+.user-role {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+}
+
+.user-contact {
+    margin-top: 0.25rem;
+}
+
+.unassigned-notice {
+    background: #FFFBEB;
+    color: #92400E;
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border: 1px solid #FDE68A;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.action-btn.primary {
+    background: var(--primary);
+    color: white;
+}
+
+.action-btn.primary:hover {
+    background: var(--primary-dark);
+    color: white;
+}
+
+.action-btn.info {
+    background: var(--info);
+    color: white;
+}
+
+.action-btn.info:hover {
+    background: #0284C7;
+    color: white;
+}
+
+.action-btn.success {
+    background: var(--success);
+    color: white;
+}
+
+.action-btn.success:hover {
+    background: var(--primary-dark);
+    color: white;
+}
+
+.action-btn.secondary {
+    background: var(--gray-300);
+    color: var(--gray-600);
+    cursor: not-allowed;
+}
+
+.action-btn.outline {
+    background: transparent;
+    color: var(--secondary);
+    border: 1px solid var(--secondary);
+}
+
+.action-btn.outline:hover {
+    background: var(--secondary);
+    color: white;
+}
+
+/* Timeline */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--gray-200);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--white);
+    border: 3px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--gray-400);
+}
+
+.timeline-item.completed .timeline-marker {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+.timeline-item.cancelled .timeline-marker {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: white;
+}
+
+.timeline-content {
+    background: var(--gray-50);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--gray-200);
+}
+
+.timeline-title {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.timeline-date {
+    color: var(--gray-600);
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.timeline-description {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+}
+
+/* Assignment Summary */
+.assignment-summary {
+    background: var(--gray-50);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--gray-200);
+}
+
+.assignment-summary h6 {
+    color: var(--gray-800);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.summary-item {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.summary-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: var(--border-radius);
+    border: none;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+/* Form Elements */
+.form-label {
+    font-weight: 600;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+}
+
+.form-control,
+.form-select {
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    transition: var(--transition);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    
+    .header-actions {
+        width: 100%;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 0.9rem;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
     
-    .user-avatar.engineer {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    .status-overview {
+        flex-direction: column;
+        gap: 0.5rem;
     }
     
-    .user-avatar.booker {
-        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    .status-item {
+        min-width: auto;
     }
     
-    .unassigned-notice {
-        background: #fef3cd;
-        color: #b45309;
-        padding: 1rem;
-        border-radius: 8px;
-        text-align: center;
-        font-weight: 500;
+    .info-grid {
+        gap: 0.5rem;
     }
     
-    /* Timeline */
+    .time-range {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
     .timeline {
-        position: relative;
-        padding-left: 3rem;
+        padding-left: 1.5rem;
     }
     
     .timeline::before {
-        content: '';
-        position: absolute;
-        left: 1.5rem;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: var(--gray-200);
-    }
-    
-    .timeline-item {
-        position: relative;
-        margin-bottom: 2rem;
-    }
-    
-    .timeline-item:last-child {
-        margin-bottom: 0;
+        left: 0.75rem;
     }
     
     .timeline-marker {
-        position: absolute;
-        left: -2.75rem;
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 50%;
-        background: var(--white);
-        border: 3px solid var(--gray-200);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.875rem;
-        color: var(--gray-400);
+        left: -1.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .action-buttons .action-btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
     }
     
-    .timeline-item.completed .timeline-marker {
-        background: var(--success);
-        border-color: var(--success);
-        color: var(--white);
+    .header-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
     }
     
-    .timeline-item.cancelled .timeline-marker {
-        background: var(--danger);
-        border-color: var(--danger);
-        color: var(--white);
-    }
-    
-    .timeline-content {
-        background: var(--gray-50);
-        padding: 1.25rem;
-        border-radius: 8px;
-        border: 1px solid var(--gray-200);
-    }
-    
-    .timeline-title {
-        font-weight: 600;
-        color: var(--gray-800);
-        margin-bottom: 0.5rem;
-        font-size: 1rem;
-    }
-    
-    .timeline-date {
-        color: var(--gray-600);
-        margin-bottom: 0.25rem;
-        font-size: 0.875rem;
-    }
-    
-    .timeline-description {
-        color: var(--gray-500);
-        font-size: 0.875rem;
-    }
-    
-    /* Fault Description */
-    .fault-description p {
-        background: var(--gray-50);
-        padding: 1.5rem;
-        border-radius: 8px;
-        border-left: 4px solid var(--primary);
-        line-height: 1.6;
-        font-size: 1rem;
-        color: var(--gray-800);
-    }
-    
-    /* Comment Box */
-    .comment-box {
-        background: var(--gray-50);
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid var(--gray-200);
-    }
-    
-    .comment-header {
-        background: var(--white);
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--gray-200);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .comment-author {
-        font-weight: 600;
-        color: var(--gray-800);
-    }
-    
-    .comment-date {
-        color: var(--gray-500);
-        font-size: 0.875rem;
-    }
-    
-    .comment-content {
-        padding: 1.5rem;
-        color: var(--gray-800);
-        line-height: 1.6;
-    }
-    
-    /* Assignment Summary */
     .assignment-summary {
-        background: var(--gray-50);
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid var(--gray-200);
+        padding: 0.75rem;
     }
-    
-    .assignment-summary h6 {
-        color: var(--gray-800);
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-    
-    .summary-item {
-        margin-bottom: 1rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--gray-200);
-    }
-    
-    .summary-item:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
-    }
-    
-    /* Amount Highlight */
-    .amount-highlight {
-        background: var(--gray-50);
-        padding: 1rem;
-        border-radius: 8px;
-        border: 1px solid var(--gray-200);
-    }
+}
 </style>
 @endpush
 
@@ -933,36 +1600,48 @@ document.getElementById('assignJobCardForm').addEventListener('submit', function
     });
 });
 
-// Notification function
+// Notification function using toastr if available, otherwise custom
 function showToast(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info'} alert-dismissible fade show notification`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 300px;
-        max-width: 500px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
-    
-    notification.innerHTML = `
-        <div class="d-flex align-items-center">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
-            <span>${message}</span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
+    if (typeof toastr !== 'undefined') {
+        const toastrType = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+        toastr[toastrType](message, type.charAt(0).toUpperCase() + type.slice(1) + '!', {
+            closeButton: true,
+            progressBar: true,
+            timeOut: 5000,
+            extendedTimeOut: 2000,
+            positionClass: 'toast-top-right'
+        });
+    } else {
+        // Fallback notification
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info'} alert-dismissible fade show notification`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        
+        notification.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                <span>${message}</span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
 }
 
 // Initialize tooltips

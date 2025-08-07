@@ -17,10 +17,12 @@
             </div>
         </div>
         <div class="header-actions">
-            <button onclick="window.location.href='{{ route('admin.call-logs.create') }}'" class="btn btn-sm btn-success me-2">
-                <i class="fas fa-plus me-1"></i>
-                New Job
-            </button>
+            @if(in_array(auth()->user()->role ?? 'user', ['admin', 'accounts']))
+                <button onclick="window.location.href='{{ route('admin.call-logs.create') }}'" class="btn btn-sm btn-success me-2">
+                    <i class="fas fa-plus me-1"></i>
+                    New Job
+                </button>
+            @endif
             <button id="refreshJobs" class="btn btn-sm btn-secondary">
                 <i class="fas fa-sync-alt me-1"></i>
                 Refresh
@@ -47,7 +49,7 @@
 
     {{-- Compact Filter Card --}}
     <div class="filter-card mb-2">
-        <form method="GET" action="{{ route('admin.call-logs.unassigned') }}" class="filter-form">
+        <form method="GET" action="{{ route('admin.call-logs.unassigned') }}" class="filter-form" id="filterForm">
             <div class="filter-row">
                 <div class="filter-group search-group">
                     <div class="search-input-wrapper">
@@ -60,19 +62,16 @@
                 </div>
                 
                 <div class="filter-group">
-                    <select name="type" class="form-select form-select-sm">
+                    <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">All Types</option>
                         <option value="normal" @selected(request('type') == 'normal')>Normal</option>
                         <option value="emergency" @selected(request('type') == 'emergency')>Emergency</option>
-                        <option value="maintenance" @selected(request('type') == 'maintenance')>Maintenance</option>
-                        <option value="repair" @selected(request('type') == 'repair')>Repair</option>
-                        <option value="installation" @selected(request('type') == 'installation')>Installation</option>
-                        <option value="consultation" @selected(request('type') == 'consultation')>Consultation</option>
+                 
                     </select>
                 </div>
                 
                 <div class="filter-group">
-                    <select name="date_range" class="form-select form-select-sm">
+                    <select name="date_range" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">All Dates</option>
                         <option value="today" @selected(request('date_range') == 'today')>Today</option>
                         <option value="yesterday" @selected(request('date_range') == 'yesterday')>Yesterday</option>
@@ -117,7 +116,7 @@
                     </span>
                     <span class="badge overdue-jobs">
                         <i class="fas fa-clock me-1"></i>
-                        {{ $callLogs->where('date_booked', '<', now()->subDay())->count() }} Overdue
+                        {{ $callLogs->filter(function($job) { return $job->date_booked && $job->date_booked->lt(now()->subDay()); })->count() }} Overdue
                     </span>
                 </div>
             </div>
@@ -184,8 +183,8 @@
                                 <div class="update-time">
                                     @if($job->date_booked)
                                         <div class="date-main">{{ $job->date_booked->format('M j, Y') }}</div>
-                                        <small class="text-muted">{{ $job->date_booked->diffForHumans() }}</small>
-                                        @if($job->date_booked->diffInDays(now()) > 1)
+                                        <small class="text-muted">{{ $job->date_booked->diffForHumans(null, true, false, 2) }}</small>
+                                        @if($job->date_booked->lt(now()->subDay()))
                                             <span class="status-badge priority-high mt-1" style="font-size: 0.6rem; padding: 0.15rem 0.3rem;">
                                                 Overdue
                                             </span>
@@ -196,20 +195,28 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="amount-charged">${{ number_format($job->amount_charged ?? 0, 2) }}</span>
+                                <div class="amount-info">
+                                    <span class="amount-charged">
+                                        @if(($job->currency ?? 'USD') === 'ZWG')
+                                            ZWG {{ number_format($job->amount_charged ?? 0, 0) }}
+                                        @else
+                                            ${{ number_format($job->amount_charged ?? 0, 2) }}
+                                        @endif
+                                    </span>
+                                </div>
                             </td>
                             <td>
                                 <div class="action-buttons">
                                     <button onclick="window.location.href='{{ route('admin.call-logs.show', $job->id) }}'" 
                                        class="action-btn view-btn" 
-                                       title="View Details">
+                                       title="View Details" type="button" aria-label="View Job #{{ $job->id }}">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     @if(in_array(auth()->user()->role ?? 'user', ['admin', 'manager']))
                                         <button type="button" class="action-btn assign-btn"
                                             data-bs-toggle="modal" 
                                             data-bs-target="#assignModal{{ $job->id }}"
-                                            title="Assign Technician">
+                                            title="Assign Technician" aria-label="Assign Job #{{ $job->id }}">
                                             <i class="fas fa-user-plus"></i>
                                         </button>
                                     @endif
@@ -223,11 +230,13 @@
                                     <i class="fas fa-user-times"></i>
                                     <h6>No Unassigned Jobs</h6>
                                     <p>All jobs have been assigned or no jobs match your criteria.</p>
-                                    <button onclick="window.location.href='{{ route('admin.call-logs.create') }}'" 
-                                            class="btn btn-success btn-sm mt-2">
-                                        <i class="fas fa-plus me-1"></i>
-                                        Create New Job
-                                    </button>
+                                    @if(in_array(auth()->user()->role ?? 'user', ['admin', 'accounts']))
+                                        <button onclick="window.location.href='{{ route('admin.call-logs.create') }}'" 
+                                                class="btn btn-success btn-sm mt-2">
+                                            <i class="fas fa-plus me-1"></i>
+                                            Create New Job
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -257,12 +266,13 @@
                         <i class="fas fa-user-plus me-2"></i>
                         Assign Job #{{ $job->id }}
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
+
                 <form method="POST" action="{{ route('admin.call-logs.assign', $job->id) }}" 
                       onsubmit="return handleJobAssignment(event, {{ $job->id }})">
                     @csrf
+                    @method('PUT')
                     
                     <div class="modal-body">
                         <div class="row">
@@ -272,16 +282,20 @@
                                         Select Technician
                                     </label>
                                     <select name="engineer" id="engineer{{ $job->id }}" 
-                                            class="form-select" required>
+                                            class="form-select @error('engineer') is-invalid @enderror" required>
                                         <option value="" selected disabled>Choose a technician...</option>
-                                        @foreach($technicians as $tech)
-                                            <option value="{{ $tech->id }}">
-                                                {{ $tech->name }}
-                                                @if($tech->email)
-                                                    - {{ $tech->email }}
+                                        @if(isset($technicians))
+                                            @foreach($technicians as $tech)
+                                                @if(in_array($tech->role, ['admin', 'manager', 'technician']))
+                                                    <option value="{{ $tech->id }}">
+                                                        {{ $tech->name }}
+                                                        @if($tech->email)
+                                                            - {{ $tech->email }}
+                                                        @endif
+                                                    </option>
                                                 @endif
-                                            </option>
-                                        @endforeach
+                                            @endforeach
+                                        @endif
                                     </select>
                                     @error('engineer')
                                         <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -312,14 +326,21 @@
                                     </div>
                                     <div class="summary-item mt-2">
                                         <strong>Type:</strong><br>
-                                        <span class="status-badge {{ $typeConfig[$job->type ?? 'normal']['class'] ?? 'status-open' }}">
+                                        @php
+                                            $modalTypeConfig = $typeConfig[$job->type ?? 'normal'] ?? $typeConfig['normal'];
+                                        @endphp
+                                        <span class="status-badge {{ $modalTypeConfig['class'] }}">
                                             {{ ucfirst($job->type ?? 'normal') }}
                                         </span>
                                     </div>
                                     <div class="summary-item mt-2">
                                         <strong>Amount:</strong><br>
                                         <span style="color: var(--success); font-weight: 600;">
-                                            ${{ number_format($job->amount_charged ?? 0, 2) }}
+                                            @if(($job->currency ?? 'USD') === 'ZWG')
+                                                ZWG {{ number_format($job->amount_charged ?? 0, 0) }}
+                                            @else
+                                                ${{ number_format($job->amount_charged ?? 0, 2) }}
+                                            @endif
                                         </span>
                                     </div>
                                 </div>
@@ -345,7 +366,7 @@
 
 @push('styles')
 <style>
-/* Updated CSS Variables for Unassigned Jobs */
+/* Your original CSS is maintained exactly as provided */
 :root {
     --primary: #059669;
     --primary-dark: #047857;
@@ -696,7 +717,13 @@
     margin-top: 0.15rem;
 }
 
-/* Amount */
+/* Amount Info */
+.amount-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
 .amount-charged {
     font-weight: 600;
     color: var(--gray-800);
@@ -941,13 +968,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Auto-submit on filter change
-    const filterSelects = document.querySelectorAll('select[name="type"], select[name="date_range"]');
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            this.closest('form').submit();
+    // Debounced search input
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        let debounceTimer;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                if (this.value.length >= 3 || this.value.length === 0) {
+                    document.getElementById('filterForm').submit();
+                }
+            }, 500);
         });
-    });
+        
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('filterForm').submit();
+            }
+        });
+    }
     
     // Initialize tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
@@ -1070,4 +1110,3 @@ style.textContent = `
 document.head.appendChild(style);
 </script>
 @endpush
-

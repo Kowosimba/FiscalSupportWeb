@@ -18,7 +18,10 @@ use App\Http\Controllers\{
     CallReportController,
     FaqCategoryController,
     AdminCommentController,
+    ProfileController,
 };
+
+use App\Http\Controllers\Admin\AdminGlobalSearchController;
 
 use App\Http\Controllers\Admin\{
     AdminBlogController,
@@ -78,11 +81,18 @@ Route::get('/faqs', [FaqController::class, 'index'])->name('faqs');
 // GUEST ROUTES (Authentication)
 // =============================================================================
 
-Route::middleware('guest')->controller(AuthController::class)->group(function () {
-    Route::get('/register', 'showRegister')->name('show.register');
-    Route::post('/register', 'register')->name('register');
-    Route::get('/login', 'showLogin')->name('show.login');
-    Route::post('/login', 'login')->name('login');
+// Password reset routes
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+    
+    // Auth routes
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('show.register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register');
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('show.login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
 });
 
 // =============================================================================
@@ -93,13 +103,27 @@ Route::middleware('auth')->group(function () {
     // Authentication
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Notifications
+    // Profile Management
+    Route::prefix('profile')->name('profile.')->controller(ProfileController::class)->group(function () {
+        Route::get('/', 'show')->name('show');
+        Route::put('/update', 'updateProfile')->name('update');
+        Route::put('/password', 'updatePassword')->name('password');
+        Route::post('/avatar', 'updateAvatar')->name('avatar');
+        Route::delete('/avatar', 'deleteAvatar')->name('avatar.delete');
+        Route::put('/preferences', 'updatePreferences')->name('preferences');
+    });
+
+    // Notifications - Consolidated and cleaned up
     Route::prefix('notifications')->name('notifications.')->controller(NotificationController::class)->group(function () {
         Route::get('/', 'index')->name('index');
-        Route::post('/{notification}/read', 'markAsRead')->name('read');
-        Route::post('/read-all', 'markAllAsRead')->name('read-all');
+        Route::get('/recent', 'getRecent')->name('recent');
+        Route::get('/count', 'getUnreadCount')->name('count');
+        Route::post('/mark-all-read', 'markAllAsRead')->name('mark-all-read');
         Route::get('/{notification}/redirect', 'redirect')->name('redirect');
+        Route::post('/{notification}/read', 'markAsRead')->name('read');
+        Route::delete('/{notification}', 'destroy')->name('destroy');
     });
+
 });
 
 // =============================================================================
@@ -109,6 +133,15 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [SupportTicketController::class, 'index'])->name('index');
+
+    // User Management
+    Route::prefix('users')->name('users.')->controller(AdminUserController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/{user}/assign-role', 'assignRole')->name('assign-role');
+        Route::post('/{user}/toggle-activation', 'toggleActivation')->name('toggle-activation');
+        Route::get('/activate/{token}', 'showActivationPage')->name('activate');
+        Route::post('/activate', 'processActivation')->name('processActivation');
+    });
 
     // FAQ Management
     Route::prefix('faqs')->name('faqs.')->group(function () {
@@ -135,7 +168,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::post('/bulk-action', 'bulkAction')->name('bulk-action');
     });
 
-    // Admin Tickets Management
+    // Tickets Management
     Route::prefix('tickets')->name('tickets.')->controller(SupportTicketController::class)->group(function () {
         // Static routes first
         Route::get('/', 'index')->name('index');
@@ -158,12 +191,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         });
     });
 
-    // User Management
-    Route::prefix('users')->name('users.')->controller(AdminUserController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/{user}/assign-role', 'assignRole')->name('assign-role');
-    });
-
     // Content Management
     Route::get('/content', [ContentController::class, 'index'])->name('content.index');
     Route::resource('comments', AdminCommentController::class)->only(['index', 'edit', 'update', 'destroy']);
@@ -178,32 +205,26 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::delete('/{service}/resources/{resource}', [ServiceResourceController::class, 'destroy'])->name('resources.destroy');
     });
 
-    // Newsletter Management
-    Route::prefix('subscribers')->name('subscribers.')->controller(NewsletterSubscriberController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::delete('/{subscriber}', 'destroy')->name('destroy');
-    });
 
-     Route::resource('subscribers', NewsletterSubscriberController::class)->except(['show', 'create', 'edit', 'update']);
-    
+   // Newsletter Management
+        Route::prefix('subscribers')->name('subscribers.')->controller(NewsletterSubscriberController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store'); 
+            Route::delete('/{subscriber}', 'destroy')->name('destroy');
+        });
+
     Route::resource('newsletters', NewsletterCampaignController::class)->except(['destroy']);
     Route::post('newsletters/{newsletter}/send', [NewsletterCampaignController::class, 'send'])->name('newsletters.send');
 
-    // Contact Management
-    Route::resource('contacts', CustomerContactController::class);
-
-    // =============================================================================
-    // CALL LOGS MANAGEMENT (Properly Ordered)
-    // =============================================================================
-    
+    // Call Logs Management
     Route::prefix('call-logs')->name('call-logs.')->controller(CallLogController::class)->group(function () {
-        // Static routes MUST come first (before any parameterized routes)
+        // Static routes MUST come first
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
         Route::post('/', 'store')->name('store');
         Route::get('/dashboard', 'dashboard')->name('dashboard');
-        Route::get('/reports', 'reports')->name('reports');
         Route::get('/export', 'export')->name('export');
+        Route::post('/export', [CallReportController::class, 'export'])->name('export-post');
         
         // Status-based listing routes (all static)
         Route::get('/all', 'all')->name('all');
@@ -212,8 +233,10 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/completed', 'completed')->name('completed');
         Route::get('/pending', 'pending')->name('pending');
         Route::get('/unassigned', 'unassigned')->name('unassigned');
-        Route::get('/assigned', 'assigned')->name('assigned');
+        Route::put('/assigned', 'assigned')->name('assigned');
         Route::get('/cancelled', 'cancelled')->name('cancelled');
+        Route::get('/reports', 'index')->name('reports');
+        Route::post('/generate', 'generate')->name('generate');
 
         // Parameterized routes MUST come last
         Route::prefix('{callLog}')->group(function () {
@@ -221,34 +244,36 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
             Route::get('/edit', 'edit')->name('edit');
             Route::put('/', 'update')->name('update');
             Route::delete('/', 'destroy')->name('destroy');
-            Route::post('/assign', 'assign')->name('assign');
+            Route::put('/assign', 'assign')->name('assign');
             Route::patch('/status', 'updateStatus')->name('update-status');
             Route::post('/complete', 'complete')->name('complete');
+            Route::post('/notify-customer', 'notifyCustomer')->name('notify-customer');
         });
-         Route::post('/{callLog}/notify-customer', 'notifyCustomer')->name('notify-customer');
-    });
-
-    // Call Reports Management (Legacy)
-    Route::prefix('call-reports')->name('call-reports.')->controller(CallReportController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/export', 'export')->name('export');
-        Route::post('/generate', 'generate')->name('generate');
-    });
-});
-Route::middleware('auth')->group(function () {
-    Route::prefix('notifications')->name('notifications.')->controller(NotificationController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/{notification}/read', 'markAsRead')->name('read');
-        Route::post('/read-all', 'markAllAsRead')->name('read-all');
-        Route::get('/{notification}/redirect', 'redirect')->name('redirect');
-        Route::delete('/{notification}', 'destroy')->name('destroy');
-        
-        // API routes for the dropdown
-        Route::get('/api/unread-count', 'getUnreadCount')->name('api.unread-count');
-        Route::get('/api/recent', 'getRecent')->name('api.recent');
     });
 });
 
-Route::get('/admin/{any}', function () {
-    return view('admin.app');
-})->where('any', '.*')->middleware('auth'); // Or your admin middleware
+// =============================================================================
+// DEVELOPMENT/TESTING ROUTES
+// =============================================================================
+
+// Email Preview (Remove in production)
+Route::get('/preview-email', function() {
+    $callLog = App\Models\CallLog::first();
+    return new App\Mail\JobCompletionNotification($callLog);
+})->middleware('auth'); // Add auth middleware for security
+
+// Global Search Route
+Route::get('/admin/global-search', [App\Http\Controllers\AdminGlobalSearchController::class, 'globalSearch'])
+    ->name('admin.global-search')
+    ->middleware(['auth']);
+
+// Customer Contacts Routes
+Route::prefix('admin/contacts')->name('admin.contacts.')->middleware(['auth'])->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\CustomerContactController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\Admin\CustomerContactController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Admin\CustomerContactController::class, 'store'])->name('store');
+    Route::get('/{contact}', [App\Http\Controllers\Admin\CustomerContactController::class, 'show'])->name('show');
+    Route::get('/{contact}/edit', [App\Http\Controllers\Admin\CustomerContactController::class, 'edit'])->name('edit');
+    Route::put('/{contact}', [App\Http\Controllers\Admin\CustomerContactController::class, 'update'])->name('update');
+    Route::delete('/{contact}', [App\Http\Controllers\Admin\CustomerContactController::class, 'destroy'])->name('destroy');
+});

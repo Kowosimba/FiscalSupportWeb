@@ -16,71 +16,79 @@
         </div>
         
         <div class="row gy-40">
-            <!-- Individual Team Member Cards -->
+            <!-- Director Finance & Admin - Tapiwa Gandiwa -->
             <div class="col-xl-4 col-md-6">
                 <div class="team-card-modern">
                     <div class="team-card-thumb">
-                        <img src="{{ asset('assets/img/team/team-leader-1.jpg') }}" alt="Managing Director">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
                         <div class="team-card-overlay">
                             <div class="social-links">
                                 <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                                <a href="mailto:"><i class="fas fa-envelope"></i></a>
+                                <a href="mailto:tapiwa@company.com"><i class="fas fa-envelope"></i></a>
                             </div>
                         </div>
                     </div>
                     <div class="team-card-content">
-                        <h4 class="team-name">Leadership Team</h4>
-                        <span class="team-designation">Managing Director & Co-Founder</span>
-                        <p class="team-bio">Leading strategic direction with over 15 years in African IT markets and extensive fiscal device implementation experience.</p>
+                        <h4 class="team-name">Tapiwa Gandiwa</h4>
+                        <span class="team-designation">Director Finance & Admin</span>
+                        <p class="team-bio">Leading financial strategy and administrative operations with expertise in corporate finance and regulatory compliance.</p>
                         <div class="expertise-tags">
-                            <span class="tag">Strategic Planning</span>
-                            <span class="tag">Market Development</span>
+                            <span class="tag">Financial Planning</span>
+                            <span class="tag">Compliance</span>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Director Technical - Daniel Chanda -->
             <div class="col-xl-4 col-md-6">
                 <div class="team-card-modern">
                     <div class="team-card-thumb">
-                        <img src="{{ asset('assets/img/team/team-leader-2.jpg') }}" alt="Technical Director">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
                         <div class="team-card-overlay">
                             <div class="social-links">
                                 <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                                <a href="mailto:"><i class="fas fa-envelope"></i></a>
+                                <a href="mailto:daniel@company.com"><i class="fas fa-envelope"></i></a>
                             </div>
                         </div>
                     </div>
                     <div class="team-card-content">
-                        <h4 class="team-name">Technical Leadership</h4>
-                        <span class="team-designation">Technical Director & Co-Founder</span>
-                        <p class="team-bio">Driving technical excellence with deep expertise in fiscal compliance systems and enterprise IT infrastructure across multiple African markets.</p>
+                        <h4 class="team-name">Daniel Chanda</h4>
+                        <span class="team-designation">Director Technical</span>
+                        <p class="team-bio">Driving technical excellence with expertise in fiscal compliance systems and enterprise IT solutions.</p>
                         <div class="expertise-tags">
                             <span class="tag">Fiscal Systems</span>
-                            <span class="tag">IT Infrastructure</span>
+                            <span class="tag">IT Solutions</span>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Director Network Infrastructure & Security - Paul Musandu -->
             <div class="col-xl-4 col-md-6">
                 <div class="team-card-modern">
                     <div class="team-card-thumb">
-                        <img src="{{ asset('assets/img/team/team-leader-3.jpg') }}" alt="Operations Director">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
                         <div class="team-card-overlay">
                             <div class="social-links">
                                 <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                                <a href="mailto:"><i class="fas fa-envelope"></i></a>
+                                <a href="mailto:paul@company.com"><i class="fas fa-envelope"></i></a>
                             </div>
                         </div>
                     </div>
                     <div class="team-card-content">
-                        <h4 class="team-name">Operations Leadership</h4>
-                        <span class="team-designation">Operations Director</span>
-                        <p class="team-bio">Ensuring seamless service delivery and client satisfaction with proven track record in multi-country operations and support systems.</p>
+                        <h4 class="team-name">Paul Musandu</h4>
+                        <span class="team-designation">Director Network Infrastructure & Security</span>
+                        <p class="team-bio">Ensuring robust network architecture and cybersecurity with expertise in enterprise infrastructure and data protection.</p>
                         <div class="expertise-tags">
-                            <span class="tag">Service Delivery</span>
-                            <span class="tag">Client Relations</span>
+                            <span class="tag">Network Infrastructure</span>
+                            <span class="tag">Cybersecurity</span>
                         </div>
                     </div>
                 </div>
@@ -89,9 +97,7 @@
     </div>
 </section>
 
-
 <style>
-
 /* Modern Team Card Styles */
 .team-card-modern {
     background: #fff;
@@ -100,6 +106,7 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     position: relative;
+    height: 450px; /* Fixed height for uniformity */
 }
 
 .team-card-modern:hover {
@@ -110,17 +117,31 @@
 .team-card-thumb {
     position: relative;
     overflow: hidden;
-    height: 280px;
+    height: 320px; /* Increased height for photo space */
+    background: linear-gradient(135deg, var(--theme-color) 0%, var(--theme-color2) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.team-card-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.user-avatar {
+    width: 120px;
+    height: 120px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid rgba(255,255,255,0.3);
     transition: transform 0.3s ease;
 }
 
-.team-card-modern:hover .team-card-thumb img {
+.user-avatar i {
+    font-size: 60px;
+    color: rgba(255,255,255,0.9);
+}
+
+.team-card-modern:hover .user-avatar {
     transform: scale(1.1);
 }
 
@@ -150,55 +171,63 @@
 .social-links a {
     width: 40px;
     height: 40px;
-    background: var(--theme-color);
+    background: rgba(255,255,255,0.2);
     color: #fff;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background-color 0.3s ease;
+    border: 2px solid rgba(255,255,255,0.3);
 }
 
 .social-links a:hover {
-    background: var(--theme-color2);
+    background: rgba(255,255,255,0.3);
 }
 
 .team-card-content {
-    padding: 30px 25px;
+    padding: 25px 20px;
+    height: 130px; /* Fixed height for content area */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .team-name {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
     color: var(--title-color);
 }
 
 .team-designation {
     color: var(--theme-color);
     font-weight: 500;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     display: block;
+    font-size: 14px;
 }
 
 .team-bio {
     color: var(--body-color);
-    line-height: 1.6;
-    margin-bottom: 20px;
+    line-height: 1.5;
+    margin-bottom: 15px;
+    font-size: 14px;
+    flex-grow: 1;
 }
 
 .expertise-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 }
 
 .expertise-tags .tag {
     background: var(--theme-color);
     color: #fff;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 11px;
     font-weight: 500;
 }
 
@@ -288,9 +317,15 @@
     .mission-statement-card {
         padding: 30px 20px;
     }
+    
+    .team-card-modern {
+        height: auto;
+    }
+    
+    .team-card-content {
+        height: auto;
+    }
 }
-
-
 </style>
 
 <!-- Why Choose Us Area -->

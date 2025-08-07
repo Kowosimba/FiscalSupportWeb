@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Notification;
 use Carbon\Carbon;
 use App\Notifications\CustomerTicketResolvedNotification;
 use App\Notifications\CustomerTicketCreatedNotification;
@@ -27,56 +28,136 @@ class SupportTicketController extends Controller
 {
     use \Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
-    public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'service' => 'required|string|max:255',
-            'contact_details' => 'nullable|string|max:255',
-            'message' => 'required|string',
-            'attachment' => 'nullable|file|max:5120|mimes:pdf,jpg,png',
+    
+
+ public function store(Request $request)
+{
+    $validatedData = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|max:255',
+        'service' => 'required|string|max:255',
+        'contact_details' => 'nullable|string|max:255',
+        'message' => 'required|string',
+        'attachment' => 'nullable|file|max:5120|mimes:pdf,jpg,png',
+    ]);
+
+    // No role or auth checks here since it's public-facing
+
+    try {
+        $attachmentPath = $request->hasFile('attachment')
+            ? $this->storeAttachment($request->file('attachment'))
+            : null;
+
+        $ticket = Ticket::create([
+            'company_name' => $validatedData['name'],
+            'contact_details' => $validatedData['contact_details'] ?? null,
+            'email' => $validatedData['email'],
+            'subject' => $validatedData['service'],
+            'message' => $validatedData['message'],
+            'service' => $validatedData['service'],
+            'attachment' => $attachmentPath,
+            'status' => 'pending',
+            'priority' => $request->input('priority', 'low'),
         ]);
 
-        if (!in_array(auth::user()->role, ['admin', 'manager'])) {
+        // Notify customer that ticket was created
+        Notification::route('mail', $ticket->email)
+            ->notify(new CustomerTicketCreatedNotification($ticket));
+
+        // Notify all managers about the new ticket that needs assignment
+        $managers = User::where('role', 'manager')->get();
+        foreach ($managers as $manager) {
+            $manager->notify(new \App\Notifications\NewTicketForAssignmentNotification($ticket));
+        }
+
         return redirect()->back()
-            ->with('toastr', [
-                'type' => 'error',
-                'message' => 'You do not have permission to create a new ticket'
-            ]);
+            ->with('message', 'Your ticket has been submitted successfully! Ticket ID: ' . $ticket->id);
+    } catch (\Exception $e) {
+        Log::error('Ticket submission failed: ' . $e->getMessage(), [
+            'exception' => $e,
+            'request_data' => $request->except('attachment')
+        ]);
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Failed to submit ticket. Please try again.');
     }
+}
+
+    /**
+     * Store attachment for tickets.
+     */
+
+    /**
+     * Admin-side ticket creation (authenticated users).
+     * Only authenticated admins/managers or staff should use this.
+     */
+   public function adminStore(Request $request)
+    {
+        $request->validate([
+            'company_name' => 'required|string|max:255',
+            'contact_details' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255',
+            'service' => 'required|string|max:255',
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string',
+            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'priority' => 'required|in:low,medium,high',
+            'assigned_to' => 'nullable|exists:users,id',
+        ]);
 
         try {
-            $attachmentPath = $request->hasFile('attachment') 
-                ? $this->storeAttachment($request->file('attachment')) 
-                : null;
-
-            $ticket = Ticket::create([
-                'company_name' => $validatedData['name'],
-                'contact_details' => $validatedData['contact_details'],
-                'email' => $validatedData['email'],
-                'subject' => $validatedData['service'],
-                'message' => $validatedData['message'],
-                'service' => $validatedData['service'],
-                'attachment' => $attachmentPath,
-                'status' => 'pending',
-                'priority' => $request->input('priority', 'low'),
+            $data = $request->only([
+                'company_name',
+                'contact_details',
+                'email',
+                'service',
+                'subject',
+                'message',
+                'priority',
+                'assigned_to',
             ]);
 
-            // Delay notification for UX
-            $ticket->notify((new CustomerTicketCreatedNotification($ticket))->delay(now()->addSeconds(10)));
+            if ($request->hasFile('attachment')) {
+                $data['attachment'] = $request->file('attachment')->store('attachments', 'public');
+            }
 
-            return redirect()->back()
-                ->with('message', 'Your ticket has been submitted successfully! Ticket ID: ' . $ticket->id);
+            $data['status'] = 'in_progress';
 
+            $ticket = Ticket::create($data);
+
+            if (!empty($ticket->assigned_to)) {
+                $technician = User::find($ticket->assigned_to);
+                if ($technician) {
+                    $technician->notify(new TicketAssignedNotification($ticket));
+                }
+            }
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Ticket created successfully!',
+                    'ticket' => [
+                        'id' => $ticket->id,
+                        'subject' => $ticket->subject,
+                        'status' => $ticket->status,
+                        'priority' => $ticket->priority,
+                    ],
+                ]);
+            }
+
+            return redirect()->route('admin.tickets.unassigned')->with('success', 'Ticket #' . $ticket->id . ' created successfully!');
         } catch (\Exception $e) {
-            Log::error('Ticket submission failed: ' . $e->getMessage(), [
-                'exception' => $e,
-                'request_data' => $request->except('attachment')
-            ]);
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Failed to submit ticket. Please try again.');
+            Log::error('Admin ticket creation failed: ' . $e->getMessage());
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error creating ticket. Please try again.',
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Error creating ticket. Please try again.')->withInput();
         }
     }
 
@@ -444,87 +525,6 @@ class SupportTicketController extends Controller
 
         return view('admin.unassigned-tickets', compact('tickets', 'technicians', 'statuses', 'priorities'));
     }
-
-  public function adminStore(Request $request)
-{
-    try {
-        $validated = $request->validate([
-            'company_name' => 'required|string|max:255',
-            'contact_details' => 'nullable|string|max:255',
-            'email' => 'required|email|max:255',
-            'service' => 'required|string|max:255',
-            'subject' => 'required|string|max:255',
-            'message' => 'required|string',
-            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'priority' => 'required|in:low,medium,high',
-            'assigned_to' => 'nullable|exists:users,id',
-        ]);
-
-        // Handle file upload
-        if ($request->hasFile('attachment')) {
-            $validated['attachment'] = $request->file('attachment')->store('attachments', 'public');
-        }
-
-        // Set default status
-        $validated['status'] = 'in_progress';
-
-        // Create the ticket
-        $ticket = Ticket::create($validated);
-
-        // Send notification to assigned technician
-        if ($ticket->assigned_to) {
-            $technician = User::find($ticket->assigned_to);
-            $technician->notify(new TicketAssignedNotification($ticket));
-        }
-
-        // Return JSON for AJAX requests (toastr optimized)
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Ticket created successfully!',
-                'ticket' => [
-                    'id' => $ticket->id,
-                    'subject' => $ticket->subject,
-                    'status' => $ticket->status,
-                    'priority' => $ticket->priority
-                ]
-            ]);
-        }
-
-        // Fallback redirect with session flash for toastr
-        return redirect()->route('admin.tickets.unassigned')
-            ->with('success', 'Ticket #' . $ticket->id . ' created successfully!');
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        // Handle validation errors for AJAX
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed. Please check your input.',
-                'errors' => $e->errors()
-            ], 422);
-        }
-
-        // Re-throw for normal form submission
-        throw $e;
-
-    } catch (\Exception $e) {
-        \Log::error('Error creating ticket: ' . $e->getMessage());
-
-        // Handle general errors for AJAX
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error creating ticket. Please try again.'
-            ], 500);
-        }
-
-        // Fallback redirect with error
-        return redirect()->back()
-            ->with('error', 'Error creating ticket. Please try again.')
-            ->withInput();
-    }
-}
 
 
     public function create()

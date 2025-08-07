@@ -60,17 +60,17 @@
                 </div>
                 
                 <div class="filter-group">
-                    <select name="engineer" class="form-select form-select-sm">
-                        <option value="">All Engineers</option>
-                        @forelse($technicians ?? [] as $tech)
-                            <option value="{{ is_object($tech) && isset($tech->id) ? $tech->id : '' }}" 
-                                @selected(is_object($tech) && isset($tech->id) && request('engineer') == $tech->id)>
-                                {{ is_object($tech) && isset($tech->name) ? $tech->name : 'Unknown' }}
-                            </option>
-                        @empty
-                            <option disabled>No engineers available</option>
-                        @endforelse
-                    </select>
+                <select name="engineer" class="form-select form-select-sm">
+                <option value="">All Engineers</option>
+                @forelse($technicians ?? [] as $tech)
+                    <option value="{{ is_object($tech) && isset($tech->id) ? $tech->id : '' }}" @selected(request('engineer') == (is_object($tech) && isset($tech->id) ? $tech->id : ''))>
+                        {{ is_object($tech) && isset($tech->name) ? $tech->name : 'Unknown' }}
+                    </option>
+                @empty
+                    <option disabled>No engineers available</option>
+                @endforelse
+            </select>
+
                 </div>
                 
                 <div class="filter-group">

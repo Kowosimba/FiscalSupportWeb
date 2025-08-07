@@ -26,9 +26,17 @@ class NotificationController extends Controller
      */
     public function markAsRead(DatabaseNotification $notification)
     {
-        $this->authorize('update', $notification);
+        // Check if the notification belongs to the current user
+        if ($notification->notifiable_id !== Auth::id()) {
+            abort(403, 'Unauthorized');
+        }
+
         $notification->markAsRead();
-        return back()->with('success', 'Notification marked as read');
+        
+        return response()->json([
+            'success' => true, 
+            'message' => 'Notification marked as read'
+        ]);
     }
 
     /**
@@ -37,7 +45,11 @@ class NotificationController extends Controller
     public function markAllAsRead()
     {
         Auth::user()->unreadNotifications->markAsRead();
-        return response()->json(['success' => true, 'message' => 'All notifications marked as read']);
+        
+        return response()->json([
+            'success' => true, 
+            'message' => 'All notifications marked as read'
+        ]);
     }
 
     /**
@@ -107,8 +119,16 @@ class NotificationController extends Controller
      */
     public function destroy(DatabaseNotification $notification)
     {
-        $this->authorize('delete', $notification);
+        // Check if the notification belongs to the current user
+        if ($notification->notifiable_id !== Auth::id()) {
+            abort(403, 'Unauthorized');
+        }
+
         $notification->delete();
-        return response()->json(['success' => true, 'message' => 'Notification deleted']);
+        
+        return response()->json([
+            'success' => true, 
+            'message' => 'Notification deleted'
+        ]);
     }
 }

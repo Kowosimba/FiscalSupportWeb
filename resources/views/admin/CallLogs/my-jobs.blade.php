@@ -107,10 +107,6 @@
                     <select name="type" class="form-select form-select-sm">
                         <option value="">All Types</option>
                         <option value="normal" @selected(request('type') == 'normal')>Normal</option>
-                        <option value="maintenance" @selected(request('type') == 'maintenance')>Maintenance</option>
-                        <option value="repair" @selected(request('type') == 'repair')>Repair</option>
-                        <option value="installation" @selected(request('type') == 'installation')>Installation</option>
-                        <option value="consultation" @selected(request('type') == 'consultation')>Consultation</option>
                         <option value="emergency" @selected(request('type') == 'emergency')>Emergency</option>
                     </select>
                 </div>

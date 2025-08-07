@@ -11,26 +11,12 @@ class CallLog extends Model
     use HasFactory;
 
     protected $fillable = [
-        'job_card',
-        'customer_name',
-        'customer_email', 
-        'customer_phone',
-        'company_name',
-        'fault_description',
-        'zimra_ref',
-        'date_booked',
-        'date_resolved',
-        'time_start',
-        'time_finish',
-        'type',
-        'billed_hours', // This should be a string field
-        'amount_charged',
-        'status',
-        'approved_by',
-        'assigned_to',
-        'engineer_comments',
-        'booked_by'
-    ];
+    'customer_name', 'customer_email', 'customer_phone', 'customer_address',
+    'zimra_ref', 'type', 'amount_charged', 'currency', 'date_booked',
+    'fault_description', 'status', 'approved_by', 'approved_by_name',
+    'booked_by', 'assigned_to'
+];
+
 
     protected $casts = [
         'date_booked' => 'datetime',
@@ -137,7 +123,7 @@ public function isBilledHoursPercentage()
      */
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'completed');
+        return $query->where('status', 'complete');
     }
 
     /**

@@ -23,10 +23,8 @@ Visit Our Website
 ## Stay Connected
 
 Follow us on social media for even more updates:
-- Facebook: [Fiscal Support Services](https://www.facebook.com/)
-- LinkedIn: [Company Page](https://www.linkedin.com/)
-- Twitter: [@FiscalSupport](https://twitter.com/)
-
+- Facebook: [Fiscal Support Services](https://www.facebook.com/p/FIscal-Support-Services-100032786814929/)
+- LinkedIn: [Company Page](https://zw.linkedin.com/company/fiscalsupport)
 ---
 
 **Subscription Details:**
@@ -39,8 +37,4 @@ If you didn't request this subscription or want to unsubscribe, please ignore th
 Thanks,<br>
 **The Team at {{ $company_name }}**
 
-<small style="color: #666; font-size: 12px;">
-<br>
-© {{ date('Y') }} Fiscal Support Services. All rights reserved.
-</small>
 @endcomponent

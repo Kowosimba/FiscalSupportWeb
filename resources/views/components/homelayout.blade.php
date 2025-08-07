@@ -697,6 +697,18 @@
             <div class="close-btn"><i class="fas fa-times"></i></div>
             <div class="tgmobile__menu-outer">
             </div>
+             <!-- Mobile Login Button -->
+                <div class="mobile-login-container" style="margin-bottom: 20px;">
+                    @auth
+                        <a href="{{ route('admin.index') }}" class="mobile-login-btn" style="display: block; text-align: center;">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    @else
+                        <a href="{{ route('show.login') }}" class="mobile-login-btn" style="display: block; text-align: center;">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                    @endauth
+                </div>
             
             <div class="tgmobile__menu-bottom">
                 

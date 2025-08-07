@@ -72,7 +72,8 @@
                         <i class="fas fa-dollar-sign"></i>
                     </div>
                     <div class="stat-content">
-                        <div class="stat-number">${{ number_format($stats['total_revenue'] ?? 0, 0) }}</div>
+                        {{-- Show revenue with currency, extend for multiple currencies as needed --}}
+                        <div class="stat-number">${{ number_format($stats['total_revenue'] ?? 0, 2) }}</div>
                         <div class="stat-label">Total Revenue</div>
                     </div>
                 </div>
@@ -101,45 +102,58 @@
                         <input type="text" name="search" id="search"
                             value="{{ request('search') }}"
                             placeholder="Search jobs..."
-                            class="form-control form-control-sm">
+                            class="form-control form-control-sm"
+                            autocomplete="off">
                     </div>
                 </div>
-                
+
                 <div class="filter-group">
-                    <select name="engineer" class="form-select form-select-sm">
+                    <select name="engineer" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">All Engineers</option>
+                        @php
+                            $selectedEngineer = request('engineer');
+                            // Display engineers with specified roles: admin, accounts, manager, technician
+                        @endphp
                         @foreach($technicians as $tech)
-                            <option value="{{ $tech->id }}" @selected(request('engineer') == $tech->id)>
-                                {{ $tech->name }}
-                            </option>
+                            @if(in_array($tech->role, ['admin', 'accounts', 'manager', 'technician']))
+                                <option value="{{ $tech->id }}" @selected($selectedEngineer == $tech->id)>{{ $tech->name }}</option>
+                            @endif
                         @endforeach
                     </select>
                 </div>
-                
+
                 <div class="filter-group">
-                    <select name="type" class="form-select form-select-sm">
+                    @php
+                        $types = ['normal','emergency'];
+                        $selectedType = request('type');
+                    @endphp
+                    <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">All Types</option>
-                        <option value="normal" @selected(request('type') == 'normal')>Normal</option>
-                        <option value="maintenance" @selected(request('type') == 'maintenance')>Maintenance</option>
-                        <option value="repair" @selected(request('type') == 'repair')>Repair</option>
-                        <option value="installation" @selected(request('type') == 'installation')>Installation</option>
-                        <option value="consultation" @selected(request('type') == 'consultation')>Consultation</option>
-                        <option value="emergency" @selected(request('type') == 'emergency')>Emergency</option>
+                        @foreach($types as $type)
+                            <option value="{{ $type }}" @selected($selectedType == $type)>{{ ucfirst($type) }}</option>
+                        @endforeach
                     </select>
                 </div>
-                
+
                 <div class="filter-group">
-                    <select name="date_range" class="form-select form-select-sm">
-                        <option value="">All Dates</option>
-                        <option value="today" @selected(request('date_range') == 'today')>Today</option>
-                        <option value="this_week" @selected(request('date_range') == 'this_week')>This Week</option>
-                        <option value="this_month" @selected(request('date_range') == 'this_month')>This Month</option>
-                        <option value="last_month" @selected(request('date_range') == 'last_month')>Last Month</option>
-                        <option value="last_3_months" @selected(request('date_range') == 'last_3_months')>Last 3 Months</option>
-                        <option value="this_year" @selected(request('date_range') == 'this_year')>This Year</option>
+                    @php
+                        $dateRanges = [
+                            '' => 'All Dates',
+                            'today' => 'Today',
+                            'this_week' => 'This Week',
+                            'this_month' => 'This Month',
+                            'last_month' => 'Last Month',
+                            'last_3_months' => 'Last 3 Months',
+                            'this_year' => 'This Year',
+                        ];
+                    @endphp
+                    <select name="date_range" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @foreach($dateRanges as $key => $label)
+                            <option value="{{ $key }}" @selected(request('date_range') == $key)>{{ $label }}</option>
+                        @endforeach
                     </select>
                 </div>
-                
+
                 <div class="filter-actions">
                     <button type="submit" class="btn btn-sm btn-secondary">
                         <i class="fas fa-filter me-1"></i>
@@ -162,9 +176,9 @@
                     Completed Jobs History
                 </h4>
                 @if($callLogs->count() > 0)
-                <p class="card-subtitle mb-0">
-                    Showing {{ $callLogs->firstItem() }} to {{ $callLogs->lastItem() }} of {{ $callLogs->total() }} jobs
-                </p>
+                    <p class="card-subtitle mb-0">
+                        Showing {{ $callLogs->firstItem() }} to {{ $callLogs->lastItem() }} of {{ $callLogs->total() }} jobs
+                    </p>
                 @endif
             </div>
             <div class="header-actions">
@@ -174,7 +188,7 @@
                 </button>
             </div>
         </div>
-        
+
         <div class="content-card-body">
             <div class="table-responsive">
                 <table class="compact-table">
@@ -231,7 +245,7 @@
                                     @if($job->assignedTo)
                                         <div class="d-flex align-items-center">
                                             <div class="user-avatar me-2" style="width: 24px; height: 24px; font-size: 0.7rem;">
-                                                {{ substr($job->assignedTo->name, 0, 1) }}
+                                                {{ Str::upper(substr($job->assignedTo->name, 0, 1)) }}
                                             </div>
                                             <span>{{ Str::limit($job->assignedTo->name, 12) }}</span>
                                         </div>
@@ -274,14 +288,14 @@
                             <td>
                                 <div class="action-buttons">
                                     <button onclick="window.location.href='{{ route('admin.call-logs.show', $job) }}'" 
-                                       class="action-btn view-btn" 
-                                       title="View Details">
+                                            class="action-btn view-btn" 
+                                            title="View Details" type="button" aria-label="View Job #{{ $job->id }}">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     @if($job->engineer_comments)
                                         <button class="action-btn comment-btn" 
                                                 onclick="showComments('{{ addslashes($job->engineer_comments) }}')"
-                                                title="View Comments">
+                                                title="View Comments" type="button" aria-label="View Comments for Job #{{ $job->id }}">
                                             <i class="fas fa-comment"></i>
                                         </button>
                                     @endif
@@ -302,7 +316,7 @@
                     </tbody>
                 </table>
             </div>
-            
+
             @if($callLogs->hasPages())
             <div class="pagination-wrapper">
                 {{ $callLogs->withQueryString()->onEachSide(1)->links() }}
@@ -321,7 +335,7 @@
                     <i class="fas fa-comment me-2"></i>
                     Engineer Comments
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div id="commentsContent" class="engineer-comments-content">
@@ -338,7 +352,7 @@
 
 @push('styles')
 <style>
-/* Updated CSS Variables for Completed Jobs */
+/* Your full CSS as provided earlier, ensuring consistent styles */
 :root {
     --primary: #059669;
     --primary-dark: #047857;
@@ -640,6 +654,7 @@
     letter-spacing: 0.05em;
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--gray-200);
+    white-space: nowrap;
 }
 
 .compact-table td {
@@ -677,12 +692,7 @@
     display: inline;
 }
 
-.ticket-subject:hover {
-    color: var(--secondary);
-    text-decoration: none !important;
-}
-
-.ticket-subject:focus {
+.ticket-subject:hover, .ticket-subject:focus {
     color: var(--secondary);
     text-decoration: none !important;
     outline: none;
@@ -1005,122 +1015,96 @@ document.addEventListener('DOMContentLoaded', function() {
             const originalContent = this.innerHTML;
             this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing';
             this.disabled = true;
-            
+
             setTimeout(() => {
                 window.location.reload();
             }, 800);
         });
     }
-    
-    // Auto-submit on filter change
+
+    // Auto-submit on filter change (for selects)
     const filterSelects = document.querySelectorAll('select[name="engineer"], select[name="type"], select[name="date_range"]');
     filterSelects.forEach(select => {
         select.addEventListener('change', function() {
             this.closest('form').submit();
         });
     });
-    
-    // Toast notification function
-    function showToast(type, message) {
-        const toast = document.createElement('div');
-        toast.className = `toast-notification toast-${type}`;
-        toast.setAttribute('role', 'alert');
-        
-        const icons = {
-            'success': 'fa-check-circle',
-            'error': 'fa-exclamation-circle',
-            'warning': 'fa-exclamation-triangle',
-            'info': 'fa-info-circle'
-        };
-        
-        const colors = {
-            'success': 'linear-gradient(135deg, #059669, #047857)',
-            'error': 'linear-gradient(135deg, #DC2626, #B91C1C)',
-            'warning': 'linear-gradient(135deg, #F59E0B, #D97706)',
-            'info': 'linear-gradient(135deg, #6B7280, #4B5563)'
-        };
-        
-        toast.innerHTML = `
-            <div class="toast-content">
-                <i class="fas ${icons[type] || icons['info']} me-1"></i>
-                ${message}
-            </div>
-            <button class="toast-close" onclick="this.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
-        toast.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 16px;
-            border-radius: 8px;
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 9999;
-            min-width: 300px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            animation: slideIn 0.3s ease;
-            background: ${colors[type] || colors['info']};
-        `;
-        
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.remove();
+
+    // Comments modal function
+    window.showComments = function(comments) {
+        const commentsContent = document.getElementById('commentsContent');
+        commentsContent.textContent = comments || 'No comments available for this job.';
+
+        const modal = new bootstrap.Modal(document.getElementById('commentsModal'));
+        modal.show();
+    };
+
+    // Export functionality placeholder
+    window.exportResults = function() {
+        alert('Export functionality is not implemented yet.');
+    };
+
+    // Table row click to view job details, except buttons
+    document.querySelectorAll('tbody tr').forEach(row => {
+        row.addEventListener('click', event => {
+            if (!event.target.closest('.action-buttons') && !event.target.closest('button')) {
+                const btnView = row.querySelector('.view-btn');
+                if (btnView) btnView.click();
             }
-        }, 4000);
-    }
-    
-    // Make functions globally available
-    window.showToast = showToast;
+        });
+    });
 });
-
-// Comments modal function
-function showComments(comments) {
-    const commentsContent = document.getElementById('commentsContent');
-    commentsContent.textContent = comments || 'No comments available for this job.';
-    
-    const modal = new bootstrap.Modal(document.getElementById('commentsModal'));
-    modal.show();
-}
-
-// Export functionality placeholder
-function exportResults() {
-    showToast('info', 'Export functionality will be implemented soon!');
-}
-
-// Add animation keyframes
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    
-    .toast-close {
-        background: none;
-        border: none;
-        color: white;
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
-        opacity: 0.8;
-        transition: all 0.2s ease;
-    }
-    
-    .toast-close:hover {
-        opacity: 1;
-        background: rgba(255,255,255,0.1);
-    }
-`;
-document.head.appendChild(style);
 </script>
 @endpush
 
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Refresh button functionality
+    const refreshBtn = document.getElementById('refreshJobs');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            const originalContent = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing';
+            this.disabled = true;
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+        });
+    }
+
+    // Auto-submit on filter change (for selects)
+    const filterSelects = document.querySelectorAll('select[name="engineer"], select[name="type"], select[name="date_range"]');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+
+    // Comments modal function
+    window.showComments = function(comments) {
+        const commentsContent = document.getElementById('commentsContent');
+        commentsContent.textContent = comments || 'No comments available for this job.';
+
+        const modal = new bootstrap.Modal(document.getElementById('commentsModal'));
+        modal.show();
+    };
+
+    // Export functionality placeholder
+    window.exportResults = function() {
+        alert('Export functionality is not implemented yet.');
+    };
+
+    // Table row click to view job details, except buttons
+    document.querySelectorAll('tbody tr').forEach(row => {
+        row.addEventListener('click', event => {
+            if (!event.target.closest('.action-buttons') && !event.target.closest('button')) {
+                const btnView = row.querySelector('.view-btn');
+                if (btnView) btnView.click();
+            }
+        });
+    });
+});
+</script>
+@endpush

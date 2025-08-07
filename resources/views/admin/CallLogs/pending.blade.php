@@ -59,24 +59,21 @@
                     <select name="type" class="form-select form-select-sm">
                         <option value="">All Types</option>
                         <option value="normal" @selected(request('type') == 'normal')>Normal</option>
-                        <option value="maintenance" @selected(request('type') == 'maintenance')>Maintenance</option>
-                        <option value="repair" @selected(request('type') == 'repair')>Repair</option>
-                        <option value="installation" @selected(request('type') == 'installation')>Installation</option>
-                        <option value="consultation" @selected(request('type') == 'consultation')>Consultation</option>
                         <option value="emergency" @selected(request('type') == 'emergency')>Emergency</option>
                     </select>
                 </div>
                 
                 <div class="filter-group">
-                    <select name="technician" class="form-select form-select-sm">
-                        <option value="">All Technicians</option>
-                        @foreach($technicians as $tech)
-                            <option value="{{ $tech->id }}" @selected(request('technician') == $tech->id)>
-                                {{ $tech->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+    <select name="technician" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All Technicians</option>
+        @foreach($technicians as $tech)
+            <option value="{{ $tech->id }}" @selected(request('technician') == $tech->id)>
+                {{ $tech->name }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
                 
                 <div class="filter-group">
                     <select name="date_range" class="form-select form-select-sm">
@@ -234,13 +231,7 @@
                                                 title="Start Job">
                                             <i class="fas fa-play"></i>
                                         </button>
-                                    @elseif(!$job->assignedTo && (auth()->user()->role === 'admin' || auth()->user()->role === 'manager'))
-                                        <button class="action-btn assign-btn" 
-                                                onclick="quickAssign({{ $job->id }})"
-                                                title="Quick Assign">
-                                            <i class="fas fa-user-plus"></i>
-                                        </button>
-                                    @endif
+                                     @endif
                                 </div>
                             </td>
                         </tr>

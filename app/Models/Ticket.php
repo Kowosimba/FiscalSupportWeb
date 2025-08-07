@@ -5,27 +5,29 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Notifications\Notifiable;
 use App\Models\Comment;
 
 class Ticket extends Model
 {
     use HasFactory;
+    use Notifiable;
 
     protected $table = 'tickets'; // If your table is named support_tickets
 
     protected $fillable = [
-        'subject',
-        'description',
-        'priority',
-        'status',
         'company_name',
-        'customer_name',
-        'customer_email',
-        'customer_phone',
+        'contact_details',  // matches migration column
+        'email',
+        'subject',
+        'message',
+        'service',
+        'status',
+        'priority',
         'assigned_to',
-        'resolved_at',
-        'customer_rating'
+        'attachment',
     ];
+
 
     protected $casts = [
         'resolved_at' => 'datetime',

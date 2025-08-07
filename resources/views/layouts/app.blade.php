@@ -12,19 +12,21 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+       <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/img/favi.png') }}">
 
     <style>
         :root {
-            /* Modern Professional Color Scheme */
-            --primary: #059669;           /* Emerald Green */
-            --primary-light: #10B981;     /* Light Emerald */
-            --primary-dark: #047857;      /* Dark Emerald */
-            --secondary: #6B7280;         /* Cool Gray */
-            --accent: #8B5CF6;            /* Purple accent */
-            --success: #059669;
+            /* Enhanced Dark Green Color Scheme */
+            --primary: #065f46;
+            --primary-light: #047857;
+            --primary-lighter: #059669;
+            --primary-dark: #064e3b;
+            --secondary: #6B7280;
+            --accent: #10B981;
+            --success: #065f46;
             --warning: #F59E0B;
             --danger: #DC2626;
-            --info: #0EA5E9;
+            --info: #047857;
             
             /* Neutral Modern Grays */
             --white: #FFFFFF;
@@ -38,23 +40,6 @@
             --gray-700: #374151;
             --gray-800: #1F2937;
             --gray-900: #111827;
-            
-            /* Dark Mode Colors */
-            --dark-primary: #10B981;
-            --dark-bg: #0F172A;           /* Slate 900 */
-            --dark-surface: #1E293B;      /* Slate 800 */
-            --dark-surface-light: #334155; /* Slate 700 */
-            --dark-text: #F1F5F9;         /* Slate 100 */
-            --dark-text-muted: #94A3B8;   /* Slate 400 */
-            
-            /* Status Colors */
-            --ticket-open: #3B82F6;       /* Blue */
-            --ticket-pending: #F59E0B;    /* Amber */
-            --ticket-solved: #059669;     /* Emerald */
-            --ticket-closed: #6B7280;     /* Gray */
-            --priority-high: #DC2626;     /* Red */
-            --priority-medium: #F59E0B;   /* Amber */
-            --priority-low: #059669;      /* Emerald */
             
             /* Layout & Effects */
             --sidebar-width: 280px;
@@ -74,19 +59,21 @@
 
         /* Dark Mode Variables */
         body.dark-mode {
-            --primary: var(--dark-primary);
-            --white: var(--dark-surface);
-            --gray-50: var(--dark-surface-light);
-            --gray-100: var(--dark-surface);
+            --primary: #10B981;
+            --primary-light: #34D399;
+            --primary-lighter: #6EE7B7;
+            --white: #1E293B;
+            --gray-50: #334155;
+            --gray-100: #1E293B;
             --gray-200: #475569;
             --gray-300: #64748B;
             --gray-400: #94A3B8;
             --gray-500: #CBD5E1;
             --gray-600: #E2E8F0;
             --gray-700: #F1F5F9;
-            --gray-800: var(--dark-text);
-            --gray-900: var(--dark-text);
-            background-color: var(--dark-bg) !important;
+            --gray-800: #F1F5F9;
+            --gray-900: #F1F5F9;
+            background-color: #0F172A !important;
             --glass-bg: rgba(30, 41, 59, 0.95);
             --glass-border: rgba(255, 255, 255, 0.1);
         }
@@ -137,6 +124,7 @@
 
         .navbar-brand:hover {
             transform: scale(1.02);
+            color: var(--primary);
         }
 
         .navbar-brand-logo {
@@ -175,7 +163,7 @@
         .navbar-search input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1), var(--shadow-md);
+            box-shadow: 0 0 0 3px rgba(6, 95, 70, 0.1), var(--shadow-md);
             transform: translateY(-1px);
         }
 
@@ -188,10 +176,128 @@
             font-size: 1rem;
         }
 
+        /* Search Results Dropdown */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-xl);
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1040;
+            display: none;
+            margin-top: 0.5rem;
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--gray-100);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .search-result-item:hover {
+            background: var(--gray-50);
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+        }
+
+        .search-result-icon.contact {
+            background: rgba(6, 95, 70, 0.1);
+            color: var(--primary);
+        }
+
+        .search-result-icon.ticket {
+            background: rgba(245, 158, 11, 0.1);
+            color: #F59E0B;
+        }
+
+        .search-result-icon.job {
+            background: rgba(4, 120, 87, 0.1);
+            color: var(--primary-light);
+        }
+
+        .search-result-content {
+            flex: 1;
+        }
+
+        .search-result-title {
+            font-weight: 600;
+            color: var(--gray-800);
+            font-size: 0.9rem;
+        }
+
+        .search-result-subtitle {
+            font-size: 0.8rem;
+            color: var(--gray-500);
+            margin-top: 0.25rem;
+        }
+
+        .search-no-results {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: var(--gray-500);
+        }
+
+        .search-loading {
+            padding: 1.5rem 1rem;
+            text-align: center;
+            color: var(--gray-500);
+        }
+
         .navbar-actions {
             display: flex;
             align-items: center;
             gap: 0.75rem;
+        }
+
+        /* Current Time Display */
+        .navbar-time {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            min-width: 140px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .navbar-time-date {
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .navbar-time-clock {
+            font-family: 'Monaco', 'Menlo', monospace;
+            color: var(--primary);
+            font-weight: 700;
         }
 
         .navbar-notification, .theme-toggle {
@@ -219,9 +325,9 @@
 
         .navbar-notification-badge {
             position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 18px;
+            top: 6px;
+            right: 6px;
+            min-width: 18px;
             height: 18px;
             background: linear-gradient(135deg, var(--danger), #EF4444);
             color: var(--white);
@@ -233,6 +339,7 @@
             justify-content: center;
             border: 2px solid var(--white);
             animation: pulse 2s infinite;
+            padding: 0 4px;
         }
 
         @keyframes pulse {
@@ -269,6 +376,7 @@
             justify-content: center;
             font-weight: 700;
             font-size: 1rem;
+            overflow: hidden;
         }
 
         .user-info {
@@ -288,7 +396,7 @@
             font-weight: 500;
         }
 
-        /* Modern Sidebar */
+        /* Modern Sidebar with Fixed Navigation Button Issues */
         .sidebar {
             width: var(--sidebar-width);
             background: var(--white);
@@ -315,6 +423,7 @@
             list-style: none;
             padding: 0;
             flex: 1;
+            padding-bottom: 120px; /* Extra space for profile */
         }
 
         .nav-section {
@@ -366,16 +475,19 @@
             position: relative;
             font-weight: 500;
             margin-right: 1rem;
+            min-height: 48px; /* Ensure consistent button height */
+            white-space: nowrap; /* Prevent text wrapping */
         }
 
         .nav-link:hover {
-            background: linear-gradient(90deg, rgba(5, 150, 105, 0.08), rgba(5, 150, 105, 0.04));
+            background: linear-gradient(90deg, rgba(6, 95, 70, 0.08), rgba(6, 95, 70, 0.04));
             color: var(--primary);
             transform: translateX(4px);
+            text-decoration: none;
         }
 
         .nav-link.active {
-            background: linear-gradient(90deg, rgba(5, 150, 105, 0.15), rgba(5, 150, 105, 0.08));
+            background: linear-gradient(90deg, rgba(6, 95, 70, 0.15), rgba(6, 95, 70, 0.08));
             color: var(--primary);
             font-weight: 600;
             box-shadow: var(--shadow-sm);
@@ -401,6 +513,7 @@
             margin-right: 1rem;
             font-size: 1.1rem;
             transition: var(--transition);
+            flex-shrink: 0; /* Prevent icon from shrinking */
         }
 
         .sidebar.collapsed .nav-icon {
@@ -410,6 +523,7 @@
         .nav-text {
             transition: var(--transition);
             font-size: 0.95rem;
+            overflow: hidden; /* Hide text overflow */
         }
 
         .sidebar.collapsed .nav-text {
@@ -418,19 +532,7 @@
             overflow: hidden;
         }
 
-        .nav-badge {
-            margin-left: auto;
-            background: var(--gray-200);
-            color: var(--gray-700);
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 0.25rem 0.5rem;
-            border-radius: var(--border-radius);
-            min-width: 20px;
-            text-align: center;
-        }
-
-        /* Enhanced Navigation Groups */
+        /* Enhanced Navigation Groups with Fixed Button Issues */
         .nav-group {
             margin-bottom: 0.5rem;
         }
@@ -438,6 +540,11 @@
         .nav-group-toggle {
             cursor: pointer;
             user-select: none;
+        }
+
+        .nav-group-toggle .nav-link {
+            position: relative;
+            padding-right: 3rem; /* Space for arrow */
         }
 
         .nav-group-toggle .nav-link::after {
@@ -448,6 +555,7 @@
             right: 1.5rem;
             transition: transform 0.3s ease;
             font-size: 0.9rem;
+            color: var(--gray-500);
         }
 
         .sidebar.collapsed .nav-group-toggle .nav-link::after {
@@ -461,6 +569,11 @@
         .nav-group-submenu {
             overflow: hidden;
             transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 0;
+        }
+
+        .nav-group-submenu.expanded {
+            max-height: 500px; /* Large enough for all submenu items */
         }
 
         .nav-group-submenu .nav-link {
@@ -469,6 +582,7 @@
             margin-left: 1rem;
             margin-right: 1.5rem;
             font-weight: 500;
+            min-height: 44px; /* Slightly smaller for sub-items */
         }
 
         .nav-group-submenu .nav-link .nav-icon {
@@ -491,9 +605,11 @@
             align-items: center;
             gap: 1rem;
             cursor: pointer;
+            margin-top: auto;
+            flex-shrink: 0;
             position: sticky;
             bottom: 0;
-            margin-top: auto;
+            z-index: 10;
         }
 
         .sidebar-profile:hover {
@@ -573,7 +689,7 @@
             margin-left: var(--sidebar-collapsed);
         }
 
-        /* Enhanced Dropdowns */
+        /* Enhanced Dropdowns - Fixed positioning */
         .dropdown-menu {
             border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-xl);
@@ -583,6 +699,10 @@
             margin-top: 0.5rem;
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
+            max-height: 400px;
+            overflow-y: auto;
+            position: absolute !important;
+            z-index: 1050;
         }
 
         .dropdown-item {
@@ -594,6 +714,7 @@
             gap: 0.75rem;
             color: var(--gray-700);
             font-weight: 500;
+            white-space: nowrap;
         }
 
         .dropdown-item:hover {
@@ -605,6 +726,7 @@
         .dropdown-item i {
             font-size: 1rem;
             min-width: 18px;
+            flex-shrink: 0;
         }
 
         .dropdown-divider {
@@ -612,12 +734,14 @@
             border-color: var(--gray-200);
         }
 
-        /* Enhanced Notifications */
+        /* Enhanced Notifications Dropdown */
         .notification-dropdown {
             width: 380px;
             max-height: 500px;
             overflow-y: auto;
             padding: 0;
+            right: 0 !important;
+            left: auto !important;
         }
 
         .notification-header {
@@ -628,6 +752,9 @@
             justify-content: space-between;
             align-items: center;
             background: var(--gray-50);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .notification-item {
@@ -635,6 +762,7 @@
             border-bottom: 1px solid var(--gray-200);
             transition: var(--transition);
             cursor: pointer;
+            position: relative;
         }
 
         .notification-item:hover {
@@ -642,8 +770,20 @@
         }
 
         .notification-item.unread {
-            background: rgba(5, 150, 105, 0.05);
+            background: rgba(6, 95, 70, 0.05);
             border-left: 4px solid var(--primary);
+        }
+
+        .notification-item.unread::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 1rem;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
         }
 
         .notification-title {
@@ -651,20 +791,45 @@
             margin-bottom: 0.5rem;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
+            font-size: 0.9rem;
         }
 
         .notification-message {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--gray-600);
-            line-height: 1.5;
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
         }
 
         .notification-time {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--gray-500);
-            margin-top: 0.5rem;
             font-weight: 500;
+        }
+
+        .notification-priority {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .notification-priority.high {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--danger);
+        }
+
+        .notification-priority.medium {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .notification-priority.normal {
+            background: rgba(6, 95, 70, 0.1);
+            color: var(--success);
         }
 
         .notification-footer {
@@ -672,6 +837,32 @@
             text-align: center;
             background: var(--gray-50);
             border-top: 1px solid var(--gray-200);
+            position: sticky;
+            bottom: 0;
+        }
+
+        .notification-empty {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: var(--gray-500);
+        }
+
+        .notification-empty i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--gray-300);
+        }
+
+        /* Loading States */
+        .notification-loading {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: var(--gray-500);
+        }
+
+        .notification-loading i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
         }
 
         /* Mobile Responsiveness */
@@ -703,7 +894,11 @@
 
             .notification-dropdown {
                 width: 320px;
-                right: -50px !important;
+                right: -20px !important;
+            }
+
+            .navbar-time {
+                display: none;
             }
         }
 
@@ -737,23 +932,33 @@
             .navbar-search {
                 display: none;
             }
+            
+            .notification-dropdown {
+                width: calc(100vw - 2rem);
+                right: 1rem !important;
+                left: 1rem !important;
+            }
         }
 
         /* Custom Scrollbar */
-        .sidebar::-webkit-scrollbar {
+        .sidebar::-webkit-scrollbar,
+        .notification-dropdown::-webkit-scrollbar {
             width: 6px;
         }
 
-        .sidebar::-webkit-scrollbar-track {
+        .sidebar::-webkit-scrollbar-track,
+        .notification-dropdown::-webkit-scrollbar-track {
             background: var(--gray-100);
         }
 
-        .sidebar::-webkit-scrollbar-thumb {
+        .sidebar::-webkit-scrollbar-thumb,
+        .notification-dropdown::-webkit-scrollbar-thumb {
             background: var(--gray-300);
             border-radius: 3px;
         }
 
-        .sidebar::-webkit-scrollbar-thumb:hover {
+        .sidebar::-webkit-scrollbar-thumb:hover,
+        .notification-dropdown::-webkit-scrollbar-thumb:hover {
             background: var(--gray-400);
         }
 
@@ -766,7 +971,7 @@
         }
 
         .alert-success {
-            background: rgba(5, 150, 105, 0.1);
+            background: rgba(6, 95, 70, 0.1);
             color: var(--success);
             border-left-color: var(--success);
         }
@@ -778,7 +983,7 @@
         }
 
         .alert-info {
-            background: rgba(14, 165, 233, 0.1);
+            background: rgba(4, 120, 87, 0.1);
             color: var(--info);
             border-left-color: var(--info);
         }
@@ -789,454 +994,71 @@
             border-left-color: var(--warning);
         }
 
-        /* Tickets View - Modern Styling */
-.tickets-view {
-    padding: 0;
-    max-width: 100%;
-}
+        /* Fix for cut-off dropdowns */
+        .dropdown {
+            position: static;
+        }
 
-/* Enhanced Filter Card */
-.filter-card {
-    background: var(--white);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--gray-200);
-    margin-bottom: 1.5rem;
-    overflow: hidden;
-    transition: var(--transition);
-}
+        .dropdown-menu {
+            position: fixed !important;
+        }
 
-.filter-card:hover {
-    box-shadow: var(--shadow-md);
-}
+        /* Ensure proper z-index stacking */
+        .navbar {
+            z-index: 1030;
+        }
 
-.filter-header {
-    padding: 1rem 1.5rem;
-    background: var(--gray-50);
-    border-bottom: 1px solid var(--gray-200);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+        .sidebar {
+            z-index: 1020;
+        }
 
-.filter-title {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--gray-800);
-    margin: 0;
-    display: flex;
-    align-items: center;
-}
+        .dropdown-menu {
+            z-index: 1050;
+        }
 
-.filter-body {
-    padding: 1.5rem;
-}
+        .modal {
+            z-index: 1060;
+        }
 
-.filter-form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-}
+        .mobile-overlay {
+            z-index: 1010;
+        }
 
-.form-group {
-    margin-bottom: 0;
-}
+        /* Button color fixes */
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: var(--white);
+        }
 
-.form-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--gray-600);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
-    display: block;
-}
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+            color: var(--white);
+        }
 
-/* Enhanced Select */
-.enhanced-select {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 0.5rem center;
-    background-repeat: no-repeat;
-    background-size: 1.5em 1.5em;
-    padding-right: 2.5rem !important;
-}
+        .btn-outline-primary {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
 
-.select-wrapper {
-    position: relative;
-}
+        .btn-outline-primary:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: var(--white);
+        }
 
-.select-arrow {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-    color: var(--gray-500);
-}
+        .text-primary {
+            color: var(--primary) !important;
+        }
 
-/* Enhanced Search Input */
-.search-wrapper {
-    position: relative;
-}
+        .bg-primary {
+            background-color: var(--primary) !important;
+        }
 
-.search-icon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--gray-500);
-    font-size: 0.9rem;
-}
-
-.enhanced-input {
-    padding-left: 2.5rem !important;
-    transition: var(--transition);
-}
-
-.enhanced-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
-}
-
-/* Form Actions */
-.form-actions {
-    display: flex;
-    align-items: flex-end;
-    gap: 0.75rem;
-}
-
-/* Tickets Table */
-.tickets-table-card {
-    background: var(--white);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--gray-200);
-    overflow: hidden;
-}
-
-.table-header {
-    padding: 1rem 1.5rem;
-    background: var(--gray-50);
-    border-bottom: 1px solid var(--gray-200);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.table-title {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--gray-800);
-    margin: 0;
-    display: flex;
-    align-items: center;
-}
-
-.table-meta {
-    font-size: 0.8rem;
-    color: var(--gray-600);
-}
-
-.table-container {
-    overflow-x: auto;
-}
-
-.enhanced-tickets-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    min-width: 800px;
-}
-
-.enhanced-tickets-table thead th {
-    background: var(--gray-50);
-    color: var(--gray-700);
-    font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--gray-200);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.enhanced-tickets-table tbody tr {
-    transition: var(--transition);
-    border-bottom: 1px solid var(--gray-200);
-}
-
-.enhanced-tickets-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.enhanced-tickets-table tbody tr:hover {
-    background: var(--gray-50);
-}
-
-.enhanced-tickets-table tbody td {
-    padding: 1rem;
-    vertical-align: middle;
-    font-size: 0.85rem;
-}
-
-/* Ticket ID Badge */
-.ticket-id-badge {
-    font-family: 'Monaco', 'Menlo', monospace;
-    background: var(--primary);
-    color: var(--white);
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: inline-block;
-}
-
-/* Priority Badges */
-.priority-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: capitalize;
-}
-
-.priority-high {
-    background: rgba(220, 38, 38, 0.1);
-    color: var(--danger);
-    border: 1px solid rgba(220, 38, 38, 0.2);
-}
-
-.priority-medium {
-    background: rgba(245, 158, 11, 0.1);
-    color: var(--warning);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-.priority-low {
-    background: rgba(5, 150, 105, 0.1);
-    color: var(--success);
-    border: 1px solid rgba(5, 150, 105, 0.2);
-}
-
-/* Status Badges */
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: capitalize;
-}
-
-.status-open {
-    background: rgba(59, 130, 246, 0.1);
-    color: #3B82F6;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.status-resolved {
-    background: rgba(5, 150, 105, 0.1);
-    color: var(--success);
-    border: 1px solid rgba(5, 150, 105, 0.2);
-}
-
-.status-pending {
-    background: rgba(245, 158, 11, 0.1);
-    color: var(--warning);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-.status-closed {
-    background: rgba(107, 114, 128, 0.1);
-    color: var(--gray-600);
-    border: 1px solid rgba(107, 114, 128, 0.2);
-}
-
-/* Update Time */
-.update-time {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    color: var(--gray-600);
-    font-size: 0.8rem;
-}
-
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.action-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: var(--transition);
-    color: var(--gray-600);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-}
-
-.action-btn:hover {
-    background: var(--gray-100);
-    color: var(--primary);
-    transform: translateY(-1px);
-}
-
-.view-btn {
-    color: var(--primary);
-}
-
-/* Empty State */
-.empty-state {
-    padding: 3rem 1rem;
-    text-align: center;
-}
-
-.empty-content i {
-    font-size: 2.5rem;
-    color: var(--gray-300);
-    margin-bottom: 1rem;
-}
-
-.empty-content h4 {
-    color: var(--gray-700);
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.empty-content p {
-    color: var(--gray-600);
-    margin: 0;
-    font-size: 0.9rem;
-}
-
-/* Pagination */
-.pagination-wrapper {
-    padding: 1.5rem;
-    border-top: 1px solid var(--gray-200);
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.page-item.active .page-link {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: white;
-}
-
-.page-link {
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--border-radius) !important;
-    border: 1px solid var(--gray-300);
-    color: var(--gray-700);
-    font-size: 0.85rem;
-    transition: var(--transition);
-}
-
-.page-link:hover {
-    background: var(--gray-100);
-    color: var(--primary);
-}
-
-/* Dark Mode Adjustments */
-body.dark-mode {
-    .filter-card,
-    .tickets-table-card {
-        background: var(--dark-surface);
-        border-color: var(--dark-surface-light);
-    }
-    
-    .filter-header,
-    .table-header {
-        background: var(--dark-surface-light);
-        border-color: var(--dark-surface-light);
-    }
-    
-    .enhanced-tickets-table thead th {
-        background: var(--dark-surface-light);
-        color: var(--dark-text);
-    }
-    
-    .enhanced-tickets-table tbody tr:hover {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    
-    .priority-badge,
-    .status-badge {
-        opacity: 0.9;
-    }
-    
-    .page-link {
-        background: var(--dark-surface);
-        border-color: var(--dark-surface-light);
-        color: var(--dark-text);
-    }
-    
-    .page-link:hover {
-        background: var(--dark-surface-light);
-    }
-}
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-    .filter-form {
-        grid-template-columns: 1fr;
-    }
-    
-    .form-actions {
-        justify-content: flex-start;
-    }
-    
-    .table-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-}
-
-@media (max-width: 576px) {
-    .filter-header,
-    .table-header {
-        padding: 1rem;
-    }
-    
-    .filter-body {
-        padding: 1rem;
-    }
-    
-    .enhanced-tickets-table tbody td {
-        padding: 0.75rem;
-    }
-    
-    .action-buttons {
-        gap: 0.25rem;
-    }
-    
-    .action-btn {
-        width: 28px;
-        height: 28px;
-    }
-}
+        .border-primary {
+            border-color: var(--primary) !important;
+        }
     </style>
 
     @stack('styles')
@@ -1256,52 +1078,59 @@ body.dark-mode {
         
         <div class="navbar-search">
             <i class="fas fa-search"></i>
-            <input type="text" placeholder="Search tickets, customers, articles..." id="globalSearch">
+            <input type="text" placeholder="Search tickets, contacts, jobs..." id="globalSearch">
+            <div class="search-results" id="searchResults"></div>
         </div>
         
         <div class="navbar-actions">
+            <!-- Current Date & Time Display -->
+          <div class="navbar-time d-none d-lg-flex">
+    <div class="navbar-time-date" id="currentDate">{{ now()->addHours(2)->format('Y-m-d') }}</div>
+    <div class="navbar-time-clock" id="currentTime">{{ now()->addHours(2)->format('H:i:s') }}</div>
+</div>
+
             <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
                 <i class="fas fa-moon"></i>
             </button>
             
+            <!-- Notifications Dropdown -->
             <div class="dropdown">
                 <div class="navbar-notification dropdown-toggle" id="notificationTrigger" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-bell"></i>
-                    @auth
-                        @php
-                            $unreadCount = 0; // Replace with actual notification count from database
-                        @endphp
-                        @if($unreadCount > 0)
-                            <span class="navbar-notification-badge">{{ $unreadCount }}</span>
-                        @endif
-                    @endauth
+                    <span class="navbar-notification-badge" id="notificationBadge" style="display: none;">0</span>
                 </div>
                 
                 <ul class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationTrigger">
                     <li class="notification-header">
                         <span>Notifications</span>
-                        <a href="{{ route('notifications.read-all') }}" class="text-primary" style="font-size: 0.8rem; font-weight: 600;">Mark all read</a>
+                        <button class="btn btn-sm btn-link text-primary p-0" id="markAllRead" style="font-size: 0.8rem; font-weight: 600;">
+                            Mark all read
+                        </button>
                     </li>
-                    <!-- Dynamic notifications would go here -->
-                    <li class="notification-item">
-                        <div class="notification-title">
-                            <span>No new notifications</span>
-                        </div>
-                        <div class="notification-message">You're all caught up!</div>
-                    </li>
+                    <div id="notificationsList">
+                        <li class="notification-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <div>Loading notifications...</div>
+                        </li>
+                    </div>
                     <li class="notification-footer">
-                        <a href="{{ route('notifications.index') }}" class="text-primary" style="font-weight: 600;">View all notifications</a>
+                        <a href="{{ route('notifications.index') }}" class="text-primary" style="font-weight: 600; text-decoration: none;">
+                            View all notifications
+                        </a>
                     </li>
                 </ul>
             </div>
             
+            <!-- User Dropdown -->
             <div class="dropdown">
                 <div class="navbar-user dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <div class="user-avatar">
-                        @if(Auth::user() && Auth::user()->name)
-                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        @if(Auth::user() && Auth::user()->avatar)
+                            <img src="{{ Auth::user()->avatar_url }}" alt="{{ Auth::user()->name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+                        @elseif(Auth::user() && Auth::user()->name)
+                            {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
                         @else
-                            <i class="fas fa-user"></i>
+                            U
                         @endif
                     </div>
                     <div class="user-info d-none d-lg-block">
@@ -1311,9 +1140,8 @@ body.dark-mode {
                 </div>
                 
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="#"><i class="fas fa-user-circle"></i> My Profile</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Account Settings</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="fas fa-bell"></i> Preferences</a></li>
+                    <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="fas fa-user-circle"></i> My Profile</a></li>
+                    <li><a class="dropdown-item" href="{{ route('notifications.index') }}"><i class="fas fa-bell"></i> Notifications</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <a class="dropdown-item" href="#" id="logoutTrigger">
@@ -1346,13 +1174,13 @@ body.dark-mode {
                 <ul>
                     <!-- Tickets Section -->
                     <li class="nav-group">
-                        <div class="nav-group-toggle" data-target="tickets-submenu">
+                        <div class="nav-group-toggle {{ request()->routeIs('admin.tickets.*') ? '' : 'collapsed' }}" data-target="tickets-submenu">
                             <a class="nav-link {{ request()->routeIs('admin.tickets.*') ? 'active' : '' }}" href="javascript:void(0)">
                                 <span class="nav-icon"><i class="fas fa-ticket-alt"></i></span>
                                 <span class="nav-text">Tickets</span>
                             </a>
                         </div>
-                        <div class="nav-group-submenu" id="tickets-submenu">
+                        <div class="nav-group-submenu {{ request()->routeIs('admin.tickets.*') ? 'expanded' : '' }}" id="tickets-submenu">
                             <a class="nav-link {{ request()->routeIs('admin.tickets.open') ? 'active' : '' }}" href="{{ route('admin.tickets.open') }}">
                                 <span class="nav-icon"><i class="fas fa-play-circle"></i></span>
                                 <span class="nav-text">In Progress</span>
@@ -1378,13 +1206,13 @@ body.dark-mode {
 
                     <!-- Jobs Section -->
                     <li class="nav-group">
-                        <div class="nav-group-toggle" data-target="jobs-submenu">
+                        <div class="nav-group-toggle {{ request()->routeIs('admin.call-logs.*') ? '' : 'collapsed' }}" data-target="jobs-submenu">
                             <a class="nav-link {{ request()->routeIs('admin.call-logs.*') ? 'active' : '' }}" href="javascript:void(0)">
                                 <span class="nav-icon"><i class="fas fa-briefcase"></i></span>
                                 <span class="nav-text">Jobs</span>
                             </a>
                         </div>
-                        <div class="nav-group-submenu" id="jobs-submenu">
+                        <div class="nav-group-submenu {{ request()->routeIs('admin.call-logs.*') ? 'expanded' : '' }}" id="jobs-submenu">
                             <a class="nav-link {{ request()->routeIs('admin.call-logs.my-jobs') ? 'active' : '' }}" href="{{ route('admin.call-logs.my-jobs') }}">
                                 <span class="nav-icon"><i class="fas fa-user-check"></i></span>
                                 <span class="nav-text">My Jobs</span>
@@ -1405,10 +1233,12 @@ body.dark-mode {
                                 <span class="nav-icon"><i class="fas fa-user-slash"></i></span>
                                 <span class="nav-text">Unassigned</span>
                             </a>
-                            <a class="nav-link {{ request()->routeIs('admin.call-logs.create') ? 'active' : '' }}" href="{{ route('admin.call-logs.create') }}">
-                                <span class="nav-icon"><i class="fas fa-plus-circle"></i></span>
-                                <span class="nav-text">New Job Card</span>
-                            </a>
+                            @if(in_array(Auth::user()->role ?? '', ['admin', 'accounts']))
+                                <a class="nav-link {{ request()->routeIs('admin.call-logs.create') ? 'active' : '' }}" href="{{ route('admin.call-logs.create') }}">
+                                    <span class="nav-icon"><i class="fas fa-plus-circle"></i></span>
+                                    <span class="nav-text">New Job Card</span>
+                                </a>
+                            @endif
                         </div>
                     </li>
 
@@ -1422,13 +1252,13 @@ body.dark-mode {
 
                     <!-- Content Management -->
                     <li class="nav-group">
-                        <div class="nav-group-toggle" data-target="content-submenu">
+                        <div class="nav-group-toggle {{ request()->routeIs('admin.faqs.*') || request()->routeIs('admin.blogs.*') || request()->routeIs('admin.services.*') ? '' : 'collapsed' }}" data-target="content-submenu">
                             <a class="nav-link {{ request()->routeIs('admin.faqs.*') || request()->routeIs('admin.blogs.*') || request()->routeIs('admin.services.*') ? 'active' : '' }}" href="javascript:void(0)">
                                 <span class="nav-icon"><i class="fas fa-edit"></i></span>
                                 <span class="nav-text">Content</span>
                             </a>
                         </div>
-                        <div class="nav-group-submenu" id="content-submenu">
+                        <div class="nav-group-submenu {{ request()->routeIs('admin.faqs.*') || request()->routeIs('admin.blogs.*') || request()->routeIs('admin.services.*') ? 'expanded' : '' }}" id="content-submenu">
                             <a class="nav-link {{ request()->routeIs('admin.faqs.*') ? 'active' : '' }}" href="{{ route('admin.faqs.index') }}">
                                 <span class="nav-icon"><i class="fas fa-question-circle"></i></span>
                                 <span class="nav-text">FAQs</span>
@@ -1446,13 +1276,13 @@ body.dark-mode {
 
                     <!-- Newsletter -->
                     <li class="nav-group">
-                        <div class="nav-group-toggle" data-target="newsletter-submenu">
+                        <div class="nav-group-toggle {{ request()->routeIs('admin.newsletters.*') || request()->routeIs('admin.subscribers.*') ? '' : 'collapsed' }}" data-target="newsletter-submenu">
                             <a class="nav-link {{ request()->routeIs('admin.newsletters.*') || request()->routeIs('admin.subscribers.*') ? 'active' : '' }}" href="javascript:void(0)">
                                 <span class="nav-icon"><i class="fas fa-envelope"></i></span>
                                 <span class="nav-text">Newsletter</span>
                             </a>
                         </div>
-                        <div class="nav-group-submenu" id="newsletter-submenu">
+                        <div class="nav-group-submenu {{ request()->routeIs('admin.newsletters.*') || request()->routeIs('admin.subscribers.*') ? 'expanded' : '' }}" id="newsletter-submenu">
                             <a class="nav-link {{ request()->routeIs('admin.newsletters.*') ? 'active' : '' }}" href="{{ route('admin.newsletters.index') }}">
                                 <span class="nav-icon"><i class="fas fa-paper-plane"></i></span>
                                 <span class="nav-text">Email</span>
@@ -1466,30 +1296,11 @@ body.dark-mode {
                 </ul>
             </li>
 
-            <!-- Administration Section -->
+            <!-- Administration Section - Admin Only -->
+            @if(Auth::user()->role === 'admin')
             <li class="nav-section">
                 <div class="nav-section-title">Administration</div>
                 <ul>
-                    <!-- Reports Section -->
-                    <li class="nav-group">
-                        <div class="nav-group-toggle" data-target="reports-submenu">
-                            <a class="nav-link {{ request()->routeIs('admin.call-reports.*') || request()->routeIs('admin.call-logs.reports') ? 'active' : '' }}" href="javascript:void(0)">
-                                <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
-                                <span class="nav-text">Reports</span>
-                            </a>
-                        </div>
-                        <div class="nav-group-submenu" id="reports-submenu">
-                            <a class="nav-link {{ request()->routeIs('admin.call-reports.*') ? 'active' : '' }}" href="{{ route('admin.call-reports.index') }}">
-                                <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
-                                <span class="nav-text">Tickets Reports</span>
-                            </a>
-                            <a class="nav-link {{ request()->routeIs('admin.call-logs.reports') ? 'active' : '' }}" href="{{ route('admin.call-logs.reports') }}">
-                                <span class="nav-icon"><i class="fas fa-chart-pie"></i></span>
-                                <span class="nav-text">Jobs Reports</span>
-                            </a>
-                        </div>
-                    </li>
-
                     <!-- User Management -->
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
@@ -1499,15 +1310,18 @@ body.dark-mode {
                     </li>
                 </ul>
             </li>
+            @endif
         </ul>
 
         <!-- Profile Section at Bottom of Sidebar -->
         <div class="sidebar-profile" id="sidebarProfile">
             <div class="user-avatar">
-                @if(Auth::user() && Auth::user()->name)
-                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                @if(Auth::user() && Auth::user()->avatar)
+                    <img src="{{ Auth::user()->avatar_url }}" alt="{{ Auth::user()->name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+                @elseif(Auth::user() && Auth::user()->name)
+                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
                 @else
-                    <i class="fas fa-user"></i>
+                    U
                 @endif
             </div>
             <div class="sidebar-profile-info">
@@ -1561,6 +1375,7 @@ body.dark-mode {
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -1571,27 +1386,57 @@ body.dark-mode {
             const themeToggle = document.getElementById('themeToggle');
             const body = document.body;
             
-            // Set greeting based on time of day
-            function setGreeting() {
-                const hour = new Date().getHours();
-                let greeting = '';
-                const userName = "{{ Auth::user()->name ?? 'User' }}";
-                const firstName = userName.split(' ')[0];
-                
-                if (hour < 12) {
-                    greeting = `Good morning, ${firstName}`;
-                } else if (hour < 18) {
-                    greeting = `Good afternoon, ${firstName}`;
-                } else {
-                    greeting = `Good evening, ${firstName}`;
-                }
-                
-                const greetingElement = document.getElementById('greetingText');
-                if (greetingElement) {
-                    greetingElement.textContent = greeting;
-                }
+            // Helper function to escape HTML and prevent XSS
+            function escapeHtml(unsafe) {
+                if (!unsafe) return 'N/A';
+                return unsafe
+                    .toString()
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
             }
             
+           // Update time and greeting
+function updateTimeAndGreeting() {
+    const now = new Date();
+    const hour = now.getHours();
+    let greeting = '';
+    const userName = "{{ Auth::user()->name ?? 'User' }}";
+    const firstName = userName.split(' ')[0];
+    
+    if (hour < 12) {
+        greeting = `Good morning, ${firstName}`;
+    } else if (hour < 18) {
+        greeting = `Good afternoon, ${firstName}`;
+    } else {
+        greeting = `Good evening, ${firstName}`;
+    }
+    
+    const greetingElement = document.getElementById('greetingText');
+    if (greetingElement) {
+        greetingElement.textContent = greeting;
+    }
+
+    // Update time display (UTC+2)
+    const currentTimeElement = document.getElementById('currentTime');
+    const currentDateElement = document.getElementById('currentDate');
+    
+    if (currentTimeElement && currentDateElement) {
+        // Get UTC time and add 2 hours
+        const utcNow = new Date();
+        const utcPlus2 = new Date(utcNow.getTime() + (2 * 60 * 60 * 1000)); // Add 2 hours in milliseconds
+        
+        // Format time as HH:MM:SS
+        const timeString = utcPlus2.toISOString().substr(11, 8);
+        // Format date as YYYY-MM-DD
+        const dateString = utcPlus2.toISOString().substr(0, 10);
+        
+        currentTimeElement.textContent = timeString;
+        currentDateElement.textContent = dateString;
+    }
+}
             // Check if elements exist
             if (!sidebar || !sidebarToggle) return;
             
@@ -1608,11 +1453,14 @@ body.dark-mode {
                 themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
             }
             
-            // Initialize collapsible navigation groups
+            // Initialize components
             initializeNavGroups();
+            updateTimeAndGreeting();
+            initializeNotifications();
+            initializeGlobalSearch();
             
-            // Set initial greeting
-            setGreeting();
+            // Update time every second
+            setInterval(updateTimeAndGreeting, 1000);
             
             // Toggle sidebar
             sidebarToggle.addEventListener('click', function() {
@@ -1685,18 +1533,14 @@ body.dark-mode {
                 }, 7000);
             });
             
-            // Enhanced search functionality
-            const globalSearch = document.getElementById('globalSearch');
-            if (globalSearch) {
-                globalSearch.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        const searchTerm = this.value.trim();
-                        if (searchTerm) {
-                            // Implement global search functionality
-                            console.log('Searching for:', searchTerm);
-                            // You can redirect to a search results page or implement live search
-                        }
-                    }
+            // Sidebar profile dropdown
+            const sidebarProfile = document.getElementById('sidebarProfile');
+            const userDropdown = document.getElementById('userDropdown');
+            
+            if (sidebarProfile && userDropdown) {
+                sidebarProfile.addEventListener('click', function() {
+                    const dropdown = new bootstrap.Dropdown(userDropdown);
+                    dropdown.toggle();
                 });
             }
             
@@ -1706,18 +1550,13 @@ body.dark-mode {
                 navGroupToggles.forEach(toggle => {
                     const targetId = toggle.getAttribute('data-target');
                     const submenu = document.getElementById(targetId);
-                    const navLink = toggle.querySelector('.nav-link');
                     
                     if (!submenu) return;
                     
-                    // Check if any submenu item is active
-                    const hasActiveChild = submenu.querySelector('.nav-link.active');
-                    if (hasActiveChild) {
-                        submenu.style.maxHeight = submenu.scrollHeight + 'px';
-                        toggle.classList.remove('collapsed');
-                    } else {
-                        submenu.style.maxHeight = '0px';
-                        toggle.classList.add('collapsed');
+                    // Check initial state based on classes
+                    const isExpanded = !toggle.classList.contains('collapsed');
+                    if (isExpanded) {
+                        submenu.classList.add('expanded');
                     }
                     
                     toggle.addEventListener('click', function(e) {
@@ -1726,46 +1565,346 @@ body.dark-mode {
                         // Don't toggle if sidebar is collapsed
                         if (sidebar.classList.contains('collapsed')) return;
                         
-                        const isCollapsed = toggle.classList.contains('collapsed');
+                        const isCurrentlyCollapsed = toggle.classList.contains('collapsed');
                         
-                        if (isCollapsed) {
-                            submenu.style.maxHeight = submenu.scrollHeight + 'px';
+                        if (isCurrentlyCollapsed) {
+                            submenu.classList.add('expanded');
                             toggle.classList.remove('collapsed');
                         } else {
-                            submenu.style.maxHeight = '0px';
+                            submenu.classList.remove('expanded');
                             toggle.classList.add('collapsed');
                         }
                     });
                 });
             }
             
-            // Sidebar profile dropdown
-            const sidebarProfile = document.getElementById('sidebarProfile');
-            const userDropdown = document.getElementById('userDropdown');
-            
-            if (sidebarProfile && userDropdown) {
-                sidebarProfile.addEventListener('click', function() {
-                    // Trigger the navbar user dropdown
-                    const dropdown = new bootstrap.Dropdown(userDropdown);
-                    dropdown.toggle();
+            function initializeGlobalSearch() {
+                const globalSearch = document.getElementById('globalSearch');
+                const searchResults = document.getElementById('searchResults');
+                let searchTimeout;
+                
+                if (!globalSearch || !searchResults) return;
+                
+                globalSearch.addEventListener('input', function() {
+                    const query = this.value.trim();
+                    
+                    // Clear previous timeout
+                    clearTimeout(searchTimeout);
+                    
+                    if (query.length < 2) {
+                        searchResults.classList.remove('show');
+                        return;
+                    }
+                    
+                    // Debounce search
+                    searchTimeout = setTimeout(() => {
+                        performSearch(query);
+                    }, 300);
                 });
+                
+                // Hide results when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!globalSearch.contains(e.target) && !searchResults.contains(e.target)) {
+                        searchResults.classList.remove('show');
+                                    }
+                });
+                
+                // Show results when focusing on search
+                globalSearch.addEventListener('focus', function() {
+                    if (this.value.trim().length >= 2) {
+                        searchResults.classList.add('show');
+                    }
+                });
+                
+                // Handle keyboard navigation
+                globalSearch.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        searchResults.classList.remove('show');
+                        this.blur();
+                    }
+                });
+                
+                function performSearch(query) {
+                    // Show loading state
+                    searchResults.innerHTML = `
+                        <div class="search-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <div>Searching...</div>
+                        </div>
+                    `;
+                    searchResults.classList.add('show');
+                    
+                    fetch(`/admin/global-search?q=${encodeURIComponent(query)}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        let html = '';
+
+                        // Check if we have any results
+                        const hasResults = (data.contacts && data.contacts.length > 0) || 
+                                         (data.tickets && data.tickets.length > 0) || 
+                                         (data.jobs && data.jobs.length > 0);
+
+                        if (!hasResults) {
+                            html = `
+                                <div class="search-no-results">
+                                    <i class="fas fa-search mb-2"></i>
+                                    <p>No results found for "${escapeHtml(query)}"</p>
+                                    <small>Try searching with different keywords</small>
+                                </div>
+                            `;
+                        } else {
+                            // Display contacts
+                            if (data.contacts && data.contacts.length > 0) {
+                                data.contacts.forEach(contact => {
+                                    html += `
+                                        <div class="search-result-item" onclick="window.location.href='/admin/contacts/${contact.id}'">
+                                            <div class="search-result-icon contact">
+                                                <i class="fas fa-address-book"></i>
+                                            </div>
+                                            <div class="search-result-content">
+                                                <div class="search-result-title">${escapeHtml(contact.name)}</div>
+                                                <div class="search-result-subtitle">Contact • ${escapeHtml(contact.email)} • ${escapeHtml(contact.company)}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                            }
+
+                            // Display tickets
+                            if (data.tickets && data.tickets.length > 0) {
+                                data.tickets.forEach(ticket => {
+                                    html += `
+                                        <div class="search-result-item" onclick="window.location.href='/admin/tickets/${ticket.id}'">
+                                            <div class="search-result-icon ticket">
+                                                <i class="fas fa-ticket-alt"></i>
+                                            </div>
+                                            <div class="search-result-content">
+                                                <div class="search-result-title">#${ticket.id} - ${escapeHtml(ticket.subject)}</div>
+                                                <div class="search-result-subtitle">Ticket • ${escapeHtml(ticket.status)} • ${escapeHtml(ticket.company_name)}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                            }
+
+                            // Display jobs
+                            if (data.jobs && data.jobs.length > 0) {
+                                data.jobs.forEach(job => {
+                                    html += `
+                                        <div class="search-result-item" onclick="window.location.href='/admin/call-logs/${job.id}'">
+                                            <div class="search-result-icon job">
+                                                <i class="fas fa-briefcase"></i>
+                                            </div>
+                                            <div class="search-result-content">
+                                                <div class="search-result-title">${escapeHtml(job.job_card)} - ${escapeHtml(job.customer_name)}</div>
+                                                <div class="search-result-subtitle">Job • ${escapeHtml(job.status)} • ${escapeHtml(job.job_type)}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                            }
+                        }
+
+                        searchResults.innerHTML = html;
+                        searchResults.classList.add('show');
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        searchResults.innerHTML = `
+                            <div class="search-no-results">
+                                <i class="fas fa-exclamation-circle text-danger mb-2"></i>
+                                <p>Search temporarily unavailable</p>
+                                <small>Please try again in a moment</small>
+                            </div>
+                        `;
+                        searchResults.classList.add('show');
+                    });
+                }
             }
             
-            // Add smooth scroll behavior
-            document.documentElement.style.scrollBehavior = 'smooth';
+            function initializeNotifications() {
+                const notificationTrigger = document.getElementById('notificationTrigger');
+                const notificationsList = document.getElementById('notificationsList');
+                const notificationBadge = document.getElementById('notificationBadge');
+                const markAllReadBtn = document.getElementById('markAllRead');
+                
+                if (!notificationTrigger || !notificationsList) return;
+                
+                // Load notifications on dropdown show
+                notificationTrigger.addEventListener('show.bs.dropdown', function() {
+                    loadNotifications();
+                });
+                
+                // Load notification count on page load
+                loadNotificationCount();
+                
+                // Mark all as read
+                if (markAllReadBtn) {
+                    markAllReadBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        markAllNotificationsAsRead();
+                    });
+                }
+                
+                // Refresh notifications every 30 seconds
+                setInterval(loadNotificationCount, 30000);
+                
+                function loadNotifications() {
+                    notificationsList.innerHTML = `
+                        <li class="notification-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <div>Loading notifications...</div>
+                        </li>
+                    `;
+                    
+                    fetch('{{ route("notifications.recent") }}', {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(notifications => {
+                        displayNotifications(notifications);
+                    })
+                    .catch(error => {
+                        console.error('Error loading notifications:', error);
+                        notificationsList.innerHTML = `
+                            <li class="notification-empty">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div>Failed to load notifications</div>
+                            </li>
+                        `;
+                    });
+                }
+                
+                function loadNotificationCount() {
+                    fetch('{{ route("notifications.count") }}', {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        updateNotificationBadge(data.count);
+                    })
+                    .catch(error => {
+                        console.error('Error loading notification count:', error);
+                    });
+                }
+                
+                function displayNotifications(notifications) {
+                    if (!notifications || notifications.length === 0) {
+                        notificationsList.innerHTML = `
+                            <li class="notification-empty">
+                                <i class="fas fa-bell-slash"></i>
+                                <div>No notifications</div>
+                                <small>You're all caught up!</small>
+                            </li>
+                        `;
+                        return;
+                    }
+                    
+                    let html = '';
+                    notifications.forEach(notification => {
+                        const isUnread = !notification.read_at;
+                        const priorityClass = notification.priority || 'normal';
+                        
+                        html += `
+                            <li class="notification-item ${isUnread ? 'unread' : ''}" onclick="handleNotificationClick('${notification.url}')">
+                                <div class="notification-title">
+                                    <span>${escapeHtml(notification.title)}</span>
+                                    ${notification.priority !== 'normal' ? `<span class="notification-priority ${priorityClass}">${priorityClass}</span>` : ''}
+                                </div>
+                                <div class="notification-message">${escapeHtml(notification.message)}</div>
+                                ${notification.job_card ? `<div class="notification-message"><strong>Job:</strong> ${escapeHtml(notification.job_card)}</div>` : ''}
+                                ${notification.customer_name ? `<div class="notification-message"><strong>Customer:</strong> ${escapeHtml(notification.customer_name)}</div>` : ''}
+                                <div class="notification-time">${notification.created_at}</div>
+                            </li>
+                        `;
+                    });
+                    
+                    notificationsList.innerHTML = html;
+                }
+                
+                function updateNotificationBadge(count) {
+                    if (count > 0) {
+                        notificationBadge.textContent = count > 99 ? '99+' : count;
+                        notificationBadge.style.display = 'flex';
+                    } else {
+                        notificationBadge.style.display = 'none';
+                    }
+                }
+                
+                function markAllNotificationsAsRead() {
+                    fetch('{{ route("notifications.mark-all-read") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateNotificationBadge(0);
+                            loadNotifications();
+                            toastr.success('All notifications marked as read');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error marking notifications as read:', error);
+                        toastr.error('Failed to mark notifications as read');
+                    });
+                }
+                
+                // Global function for notification clicks
+                window.handleNotificationClick = function(url) {
+                    if (url) {
+                        window.location.href = url;
+                    }
+                };
+            }
             
-            console.log('Modern Admin Dashboard initialized successfully');
+            console.log('Enhanced Admin Dashboard initialized successfully');
         });
 
-        // Add some interactive elements
-        document.addEventListener('click', function(e) {
-            if (e.target.matches('.btn')) {
-                e.target.style.transform = 'scale(0.98)';
-                setTimeout(() => {
-                    e.target.style.transform = '';
-                }, 150);
-            }
-        });
+        // Configure Toastr
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        };
     </script>
 
     @stack('scripts')

@@ -17,10 +17,12 @@
             </div>
         </div>
         <div class="header-actions">
+            @if(auth()->user()->hasRole('manager') || auth()->user()->hasRole('admin'))
             <button onclick="window.location.href='{{ route('admin.tickets.create') }}'" class="btn btn-sm btn-success me-2">
-                <i class="fas fa-plus me-1"></i>
-                New Ticket
+            <i class="fas fa-plus me-1"></i>
+            New Ticket
             </button>
+            @endif
             <button id="refreshTickets" class="btn btn-sm btn-secondary">
                 <i class="fas fa-sync-alt me-1"></i>
                 Refresh
@@ -28,22 +30,32 @@
         </div>
     </div>
 
-    {{-- Success & Error Alerts --}}
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show mb-2">
-            <i class="fas fa-check-circle me-2"></i>
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+    <div class="alert alert-success alert-dismissible fade show mb-2" role="alert">
+        <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
 
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show mb-2">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+@if(session('error') || $errors->any())
+    <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        @if(session('error'))
+            <p>{{ session('error') }}</p>
+        @endif
+        
+        @if($errors->any())
+            <strong>Please fix the following errors:</strong>
+            <ul class="mb-0 mt-2">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        @endif
+
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
 
     {{-- Compact Filter Card --}}
     <div class="filter-card mb-2">

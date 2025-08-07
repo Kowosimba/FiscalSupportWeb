@@ -53,6 +53,12 @@ class CustomerContactController extends Controller
             ->with('success', 'Contact created successfully! You can add another contact or go back to the list.');
     }
 
+    // ADD THIS MISSING METHOD
+    public function show(CustomerContact $contact)
+    {
+        return view('admin.contacts.show', compact('contact'));
+    }
+
     public function edit(CustomerContact $contact)
     {
         return view('admin.contacts.create', compact('contact'));

@@ -21,7 +21,7 @@ return new class extends Migration
     $table->enum('type', ['normal','emergency'])->default('normal');
     $table->decimal('billed_hours', 8, 2)->nullable();
     $table->decimal('amount_charged', 10, 2);
-    $table->enum('status', ['pending', 'in_progress', 'completed', 'cancelled'])->default('pending');
+    $table->enum('status', ['pending', 'assigned','in_progress', 'complete', 'cancelled'])->default('pending');
     $table->unsignedBigInteger('approved_by');
     $table->unsignedBigInteger('assigned_to')->nullable(); // Foreign key to users table
     $table->text('engineer_comments')->nullable();

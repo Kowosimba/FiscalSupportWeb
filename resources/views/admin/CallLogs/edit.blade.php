@@ -1,36 +1,39 @@
-@extends('layouts.calllogs')
+@extends('layouts.app')
 
 @section('title', 'Edit Job Card - ' . ($callLog->job_card ?? 'TBD-' . $callLog->id))
 
 @section('content')
-<div class="container-fluid">
-    <div class="page-header-card mb-4">
-        <div class="page-header-content">
-            <div class="header-text">
-                <h3 class="page-title">
-                    <i class="fas fa-edit me-2"></i>
-                    Edit Job Card
-                </h3>
-                <p class="page-subtitle">
-                    Job Card: {{ $callLog->job_card ?? 'TBD-' . $callLog->id }}
-                </p>
+<div class="dashboard-container">
+    {{-- Header --}}
+    <div class="dashboard-header mb-2">
+        <div class="header-content">
+            <h1 class="dashboard-title">
+                <i class="fas fa-edit me-2"></i>
+                Edit Job Card
+            </h1>
+            <div class="header-meta">
+                <span class="badge bg-secondary me-2">
+                    <i class="fas fa-file-text me-1"></i>
+                    {{ $callLog->job_card ?? 'TBD-' . $callLog->id }}
+                </span>
+                <small class="text-muted">Modify job card details and status</small>
             </div>
-            <div class="header-actions d-flex gap-2">
-                <a href="{{ route('admin.call-logs.show', $callLog) }}" class="btn btn-outline-secondary btn-enhanced">
-                    <i class="fas fa-eye me-2"></i>
-                    View Job Card
-                </a>
-                <a href="{{ route('admin.call-logs.all') }}" class="btn btn-outline-secondary btn-enhanced">
-                    <i class="fas fa-arrow-left me-2"></i>
-                    Back to Jobs
-                </a>
-            </div>
+        </div>
+        <div class="header-actions">
+            <a href="{{ route('admin.call-logs.show', $callLog) }}" class="btn btn-sm btn-outline-info me-2">
+                <i class="fas fa-eye me-1"></i>
+                View Job
+            </a>
+            <a href="{{ route('admin.call-logs.all') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to Jobs
+            </a>
         </div>
     </div>
 
-    <!-- Success/Error Messages -->
+    {{-- Alerts --}}
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
+        <div class="alert alert-success alert-dismissible fade show mb-2">
             <i class="fas fa-check-circle me-2"></i>
             {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -38,7 +41,7 @@
     @endif
 
     @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">
+        <div class="alert alert-danger alert-dismissible fade show mb-2">
             <i class="fas fa-exclamation-triangle me-2"></i>
             {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -46,9 +49,10 @@
     @endif
 
     @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show">
-            <h6><i class="fas fa-exclamation-triangle me-2"></i>Please fix the following errors:</h6>
-            <ul class="mb-0">
+        <div class="alert alert-danger alert-dismissible fade show mb-2">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong>Please fix the following errors:</strong>
+            <ul class="mb-0 mt-2">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -57,533 +61,491 @@
         </div>
     @endif
 
+    {{-- Form Card --}}
     <div class="content-card">
         <div class="content-card-header">
-            <h5 class="card-title">
-                <i class="fas fa-clipboard me-2"></i>
-                Edit Job Card Details
-            </h5>
+            <div class="header-content">
+                <h4 class="card-title">
+                    <i class="fas fa-clipboard-list me-2"></i>
+                    Edit Job Card Details
+                </h4>
+                <p class="card-subtitle mb-0">Update job information and status</p>
+            </div>
+            <div class="header-actions">
+                <span class="status-badge {{ strtolower(str_replace('_', '-', $callLog->status)) }}">
+                    <i class="fas fa-flag me-1"></i>
+                    {{ ucfirst(str_replace('_', ' ', $callLog->status)) }}
+                </span>
+            </div>
         </div>
-        <div class="content-card-body">
+        
+        <div class="content-card-body" style="padding: 1.5rem;">
             <form action="{{ route('admin.call-logs.update', $callLog) }}" method="POST" id="editJobCardForm">
                 @csrf
                 @method('PUT')
                 
-                {{-- Hidden fields for essential data that all forms need --}}
-                <input type="hidden" name="customer_name" value="{{ $callLog->customer_name ?? $callLog->company_name ?? 'Unknown Customer' }}">
-                <input type="hidden" name="type" value="{{ $callLog->type ?? 'normal' }}">
-                <input type="hidden" name="amount_charged" value="{{ $callLog->amount_charged ?? 0 }}">
-                <input type="hidden" name="date_booked" value="{{ $callLog->date_booked ? $callLog->date_booked->format('Y-m-d') : now()->format('Y-m-d') }}">
-                
-                @if($callLog->assigned_to == auth()->id() && in_array(auth()->user()->role, ['technician', 'manager']))
-                    {{-- Engineer View - Only assigned engineer can edit --}}
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-section mb-4">
-                                <h6 class="section-title mb-3">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Job Information (Read Only)
-                                </h6>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Job Card Number</label>
-                                    <input type="text" class="form-control form-control-enhanced" 
-                                           value="{{ $callLog->job_card ?? 'TBD-' . $callLog->id }}" readonly>
-                                </div>
-                                
-                                <div class="form-group">
+                @php
+                    $isEngineer = $callLog->assigned_to === auth()->id() && in_array(auth()->user()->role, ['technician', 'manager']);
+                    $isAdmin = in_array(auth()->user()->role, ['admin', 'accounts']);
+                @endphp
+
+                @if($isEngineer && !$isAdmin)
+                    {{-- Engineer View - Limited Fields --}}
+                    <div class="form-wizard">
+                        {{-- Read-only Customer Info --}}
+                        <div class="form-section mb-4">
+                            <h6 class="section-title">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Job Information (Read Only)
+                            </h6>
+                            
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
                                     <label class="form-label">Customer Name</label>
-                                    <input type="text" class="form-control form-control-enhanced" 
-                                           value="{{ $callLog->customer_name ?? $callLog->company_name }}" readonly>
+                                    <input type="text" class="form-control" value="{{ $callLog->customer_name }}" readonly>
                                 </div>
-                                
-                                <div class="form-group">
+                                <div class="col-md-6">
                                     <label class="form-label">Customer Email</label>
-                                    <input type="text" class="form-control form-control-enhanced" 
-                                           value="{{ $callLog->customer_email ?? 'N/A' }}" readonly>
+                                    <input type="text" class="form-control" value="{{ $callLog->customer_email ?? 'N/A' }}" readonly>
                                 </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Customer Phone</label>
-                                    <input type="text" class="form-control form-control-enhanced" 
-                                           value="{{ $callLog->customer_phone ?? 'N/A' }}" readonly>
-                                </div>
-                                
-                                <div class="form-group">
+                                <div class="col-12">
                                     <label class="form-label">Fault Description</label>
-                                    <textarea class="form-control form-control-enhanced" rows="4" readonly>{{ $callLog->fault_description }}</textarea>
+                                    <textarea class="form-control" rows="3" readonly>{{ $callLog->fault_description }}</textarea>
                                 </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Job Type</label>
-                                    <input type="text" class="form-control form-control-enhanced" 
-                                           value="{{ ucfirst($callLog->type ?? 'normal') }}" readonly>
-                                </div>
-                                
-                                <div class="form-group">
+                                <div class="col-md-6">
                                     <label class="form-label">Amount Charged</label>
-                                    <input type="text" class="form-control form-control-enhanced" 
-                                           value="USD ${{ number_format($callLog->amount_charged ?? 0, 2) }}" readonly>
+                                    <input type="text" class="form-control" value="@if(($callLog->currency ?? 'USD') === 'ZWG')ZWG {{ number_format($callLog->amount_charged ?? 0) }}@else${{ number_format($callLog->amount_charged ?? 0, 2) }}@endif" readonly>
                                 </div>
-                                
-                                <div class="form-group">
+                                <div class="col-md-6">
                                     <label class="form-label">Date Booked</label>
-                                    <input type="text" class="form-control form-control-enhanced" 
-                                           value="{{ $callLog->date_booked ? $callLog->date_booked->format('Y-m-d') : 'N/A' }}" readonly>
+                                    <input type="text" class="form-control" value="{{ $callLog->date_booked ? $callLog->date_booked->format('Y-m-d') : 'N/A' }}" readonly>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-section mb-4">
-                                <h6 class="section-title mb-3">
-                                    <i class="fas fa-user-cog me-2"></i>
-                                    Engineer Updates
-                                </h6>
-                                
-                                <div class="form-group">
+
+                        {{-- Engineer Updates --}}
+                        <div class="form-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-user-cog me-2"></i>
+                                Engineer Updates
+                            </h6>
+                            
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
                                     <label for="job_card" class="form-label">
-                                        Job Card Number (Update with Physical Card) 
+                                        Job Card Number
                                         <span class="text-danger" id="job_card_required" style="display: none;">*</span>
                                     </label>
                                     <input type="text" 
-                                           class="form-control form-control-enhanced @error('job_card') is-invalid @enderror" 
+                                           class="form-control @error('job_card') is-invalid @enderror"
                                            id="job_card" 
                                            name="job_card" 
                                            value="{{ old('job_card', $callLog->job_card) }}"
-                                           placeholder="Enter the actual job card number from hardcopy">
-                                    <small class="form-text text-muted">
-                                        Update this with the physical job card number when completing the job
-                                    </small>
-                                    @if ($errors->has('job_card'))
-                                        <div class="invalid-feedback">{{ $errors->first('job_card') }}</div>
-                                    @endif
+                                           placeholder="Enter job card number">
+                                    @error('job_card')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                
-                                <div class="form-group">
-                                    <label for="status" class="form-label">Job Status <span class="text-danger">*</span></label>
-                                    <select class="form-control form-control-enhanced @error('status') is-invalid @enderror" 
+
+                                <div class="col-md-6">
+                                    <label for="status" class="form-label">Job Status *</label>
+                                    <select class="form-select @error('status') is-invalid @enderror" 
                                             id="status" name="status" required>
-                                        <option value="pending" {{ old('status', $callLog->status) == 'pending' ? 'selected' : '' }}>Pending</option>
-                                        <option value="assigned" {{ old('status', $callLog->status) == 'assigned' ? 'selected' : '' }}>Assigned</option>
-                                        <option value="in_progress" {{ old('status', $callLog->status) == 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                                        <option value="completed" {{ old('status', $callLog->status) == 'completed' ? 'selected' : '' }}>Completed</option>
+                                        <option value="pending" @selected(old('status', $callLog->status) == 'pending')>Pending</option>
+                                        <option value="assigned" @selected(old('status', $callLog->status) == 'assigned')>Assigned</option>
+                                        <option value="in_progress" @selected(old('status', $callLog->status) == 'in_progress')>In Progress</option>
+                                        <option value="complete" @selected(old('status', $callLog->status) == 'complete')>Complete</option>
                                     </select>
-                                    @if ($errors->has('status'))
-                                        <div class="invalid-feedback">{{ $errors->first('status') }}</div>
-                                    @endif
+                                    @error('status')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                
-                                <div class="form-group">
+
+                                <div class="col-md-6">
                                     <label for="time_start" class="form-label">
-                                        Start Time 
+                                        Start Time
                                         <span class="text-danger" id="time_start_required" style="display: none;">*</span>
                                     </label>
                                     <input type="time" 
-                                           class="form-control form-control-enhanced @error('time_start') is-invalid @enderror" 
+                                           class="form-control @error('time_start') is-invalid @enderror" 
                                            id="time_start" 
                                            name="time_start" 
-                                           value="{{ old('time_start', $callLog->time_start ? $callLog->time_start->format('H:i') : '') }}">
-                                    @if ($errors->has('time_start'))
-                                        <div class="invalid-feedback">{{ $errors->first('time_start') }}</div>
-                                    @endif
+                                           value="{{ old('time_start', $callLog->time_start) }}">
+                                    @error('time_start')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                
-                                <div class="form-group">
+
+                                <div class="col-md-6">
                                     <label for="time_finish" class="form-label">
-                                        Finish Time 
+                                        Finish Time
                                         <span class="text-danger" id="time_finish_required" style="display: none;">*</span>
                                     </label>
                                     <input type="time" 
-                                           class="form-control form-control-enhanced @error('time_finish') is-invalid @enderror" 
+                                           class="form-control @error('time_finish') is-invalid @enderror" 
                                            id="time_finish" 
                                            name="time_finish" 
-                                           value="{{ old('time_finish', $callLog->time_finish ? $callLog->time_finish->format('H:i') : '') }}">
-                                    @if ($errors->has('time_finish'))
-                                        <div class="invalid-feedback">{{ $errors->first('time_finish') }}</div>
-                                    @endif
+                                           value="{{ old('time_finish', $callLog->time_finish) }}">
+                                    @error('time_finish')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                
-                                <div class="form-group">
+
+                                <div class="col-md-6">
                                     <label for="billed_hours" class="form-label">
-                                        Billed Hours 
+                                        Billed Hours
                                         <span class="text-danger" id="billed_hours_required" style="display: none;">*</span>
                                     </label>
                                     
-                                    <!-- Quick Selection Buttons -->
-                                    <div class="billed-hours-options mb-2">
-                                        <div class="btn-group" role="group" aria-label="Quick billed hours selection">
-                                            <button type="button" class="btn btn-outline-secondary btn-sm quick-hours" data-value="10%">
-                                                10%
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm quick-hours" data-value="1">
-                                                1 Hour
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm quick-hours" data-value="2">
-                                                2 Hours
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="calculateHours">
-                                                <i class="fas fa-calculator me-1"></i>
-                                                Calculate
-                                            </button>
-                                        </div>
+                                    {{-- Quick Selection Buttons --}}
+                                    <div class="btn-group mb-2" role="group">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm quick-hours" data-value="10%">10%</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm quick-hours" data-value="1">1 Hour</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm quick-hours" data-value="2">2 Hours</button>
+                                        <button type="button" class="btn btn-outline-info btn-sm" id="calculateHours">
+                                            <i class="fas fa-calculator me-1"></i> Calculate
+                                        </button>
                                     </div>
                                     
                                     <input type="text" 
-                                           class="form-control form-control-enhanced @error('billed_hours') is-invalid @enderror" 
+                                           class="form-control @error('billed_hours') is-invalid @enderror" 
                                            id="billed_hours" 
                                            name="billed_hours" 
-                                           value="{{ old('billed_hours', $callLog->billed_hours) }}" 
-                                           placeholder="e.g., 10%, 1, 2, or custom value">
+                                           value="{{ old('billed_hours', $callLog->billed_hours) }}"
+                                           placeholder="e.g., 10%, 1, 2">
                                     
                                     <small class="form-text text-muted">
-                                        Common values: <strong>10%</strong> (percentage), <strong>1</strong> or <strong>2</strong> (hours), or enter custom value
+                                        Common values: <strong>10%</strong> (percentage), <strong>1</strong> or <strong>2</strong> (hours)
                                     </small>
-
-                                    @if ($errors->has('billed_hours'))
-                                        <div class="invalid-feedback">{{ $errors->first('billed_hours') }}</div>
-                                    @endif
+                                    @error('billed_hours')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                
-                                <div class="form-group">
+
+                                <div class="col-md-6">
                                     <label for="date_resolved" class="form-label">
-                                        Date Resolved 
+                                        Date Resolved
                                         <span class="text-danger" id="date_resolved_required" style="display: none;">*</span>
                                     </label>
                                     <input type="date" 
-                                           class="form-control form-control-enhanced @error('date_resolved') is-invalid @enderror" 
+                                           class="form-control @error('date_resolved') is-invalid @enderror" 
                                            id="date_resolved" 
                                            name="date_resolved" 
                                            value="{{ old('date_resolved', $callLog->date_resolved ? $callLog->date_resolved->format('Y-m-d') : '') }}">
-                                    @if ($errors->has('date_resolved'))
-                                        <div class="invalid-feedback">{{ $errors->first('date_resolved') }}</div>
-                                    @endif
+                                    @error('date_resolved')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                
-                                <div class="form-group">
+
+                                <div class="col-12">
                                     <label for="engineer_comments" class="form-label">
-                                        Engineer Comments 
+                                        Engineer Comments
                                         <span class="text-danger" id="engineer_comments_required" style="display: none;">*</span>
                                     </label>
-                                    <textarea class="form-control form-control-enhanced @error('engineer_comments') is-invalid @enderror" 
+                                    <textarea class="form-control @error('engineer_comments') is-invalid @enderror" 
                                               id="engineer_comments" 
                                               name="engineer_comments" 
-                                              rows="6" 
-                                              placeholder="Required: Describe the work done, parts used, resolution steps, etc.">{{ old('engineer_comments', $callLog->engineer_comments) }}</textarea>
-                                    <small class="form-text text-muted">
+                                              rows="4" 
+                                              placeholder="Required when completing: Describe work done, parts used, resolution steps, etc.">{{ old('engineer_comments', $callLog->engineer_comments) }}</textarea>
+                                    <div class="form-text text-muted">
                                         Required when marking job as complete. Describe the technical work performed.
-                                    </small>
-                                    @if ($errors->has('engineer_comments'))
-                                        <div class="invalid-feedback">{{ $errors->first('engineer_comments') }}</div>
-                                    @endif
+                                    </div>
+                                    @error('engineer_comments')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                @elseif(in_array(auth()->user()->role, ['admin', 'accounts']))
-                    {{-- Admin/Accounts View - Full access --}}
-                    <div class="row">
-                        <!-- Customer Information -->
-                        <div class="col-md-6">
-                            <div class="form-section mb-4">
-                                <h6 class="section-title mb-3">
-                                    <i class="fas fa-user me-2"></i>
-                                    Customer Information
-                                </h6>
-                                
-                                <div class="form-group">
-                                    <label for="job_card_admin" class="form-label">Job Card Number <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-enhanced @error('job_card') is-invalid @enderror" 
-                                           id="job_card_admin" name="job_card" 
-                                           value="{{ old('job_card', $callLog->job_card) }}" required>
-                                    @if ($errors->has('job_card'))
-                                        <div class="invalid-feedback">{{ $errors->first('job_card') }}</div>
-                                    @endif
+
+                @else
+                    {{-- Admin/Accounts View - Full Access --}}
+                    <div class="form-wizard">
+                        {{-- Customer Information --}}
+                        <div class="form-section mb-4">
+                            <h6 class="section-title">
+                                <i class="fas fa-user me-2"></i>
+                                Customer Information
+                            </h6>
+                            
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <label for="job_card_admin" class="form-label">Job Card Number</label>
+                                    <input type="text" 
+                                           class="form-control @error('job_card') is-invalid @enderror" 
+                                           id="job_card_admin" 
+                                           name="job_card" 
+                                           value="{{ old('job_card', $callLog->job_card) }}">
+                                    @error('job_card')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="customer_name_admin" class="form-label">Customer Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-enhanced @error('customer_name') is-invalid @enderror" 
-                                           id="customer_name_admin" name="customer_name" 
-                                           value="{{ old('customer_name', $callLog->customer_name ?? $callLog->company_name) }}" required>
-                                    @if ($errors->has('customer_name'))
-                                        <div class="invalid-feedback">{{ $errors->first('customer_name') }}</div>
-                                    @endif
+                                <div class="col-md-6">
+                                    <label for="customer_name" class="form-label">Customer Name *</label>
+                                    <input type="text" 
+                                           class="form-control @error('customer_name') is-invalid @enderror" 
+                                           id="customer_name" 
+                                           name="customer_name" 
+                                           value="{{ old('customer_name', $callLog->customer_name) }}" 
+                                           required>
+                                    @error('customer_name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="customer_email_admin" class="form-label">Customer Email</label>
-                                    <input type="email" class="form-control form-control-enhanced @error('customer_email') is-invalid @enderror" 
-                                           id="customer_email_admin" name="customer_email" 
-                                           value="{{ old('customer_email', $callLog->customer_email) }}">
-                                    @if ($errors->has('customer_email'))
-                                        <div class="invalid-feedback">{{ $errors->first('customer_email') }}</div>
-                                    @endif
+                                <div class="col-md-6">
+                                    <label for="customer_email" class="form-label">Customer Email *</label>
+                                    <input type="email" 
+                                           class="form-control @error('customer_email') is-invalid @enderror" 
+                                           id="customer_email" 
+                                           name="customer_email" 
+                                           value="{{ old('customer_email', $callLog->customer_email) }}" 
+                                           required>
+                                    @error('customer_email')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="customer_phone_admin" class="form-label">Customer Phone</label>
-                                    <input type="text" class="form-control form-control-enhanced @error('customer_phone') is-invalid @enderror" 
-                                           id="customer_phone_admin" name="customer_phone" 
+                                <div class="col-md-6">
+                                    <label for="customer_phone" class="form-label">Customer Phone</label>
+                                    <input type="text" 
+                                           class="form-control @error('customer_phone') is-invalid @enderror" 
+                                           id="customer_phone" 
+                                           name="customer_phone" 
                                            value="{{ old('customer_phone', $callLog->customer_phone) }}">
-                                    @if ($errors->has('customer_phone'))
-                                        <div class="invalid-feedback">{{ $errors->first('customer_phone') }}</div>
-                                    @endif
+                                    @error('customer_phone')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="zimra_ref_admin" class="form-label">ZIMRA Reference</label>
-                                    <input type="text" class="form-control form-control-enhanced @error('zimra_ref') is-invalid @enderror" 
-                                           id="zimra_ref_admin" name="zimra_ref" 
+                                <div class="col-md-6">
+                                    <label for="customer_address" class="form-label">Customer Address</label>
+                                    <input type="text" 
+                                           class="form-control @error('customer_address') is-invalid @enderror" 
+                                           id="customer_address" 
+                                           name="customer_address" 
+                                           value="{{ old('customer_address', $callLog->customer_address) }}">
+                                    @error('customer_address')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="zimra_ref" class="form-label">ZIMRA Reference</label>
+                                    <input type="text" 
+                                           class="form-control @error('zimra_ref') is-invalid @enderror" 
+                                           id="zimra_ref" 
+                                           name="zimra_ref" 
                                            value="{{ old('zimra_ref', $callLog->zimra_ref) }}">
-                                    @if ($errors->has('zimra_ref'))
-                                        <div class="invalid-feedback">{{ $errors->first('zimra_ref') }}</div>
-                                    @endif
+                                    @error('zimra_ref')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="fault_description_admin" class="form-label">Fault Description</label>
-                                    <textarea class="form-control form-control-enhanced @error('fault_description') is-invalid @enderror" 
-                                              id="fault_description_admin" name="fault_description" rows="4">{{ old('fault_description', $callLog->fault_description) }}</textarea>
-                                    @if ($errors->has('fault_description'))
-                                        <div class="invalid-feedback">{{ $errors->first('fault_description') }}</div>
-                                    @endif
+                                <div class="col-12">
+                                    <label for="fault_description" class="form-label">Fault Description *</label>
+                                    <textarea class="form-control @error('fault_description') is-invalid @enderror" 
+                                              id="fault_description" 
+                                              name="fault_description" 
+                                              rows="4" 
+                                              required>{{ old('fault_description', $callLog->fault_description) }}</textarea>
+                                    @error('fault_description')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Job Information -->
-                        <div class="col-md-6">
-                            <div class="form-section mb-4">
-                                <h6 class="section-title mb-3">
-                                    <i class="fas fa-cogs me-2"></i>
-                                    Job Information
-                                </h6>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="type_admin" class="form-label">Job Type <span class="text-danger">*</span></label>
-                                            <select class="form-control form-control-enhanced @error('type') is-invalid @enderror" 
-                                                    id="type_admin" name="type" required>
-                                                <option value="normal" {{ old('type', $callLog->type) == 'normal' ? 'selected' : '' }}>Normal</option>
-                                                <option value="maintenance" {{ old('type', $callLog->type) == 'maintenance' ? 'selected' : '' }}>Maintenance</option>
-                                                <option value="repair" {{ old('type', $callLog->type) == 'repair' ? 'selected' : '' }}>Repair</option>
-                                                <option value="installation" {{ old('type', $callLog->type) == 'installation' ? 'selected' : '' }}>Installation</option>
-                                                <option value="consultation" {{ old('type', $callLog->type) == 'consultation' ? 'selected' : '' }}>Consultation</option>
-                                                <option value="emergency" {{ old('type', $callLog->type) == 'emergency' ? 'selected' : '' }}>Emergency</option>
-                                            </select>
-                                            @if ($errors->has('type'))
-                                                <div class="invalid-feedback">{{ $errors->first('type') }}</div>
-                                            @endif
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="status_admin" class="form-label">Status <span class="text-danger">*</span></label>
-                                            <select class="form-control form-control-enhanced @error('status') is-invalid @enderror" 
-                                                    id="status_admin" name="status" required>
-                                                <option value="pending" {{ old('status', $callLog->status) == 'pending' ? 'selected' : '' }}>Pending</option>
-                                                <option value="assigned" {{ old('status', $callLog->status) == 'assigned' ? 'selected' : '' }}>Assigned</option>
-                                                <option value="in_progress" {{ old('status', $callLog->status) == 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                                                <option value="complete" {{ old('status', $callLog->status) == 'complete' ? 'selected' : '' }}>Complete</option>
-                                                <option value="cancelled" {{ old('status', $callLog->status) == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                                            </select>
-                                            @if ($errors->has('status'))
-                                                <div class="invalid-feedback">{{ $errors->first('status') }}</div>
-                                            @endif
-                                        </div>
-                                    </div>
+                        {{-- Job Information --}}
+                        <div class="form-section mb-4">
+                            <h6 class="section-title">
+                                <i class="fas fa-cogs me-2"></i>
+                                Job Information
+                            </h6>
+                            
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <label for="type" class="form-label">Job Type *</label>
+                                    <select class="form-select @error('type') is-invalid @enderror" 
+                                            id="type" name="type" required>
+                                        @foreach($types as $value => $label)
+                                            <option value="{{ $value }}" @selected(old('type', $callLog->type) == $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="assigned_to_admin" class="form-label">Assigned Engineer</label>
-                                    <select class="form-control form-control-enhanced @error('assigned_to') is-invalid @enderror" 
-                                            id="assigned_to_admin" name="assigned_to">
+                                <div class="col-md-6">
+                                    <label for="status_admin" class="form-label">Status *</label>
+                                    <select class="form-select @error('status') is-invalid @enderror" 
+                                            id="status_admin" name="status" required>
+                                        @foreach($statuses as $value => $label)
+                                            <option value="{{ $value }}" @selected(old('status', $callLog->status) == $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('status')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="assigned_to" class="form-label">Assigned Engineer</label>
+                                    <select class="form-select @error('assigned_to') is-invalid @enderror" 
+                                            id="assigned_to" name="assigned_to">
                                         <option value="">Select engineer...</option>
-                                        @foreach(\App\Models\User::whereIn('role', ['technician', 'manager'])->get() as $user)
-                                            <option value="{{ $user->id }}" {{ old('assigned_to', $callLog->assigned_to) == $user->id ? 'selected' : '' }}>
+                                        @foreach($technicians as $user)
+                                            <option value="{{ $user->id }}" @selected(old('assigned_to', $callLog->assigned_to) == $user->id)>
                                                 {{ $user->name }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    @if ($errors->has('assigned_to'))
-                                        <div class="invalid-feedback">{{ $errors->first('assigned_to') }}</div>
-                                    @endif
+                                    @error('assigned_to')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="approved_by_admin" class="form-label">Approved By <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-enhanced @error('approved_by') is-invalid @enderror" 
-                                           id="approved_by_admin" name="approved_by" 
-                                           value="{{ old('approved_by', $callLog->approved_by ?? auth()->user()->name) }}" required>
-                                    @if ($errors->has('approved_by'))
-                                        <div class="invalid-feedback">{{ $errors->first('approved_by') }}</div>
-                                    @endif
+                                <div class="col-md-6">
+                                    <label for="date_booked" class="form-label">Date Booked *</label>
+                                    <input type="date" 
+                                           class="form-control @error('date_booked') is-invalid @enderror" 
+                                           id="date_booked" 
+                                           name="date_booked" 
+                                           value="{{ old('date_booked', $callLog->date_booked ? $callLog->date_booked->format('Y-m-d') : now()->format('Y-m-d')) }}" 
+                                           required>
+                                    @error('date_booked')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="booked_by_admin" class="form-label">Booked By</label>
-                                    <input type="text" class="form-control form-control-enhanced @error('booked_by') is-invalid @enderror" 
-                                           id="booked_by_admin" name="booked_by" 
-                                           value="{{ old('booked_by', $callLog->booked_by) }}">
-                                    @if ($errors->has('booked_by'))
-                                        <div class="invalid-feedback">{{ $errors->first('booked_by') }}</div>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Schedule & Billing -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-section mb-4">
-                                <h6 class="section-title mb-3">
-                                    <i class="fas fa-calendar me-2"></i>
-                                    Schedule Details
-                                </h6>
-                                
-                                <div class="form-group">
-                                    <label for="date_booked_admin" class="form-label">Date Booked <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control form-control-enhanced @error('date_booked') is-invalid @enderror" 
-                                           id="date_booked_admin" name="date_booked" 
-                                           value="{{ old('date_booked', $callLog->date_booked ? $callLog->date_booked->format('Y-m-d') : now()->format('Y-m-d')) }}" required>
-                                    @if ($errors->has('date_booked'))
-                                        <div class="invalid-feedback">{{ $errors->first('date_booked') }}</div>
-                                    @endif
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="date_resolved_admin" class="form-label">Date Resolved</label>
-                                    <input type="date" class="form-control form-control-enhanced @error('date_resolved') is-invalid @enderror" 
-                                           id="date_resolved_admin" name="date_resolved" 
-                                           value="{{ old('date_resolved', $callLog->date_resolved ? $callLog->date_resolved->format('Y-m-d') : '') }}">
-                                    @if ($errors->has('date_resolved'))
-                                        <div class="invalid-feedback">{{ $errors->first('date_resolved') }}</div>
-                                    @endif
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="time_start_admin" class="form-label">Start Time</label>
-                                            <input type="time" class="form-control form-control-enhanced @error('time_start') is-invalid @enderror" 
-                                                   id="time_start_admin" name="time_start" 
-                                                   value="{{ old('time_start', $callLog->time_start ? $callLog->time_start->format('H:i') : '') }}">
-                                            @if ($errors->has('time_start'))
-                                                <div class="invalid-feedback">{{ $errors->first('time_start') }}</div>
-                                            @endif
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="time_finish_admin" class="form-label">Finish Time</label>
-                                            <input type="time" class="form-control form-control-enhanced @error('time_finish') is-invalid @enderror" 
-                                                   id="time_finish_admin" name="time_finish" 
-                                                   value="{{ old('time_finish', $callLog->time_finish ? $callLog->time_finish->format('H:i') : '') }}">
-                                            @if ($errors->has('time_finish'))
-                                                <div class="invalid-feedback">{{ $errors->first('time_finish') }}</div>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-section mb-4">
-                                <h6 class="section-title mb-3">
-                                    <i class="fas fa-dollar-sign me-2"></i>
-                                    Billing Information
-                                </h6>
-                                
-                                <div class="form-group">
-                                    <label for="billed_hours_admin" class="form-label">Billed Hours</label>
-                                    
-                                    <!-- Quick Selection Buttons -->
-                                    <div class="billed-hours-options mb-2">
-                                        <div class="btn-group" role="group" aria-label="Quick billed hours selection">
-                                            <button type="button" class="btn btn-outline-secondary btn-sm quick-hours-admin" data-value="10%">
-                                                10%
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm quick-hours-admin" data-value="1">
-                                                1 Hour
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm quick-hours-admin" data-value="2">
-                                                2 Hours
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="calculateHoursAdmin">
-                                                <i class="fas fa-calculator me-1"></i>
-                                                Calculate
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <input type="text" class="form-control form-control-enhanced @error('billed_hours') is-invalid @enderror" 
-                                           id="billed_hours_admin" name="billed_hours" 
-                                           value="{{ old('billed_hours', $callLog->billed_hours) }}" 
-                                           placeholder="e.g., 10%, 1, 2, or custom value">
-                                    
-                                    <small class="form-text text-muted">
-                                        Common values: <strong>10%</strong> (percentage), <strong>1</strong> or <strong>2</strong> (hours), or enter custom value
-                                    </small>
-
-                                    @if($errors->has('billed_hours'))
-                                        <div class="invalid-feedback">{{ $errors->first('billed_hours') }}</div>
-                                    @endif
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="amount_charged_admin" class="form-label">Amount Charged (USD) <span class="text-danger">*</span></label>
+                                <div class="col-md-6">
+                                    <label for="amount_charged" class="form-label">Amount Charged *</label>
                                     <div class="input-group">
                                         <span class="input-group-text">$</span>
-                                        <input type="number" class="form-control form-control-enhanced @error('amount_charged') is-invalid @enderror" 
-                                               id="amount_charged_admin" name="amount_charged" 
-                                               value="{{ old('amount_charged', $callLog->amount_charged ?? 0) }}" 
-                                               step="0.01" min="0" required>
+                                        <input type="number" 
+                                               class="form-control @error('amount_charged') is-invalid @enderror" 
+                                               id="amount_charged" 
+                                               name="amount_charged" 
+                                               value="{{ old('amount_charged', $callLog->amount_charged) }}" 
+                                               step="0.01" 
+                                               min="0" 
+                                               required>
                                     </div>
-                                    @if($errors->has('amount_charged'))
-                                        <div class="invalid-feedback">{{ $errors->first('amount_charged') }}</div>
-                                    @endif
+                                    @error('amount_charged')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
-                                <div class="form-group">
+                                <div class="col-md-6">
+                                    <label for="currency" class="form-label">Currency *</label>
+                                    <select class="form-select @error('currency') is-invalid @enderror" 
+                                            id="currency" name="currency" required>
+                                        <option value="USD" @selected(old('currency', $callLog->currency ?? 'USD') == 'USD')>USD</option>
+                                        <option value="ZWG" @selected(old('currency', $callLog->currency) == 'ZWG')>ZWG</option>
+                                    </select>
+                                    @error('currency')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Engineering Details --}}
+                        <div class="form-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-tools me-2"></i>
+                                Engineering Details
+                            </h6>
+                            
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <label for="time_start_admin" class="form-label">Start Time</label>
+                                    <input type="time" 
+                                           class="form-control @error('time_start') is-invalid @enderror" 
+                                           id="time_start_admin" 
+                                           name="time_start" 
+                                           value="{{ old('time_start', $callLog->time_start) }}">
+                                    @error('time_start')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="time_finish_admin" class="form-label">Finish Time</label>
+                                    <input type="time" 
+                                           class="form-control @error('time_finish') is-invalid @enderror" 
+                                           id="time_finish_admin" 
+                                           name="time_finish" 
+                                           value="{{ old('time_finish', $callLog->time_finish) }}">
+                                    @error('time_finish')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="billed_hours_admin" class="form-label">Billed Hours</label>
+                                    <input type="text" 
+                                           class="form-control @error('billed_hours') is-invalid @enderror" 
+                                           id="billed_hours_admin" 
+                                           name="billed_hours" 
+                                           value="{{ old('billed_hours', $callLog->billed_hours) }}"
+                                           placeholder="e.g., 10%, 1, 2">
+                                    @error('billed_hours')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="date_resolved_admin" class="form-label">Date Resolved</label>
+                                    <input type="date" 
+                                           class="form-control @error('date_resolved') is-invalid @enderror" 
+                                           id="date_resolved_admin" 
+                                           name="date_resolved" 
+                                           value="{{ old('date_resolved', $callLog->date_resolved ? $callLog->date_resolved->format('Y-m-d') : '') }}">
+                                    @error('date_resolved')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-12">
                                     <label for="engineer_comments_admin" class="form-label">Engineer Comments</label>
-                                    <textarea class="form-control form-control-enhanced @error('engineer_comments') is-invalid @enderror" 
-                                              id="engineer_comments_admin" name="engineer_comments" rows="4" 
-                                              placeholder="Technical notes and resolution details...">{{ old('engineer_comments', $callLog->engineer_comments) }}</textarea>
-                                    @if($errors->has('engineer_comments'))
-                                        <div class="invalid-feedback">{{ $errors->first('engineer_comments') }}</div>
-                                    @endif
+                                    <textarea class="form-control @error('engineer_comments') is-invalid @enderror" 
+                                              id="engineer_comments_admin" 
+                                              name="engineer_comments" 
+                                              rows="4" 
+                                              placeholder="Technical work performed, parts used, resolution steps, etc.">{{ old('engineer_comments', $callLog->engineer_comments) }}</textarea>
+                                    @error('engineer_comments')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
                     </div>
-                @else
-                    <!-- Unauthorized Access -->
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        You are not authorized to edit this job card. Only the assigned engineer, admin, or accounts can edit job cards.
-                    </div>
                 @endif
 
-                <!-- Form Actions -->
-                @if(($callLog->assigned_to == auth()->id() && in_array(auth()->user()->role, ['technician', 'manager'])) || in_array(auth()->user()->role, ['admin', 'accounts']))
-                    <div class="form-actions d-flex justify-content-between mt-4">
-                        <a href="{{ route('admin.call-logs.show', $callLog) }}" class="btn btn-outline-secondary btn-enhanced">
-                            <i class="fas fa-times me-2"></i>
-                            Cancel
-                        </a>
-                        <button type="submit" class="btn btn-primary btn-enhanced">
-                            <i class="fas fa-save me-2"></i>
-                            Update Job Card
-                        </button>
+                {{-- Form Actions --}}
+                <div class="form-actions mt-4 pt-3 border-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="action-buttons">
+                            <button type="submit" class="btn btn-primary me-2" id="saveJobBtn">
+                                <i class="fas fa-save me-2"></i>
+                                Update Job Card
+                            </button>
+                            <a href="{{ route('admin.call-logs.show', $callLog) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>
+                                Cancel
+                            </a>
+                        </div>
+                        <div class="form-info">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Last updated: {{ $callLog->updated_at->format('M j, Y \a\t g:i A') }}
+                            </small>
+                        </div>
                     </div>
-                @endif
+                </div>
             </form>
         </div>
     </div>
@@ -593,548 +555,450 @@
 @push('styles')
 <style>
 :root {
-    --primary-green: #22c55e;
-    --primary-green-dark: #16a34a;
-    --success-green: #10b981;
-    --light-green: #dcfce7;
-    --ultra-light-green: #f0fdf4;
-    --secondary-green: #a7f3d0;
-    --white: #ffffff;
-    --light-gray: #f8fafc;
-    --border-color: #e2e8f0;
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-    --text-muted: #94a3b8;
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-hover: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --primary: #059669;
+    --primary-dark: #047857;
+    --success: #059669;
+    --danger: #DC2626;
+    --warning: #F59E0B;
+    --info: #0EA5E9;
+    --white: #FFFFFF;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --border-radius: 8px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --transition: all 0.2s ease;
 }
 
-.page-header-card {
+/* DASHBOARD HEADER */
+.dashboard-header {
     background: var(--white);
-    border-radius: 16px;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--border-color);
-    overflow: hidden;
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
 }
 
-.page-header-content {
-    padding: 2rem;
-    background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
+.dashboard-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background: var(--secondary);
+    color: white;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* CONTENT CARD */
+.content-card {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.content-card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--gray-200);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.page-title {
-    font-size: 1.5rem;
+.card-title {
+    font-size: 1rem;
     font-weight: 600;
-    color: var(--primary-green-dark);
+    color: var(--gray-800);
     margin: 0;
+    display: flex;
+    align-items: center;
 }
 
-.page-subtitle {
-    color: var(--text-secondary);
-    margin: 0.5rem 0 0 0;
-    font-size: 0.95rem;
+.card-subtitle {
+    color: var(--gray-500);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
 }
 
-.content-card {
-    background: var(--white);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-}
-
-.content-card-header {
-    padding: 1.5rem 2rem;
-    background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.content-card-header .card-title {
-    font-size: 1.25rem;
+/* STATUS BADGE */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--primary-green);
-    margin: 0;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    text-transform: capitalize;
 }
 
-.content-card-body {
-    padding: 2rem;
+.status-badge.pending {
+    background: #FEF3C7;
+    color: #92400E;
 }
 
+.status-badge.assigned {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
+
+.status-badge.in-progress {
+    background: #FEF2F2;
+    color: #DC2626;
+}
+
+.status-badge.complete {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+/* FORM SECTIONS */
 .form-section {
-    background: var(--ultra-light-green);
-    border-radius: 12px;
-    padding: 1.5rem;
-    border: 1px solid var(--light-green);
+    margin-bottom: 2rem;
 }
 
 .section-title {
-    color: var(--primary-green-dark);
+    font-size: 1rem;
     font-weight: 600;
-    display: flex;
-    align-items: center;
+    color: var(--gray-800);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--gray-200);
 }
 
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
+/* FORM LABEL */
 .form-label {
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--gray-700);
     margin-bottom: 0.5rem;
-    display: block;
 }
 
-.form-control-enhanced {
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
+.form-label.required::after {
+    content: ' *';
+    color: var(--danger);
+}
+
+/* FORM CONTROLS */
+.form-control,
+.form-select {
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    transition: var(--transition);
     font-size: 0.95rem;
-    transition: all 0.3s ease;
-    background: var(--white);
-    width: 100%;
-}
-
-.form-control-enhanced:focus {
-    border-color: var(--primary-green);
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-    outline: none;
-}
-
-.form-control-enhanced[readonly] {
-    background: var(--light-gray);
-    color: var(--text-secondary);
-}
-
-.form-control-enhanced.is-invalid {
-    border-color: #dc3545;
-}
-
-.invalid-feedback {
-    display: block;
-    color: #dc3545;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-}
-
-.btn-enhanced {
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    border: none;
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-}
-
-.btn-primary.btn-enhanced {
-    background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%);
-    color: var(--white);
-}
-
-.btn-primary.btn-enhanced:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-}
-
-.btn-outline-secondary.btn-enhanced {
-    border: 2px solid var(--border-color);
-    color: var(--text-secondary);
-    background: transparent;
-}
-
-.btn-outline-secondary.btn-enhanced:hover {
-    background: var(--text-secondary);
-    color: var(--white);
-}
-
-.input-group-text {
-    background: var(--light-green);
-    color: var(--primary-green);
-    border: 2px solid var(--border-color);
-    font-weight: 600;
-}
-
-.text-danger {
-    color: #dc3545 !important;
-}
-
-.form-text {
-    font-size: 0.875rem;
-    color: var(--text-muted);
-    margin-top: 0.25rem;
-}
-
-.alert {
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-}
-
-.alert-warning {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
-    color: #856404;
-}
-
-.alert-success {
-    background: var(--ultra-light-green);
-    border: 1px solid var(--light-green);
-    color: var(--primary-green-dark);
-}
-
-.alert-danger {
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
-}
-
-.billed-hours-options {
-    margin-bottom: 0.5rem;
-}
-
-.btn-group .btn {
-    font-size: 0.875rem;
     padding: 0.375rem 0.75rem;
 }
 
-.quick-hours.active, .quick-hours-admin.active {
-    background-color: var(--primary-green) !important;
-    border-color: var(--primary-green) !important;
-    color: white !important;
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+    outline: none;
 }
 
-.quick-hours:hover, .quick-hours-admin:hover {
-    background-color: var(--primary-green);
-    border-color: var(--primary-green);
+/* INPUT GROUPS */
+.input-group-text {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-300);
+    color: var(--gray-700);
+    font-weight: 600;
+}
+
+/* QUICK HOURS BUTTONS */
+.btn-group .btn {
+    margin-right: 0.5rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+.btn-outline-secondary {
+    color: var(--gray-700);
+    border-color: var(--gray-400);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+
+.btn-outline-info {
+    color: var(--info);
+    border-color: var(--info);
+}
+
+.btn-outline-info:hover {
+    background-color: var(--info);
+    color: var(--white);
+    border-color: var(--info);
+}
+
+/* FORM ACTIONS */
+.form-actions {
+    background: var(--gray-50);
+    margin: 0 -1.5rem -1.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
     color: white;
 }
 
-#calculateHours, #calculateHoursAdmin {
-    background-color: #6c757d;
-    border-color: #6c757d;
-    color: white;
+.btn-primary:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
 }
 
-#calculateHours:hover, #calculateHoursAdmin:hover {
-    background-color: #5a6268;
-    border-color: #545b62;
+.btn-outline-secondary {
+    background: transparent;
+    border: 1px solid var(--gray-400);
+    color: var(--gray-600);
 }
 
+.btn-outline-secondary:hover {
+    background: var(--gray-200);
+    border-color: var(--gray-600);
+    color: var(--gray-800);
+}
+
+/* ALERTS */
+.alert {
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+}
+
+.alert-success {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.alert-danger {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+/* INVALID FEEDBACK */
+.invalid-feedback {
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+/* FORM TEXT */
+.form-text {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    margin-top: 0.25rem;
+}
+
+/* RESPONSIVE */
 @media (max-width: 768px) {
-    .page-header-content {
+    .dashboard-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
     }
     
     .header-actions {
-        flex-direction: column;
         width: 100%;
+        justify-content: flex-end;
     }
     
-    .content-card-header, .content-card-body {
-        padding: 1rem;
-    }
-    
-    .form-section {
-        padding: 1rem;
+    .content-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
     }
     
     .form-actions {
         flex-direction: column;
-        gap: 1rem;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    
+    .action-buttons {
+        width: 100%;
+        flex-direction: column;
     }
 }
+
 </style>
 @endpush
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Get elements based on current user type
     const statusSelect = document.getElementById('status') || document.getElementById('status_admin');
-    const jobCardField = document.getElementById('job_card') || document.getElementById('job_card_admin');
-    const timeStartField = document.getElementById('time_start') || document.getElementById('time_start_admin');
-    const timeFinishField = document.getElementById('time_finish') || document.getElementById('time_finish_admin');
-    const billedHoursField = document.getElementById('billed_hours') || document.getElementById('billed_hours_admin');
-    const dateResolvedField = document.getElementById('date_resolved') || document.getElementById('date_resolved_admin');
-    const engineerCommentsField = document.getElementById('engineer_comments') || document.getElementById('engineer_comments_admin');
-    
-    // Required field indicators (only for engineer view)
-    const jobCardRequired = document.getElementById('job_card_required');
-    const timeStartRequired = document.getElementById('time_start_required');
-    const timeFinishRequired = document.getElementById('time_finish_required');
-    const billedHoursRequired = document.getElementById('billed_hours_required');
-    const dateResolvedRequired = document.getElementById('date_resolved_required');
-    const engineerCommentsRequired = document.getElementById('engineer_comments_required');
+    const jobCardInput = document.getElementById('job_card');
+    const timeStartInput = document.getElementById('time_start');
+    const timeFinishInput = document.getElementById('time_finish');
+    const billedHoursInput = document.getElementById('billed_hours') || document.getElementById('billed_hours_admin');
+    const dateResolvedInput = document.getElementById('date_resolved') || document.getElementById('date_resolved_admin');
+    const engineerCommentsInput = document.getElementById('engineer_comments') || document.getElementById('engineer_comments_admin');
     
     // Quick hours buttons
-    const quickHoursButtons = document.querySelectorAll('.quick-hours, .quick-hours-admin');
-    const calculateButton = document.getElementById('calculateHours') || document.getElementById('calculateHoursAdmin');
-    
-    function updateRequiredFields() {
-        if (!statusSelect) return;
+    const quickHoursButtons = document.querySelectorAll('.quick-hours');
+    const calculateBtn = document.getElementById('calculateHours');
+
+    function toggleRequiredFields() {
+        const isComplete = statusSelect && statusSelect.value === 'complete';
         
-        const status = statusSelect.value;
+        // Required field indicators
+        const requiredFields = [
+            'job_card_required',
+            'time_start_required', 
+            'time_finish_required',
+            'billed_hours_required',
+            'date_resolved_required',
+            'engineer_comments_required'
+        ];
         
-        if (status === 'complete') {
-            // Make fields required for completion (engineer view only)
-            if (jobCardField && jobCardRequired) {
-                jobCardField.required = true;
-                jobCardRequired.style.display = 'inline';
+        requiredFields.forEach(fieldId => {
+            const indicator = document.getElementById(fieldId);
+            if (indicator) {
+                indicator.style.display = isComplete ? 'inline' : 'none';
             }
-            if (timeStartField && timeStartRequired) {
-                timeStartField.required = true;
-                timeStartRequired.style.display = 'inline';
-            }
-            if (timeFinishField && timeFinishRequired) {
-                timeFinishField.required = true;
-                timeFinishRequired.style.display = 'inline';
-            }
-            if (billedHoursField && billedHoursRequired) {
-                billedHoursField.required = true;
-                billedHoursRequired.style.display = 'inline';
-            }
-            if (dateResolvedField && dateResolvedRequired) {
-                dateResolvedField.required = true;
-                dateResolvedRequired.style.display = 'inline';
-                if (!dateResolvedField.value) {
-                    dateResolvedField.value = new Date().toISOString().split('T')[0];
-                }
-            }
-            if (engineerCommentsField && engineerCommentsRequired) {
-                engineerCommentsField.required = true;
-                engineerCommentsRequired.style.display = 'inline';
-            }
-        } else {
-            // Remove required for non-complete status
-            if (timeStartRequired) timeStartRequired.style.display = 'none';
-            if (timeFinishRequired) timeFinishRequired.style.display = 'none';
-            if (billedHoursRequired) billedHoursRequired.style.display = 'none';
-            if (dateResolvedRequired) dateResolvedRequired.style.display = 'none';
-            if (engineerCommentsRequired) engineerCommentsRequired.style.display = 'none';
-            
-            if (timeStartField) timeStartField.required = false;
-            if (timeFinishField) timeFinishField.required = false;
-            if (billedHoursField) billedHoursField.required = false;
-            if (dateResolvedField) dateResolvedField.required = false;
-            if (engineerCommentsField) engineerCommentsField.required = false;
-        }
-    }
-    
-    // Validate time finish is after time start
-    function validateTimes() {
-        if (timeStartField && timeFinishField) {
-            const startTime = timeStartField.value;
-            const finishTime = timeFinishField.value;
-            
-            if (startTime && finishTime) {
-                const start = new Date('2000-01-01 ' + startTime);
-                const finish = new Date('2000-01-01 ' + finishTime);
-                
-                if (finish <= start) {
-                    timeFinishField.setCustomValidity('Finish time must be after start time');
-                    timeFinishField.classList.add('is-invalid');
-                    
-                    // Show error message
-                    let errorDiv = timeFinishField.nextElementSibling;
-                    if (!errorDiv || !errorDiv.classList.contains('invalid-feedback')) {
-                        errorDiv = document.createElement('div');
-                        errorDiv.classList.add('invalid-feedback');
-                        timeFinishField.parentNode.appendChild(errorDiv);
-                    }
-                    errorDiv.textContent = 'Finish time must be after start time';
-                    
-                    return false;
+        });
+
+        // Set required attributes
+        const fieldsToToggle = [
+            jobCardInput,
+            timeStartInput,
+            timeFinishInput,
+            billedHoursInput,
+            dateResolvedInput,
+            engineerCommentsInput
+        ];
+        
+        fieldsToToggle.forEach(field => {
+            if (field) {
+                field.required = isComplete;
+                if (isComplete) {
+                    field.classList.add('required-for-completion');
                 } else {
-                    timeFinishField.setCustomValidity('');
-                    timeFinishField.classList.remove('is-invalid');
-                    
-                    // Remove error message
-                    let errorDiv = timeFinishField.nextElementSibling;
-                    if (errorDiv && errorDiv.classList.contains('invalid-feedback') && errorDiv.textContent.includes('Finish time')) {
-                        errorDiv.remove();
-                    }
-                    
-                    return true;
+                    field.classList.remove('required-for-completion');
                 }
             }
-        }
-        return true;
-    }
-    
-    // Calculate billed hours from time inputs
-    function calculateBilledHours() {
-        if (timeStartField && timeFinishField && billedHoursField) {
-            const startTime = timeStartField.value;
-            const finishTime = timeFinishField.value;
-            
-            if (startTime && finishTime && validateTimes()) {
-                const start = new Date('2000-01-01 ' + startTime);
-                const finish = new Date('2000-01-01 ' + finishTime);
-                const diffMs = finish - start;
-                const diffHours = diffMs / (1000 * 60 * 60);
-                
-                if (diffHours > 0) {
-                    // Round to nearest 0.25 hour
-                    const roundedHours = Math.round(diffHours * 4) / 4;
-                    billedHoursField.value = roundedHours.toString();
-                }
-            }
+        });
+
+        // Auto-fill date resolved if completing
+        if (isComplete && dateResolvedInput && !dateResolvedInput.value) {
+            dateResolvedInput.value = new Date().toISOString().split('T')[0];
         }
     }
-    
-    // Quick hours button functionality
+
+    // Quick hours selection
     quickHoursButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const value = this.dataset.value;
-            if (billedHoursField) {
-                billedHoursField.value = value;
+            if (billedHoursInput) {
+                billedHoursInput.value = this.dataset.value;
+                quickHoursButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
             }
-            
-            // Remove active class from all buttons
-            quickHoursButtons.forEach(btn => {
-                btn.classList.remove('active', 'btn-primary');
-                btn.classList.add('btn-outline-secondary');
-            });
-            
-            // Add active class to clicked button
-            this.classList.remove('btn-outline-secondary');
-            this.classList.add('btn-primary', 'active');
         });
     });
-    
-    // Calculate button functionality
-    if (calculateButton) {
-        calculateButton.addEventListener('click', function() {
-            calculateBilledHours();
+
+    // Calculate hours from time difference
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', function() {
+            const startTime = timeStartInput?.value;
+            const endTime = timeFinishInput?.value;
             
-            // Remove active class from quick buttons
-            quickHoursButtons.forEach(btn => {
-                btn.classList.remove('active', 'btn-primary');
-                btn.classList.add('btn-outline-secondary');
-            });
+            if (startTime && endTime && billedHoursInput) {
+                const start = new Date(`2000-01-01T${startTime}`);
+                const end = new Date(`2000-01-01T${endTime}`);
+                const diffHours = (end - start) / (1000 * 60 * 60);
+                
+                if (diffHours > 0) {
+                    billedHoursInput.value = Math.round(diffHours * 2) / 2; // Round to nearest 0.5
+                } else {
+                    alert('End time must be after start time');
+                }
+            } else {
+                alert('Please enter both start and end times');
+            }
         });
     }
-    
-    // Event listeners
+
+    // Status change handler
     if (statusSelect) {
-        statusSelect.addEventListener('change', updateRequiredFields);
-        updateRequiredFields(); // Initialize on page load
+        statusSelect.addEventListener('change', toggleRequiredFields);
+        toggleRequiredFields(); // Initial check
     }
-    
-    if (timeStartField) {
-        timeStartField.addEventListener('change', function() {
-            validateTimes();
-        });
-    }
-    
-    if (timeFinishField) {
-        timeFinishField.addEventListener('change', function() {
-            validateTimes();
-        });
-    }
-    
-    // Form submission with enhanced validation
+
+    // Form submission
     const form = document.getElementById('editJobCardForm');
-    if (form) {
+    const saveBtn = document.getElementById('saveJobBtn');
+    
+    if (form && saveBtn) {
         form.addEventListener('submit', function(e) {
-            const status = statusSelect ? statusSelect.value : '';
-            
-            // Validate times before submission
-            if (!validateTimes()) {
-                e.preventDefault();
-                showNotification('Please fix the time validation errors before submitting.', 'error');
-                return false;
-            }
-            
-            if (status === 'complete') {
-                let missingFields = [];
-                
-                if (jobCardField && !jobCardField.value.trim()) {
-                    missingFields.push('Job Card Number');
-                }
-                if (timeStartField && !timeStartField.value) {
-                    missingFields.push('Start Time');
-                }
-                if (timeFinishField && !timeFinishField.value) {
-                    missingFields.push('Finish Time');
-                }
-                if (billedHoursField && !billedHoursField.value.trim()) {
-                    missingFields.push('Billed Hours');
-                }
-                if (dateResolvedField && !dateResolvedField.value) {
-                    missingFields.push('Date Resolved');
-                }
-                if (engineerCommentsField && !engineerCommentsField.value.trim()) {
-                    missingFields.push('Engineer Comments');
-                }
-                
-                if (missingFields.length > 0) {
-                    e.preventDefault();
-                    showNotification('To mark this job as complete, you must fill in the following fields:\n\n' + missingFields.join('\n'), 'error');
-                    return false;
-                }
-                
-                // Validate engineer comments length
-                if (engineerCommentsField && engineerCommentsField.value.trim().length < 10) {
-                    e.preventDefault();
-                    showNotification('Engineer comments must be at least 10 characters long when completing a job.', 'error');
-                    return false;
-                }
-            }
-            
-            // Show loading state
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                const originalText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
-                
-                setTimeout(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalText;
-                }, 10000);
-            }
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
         });
     }
-    
-    // Set current value as active if it matches a quick option
-    if (billedHoursField && billedHoursField.value) {
-        const currentValue = billedHoursField.value;
-        quickHoursButtons.forEach(button => {
-            if (button.dataset.value === currentValue) {
-                button.classList.remove('btn-outline-secondary');
-                button.classList.add('btn-primary', 'active');
+
+    // Character counter for comments
+    if (engineerCommentsInput) {
+        const maxLength = 1000;
+        const counterElement = document.createElement('small');
+        counterElement.className = 'form-text text-muted char-counter';
+        engineerCommentsInput.parentNode.appendChild(counterElement);
+        
+        function updateCharCount() {
+            const currentLength = engineerCommentsInput.value.length;
+            counterElement.textContent = `${currentLength}/${maxLength} characters`;
+            
+            if (currentLength > maxLength * 0.9) {
+                counterElement.style.color = '#DC2626';
+            } else {
+                counterElement.style.color = '#6B7280';
             }
-        });
+        }
+        
+        engineerCommentsInput.addEventListener('input', updateCharCount);
+        updateCharCount(); // Initial count
     }
 });
-
-// Notification function
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;';
-    notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
 </script>
 @endpush

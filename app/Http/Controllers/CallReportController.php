@@ -20,52 +20,94 @@ class CallReportController extends \App\Http\Controllers\Controller
     /**
      * Display the call logs reports dashboard.
      */
-    public function index(Request $request)
+public function index(Request $request)
     {
+        // Get filter parameters
         $dateFrom = $request->get('date_from', now()->startOfMonth()->format('Y-m-d'));
         $dateTo = $request->get('date_to', now()->format('Y-m-d'));
-        $handler = $request->get('handler');
+        $engineer = $request->get('engineer');
         $status = $request->get('status');
-        $callType = $request->get('call_type');
-        $priority = $request->get('priority');
+        $type = $request->get('type');
 
-        // Build query with safe relationship loading
+        // Build query
         $query = CallLog::with(['loggedBy', 'handler'])
             ->whereBetween('call_time', [$dateFrom, $dateTo . ' 23:59:59']);
 
-        if ($handler) {
-            $query->where('handled_by', $handler);
+        if ($engineer) {
+            $query->where('handled_by', $engineer);
         }
 
         if ($status) {
             $query->where('call_status', $status);
         }
 
-        if ($callType) {
-            $query->where('call_type', $callType);
-        }
-
-        if ($priority) {
-            $query->where('priority', $priority);
+        if ($type) {
+            $query->where('call_type', $type);
         }
 
         $callLogs = $query->orderBy('call_time', 'desc')->get();
 
         // Generate statistics
-        $stats = $this->generateStatistics($callLogs);
-        $handlerStats = $this->generateHandlerStats($callLogs);
-        $dailyStats = $this->generateDailyStats($callLogs);
-        $callTypeStats = $this->generateCallTypeStats($callLogs);
-        $priorityStats = $this->generatePriorityStats($callLogs);
+        $stats = [
+            'total_jobs' => $callLogs->count(),
+            'completed_jobs' => $callLogs->where('call_status', 'resolved')->count(),
+            'total_revenue' => $callLogs->where('call_status', 'resolved')->sum('estimated_cost'),
+            'avg_completion_time' => $this->calculateAverageResolutionTime($callLogs->where('call_status', 'resolved')),
+            'total_billed_hours' => $callLogs->sum('call_duration_minutes') / 60,
+            'emergency_jobs' => $callLogs->where('call_type', 'emergency')->count(),
+        ];
 
-        $handlers = User::whereIn('role', ['technician', 'admin'])
-                       ->orderBy('name')
-                       ->get();
+        $engineerStats = $callLogs->groupBy('handled_by')
+            ->map(function ($engineerCalls) {
+                return [
+                    'total' => $engineerCalls->count(),
+                    'completed' => $engineerCalls->where('call_status', 'resolved')->count(),
+                    'in_progress' => $engineerCalls->where('call_status', 'in_progress')->count(),
+                    'revenue' => $engineerCalls->where('call_status', 'resolved')->sum('estimated_cost'),
+                    'billed_hours' => $engineerCalls->sum('call_duration_minutes') / 60,
+                ];
+            });
 
-        return view('admin.call-reports.index', compact(
-            'callLogs', 'stats', 'handlerStats', 'dailyStats', 
-            'callTypeStats', 'priorityStats', 'handlers',
-            'dateFrom', 'dateTo', 'handler', 'status', 'callType', 'priority'
+        $dailyStats = $callLogs->groupBy(function ($call) {
+            return $call->call_time->format('Y-m-d');
+        })->map(function ($dayCalls) {
+            return [
+                'total' => $dayCalls->count(),
+                'completed' => $dayCalls->where('call_status', 'resolved')->count(),
+                'in_progress' => $dayCalls->where('call_status', 'in_progress')->count(),
+                'revenue' => $dayCalls->where('call_status', 'resolved')->sum('estimated_cost'),
+                'billed_hours' => $dayCalls->sum('call_duration_minutes') / 60,
+            ];
+        });
+
+        $jobTypeStats = $callLogs->groupBy('call_type')
+            ->map(function ($typeCalls) use ($callLogs) {
+                return [
+                    'count' => $typeCalls->count(),
+                    'percentage' => round(($typeCalls->count() / $callLogs->count()) * 100, 1),
+                    'avg_hours' => $typeCalls->avg('call_duration_minutes') / 60,
+                    'revenue' => $typeCalls->where('call_status', 'resolved')->sum('estimated_cost'),
+                ];
+            });
+
+        $companyStats = $callLogs->groupBy('customer_name')
+            ->map(function ($companyCalls) {
+                return [
+                    'total' => $companyCalls->count(),
+                    'completed' => $companyCalls->where('call_status', 'resolved')->count(),
+                    'revenue' => $companyCalls->where('call_status', 'resolved')->sum('estimated_cost'),
+                    'last_service' => $companyCalls->max('call_time'),
+                ];
+            });
+
+        $engineers = User::whereIn('role', ['technician', 'admin'])
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.call_logs.reports', compact(
+            'callLogs', 'stats', 'engineerStats', 'dailyStats',
+            'jobTypeStats', 'companyStats', 'engineers',
+            'dateFrom', 'dateTo', 'engineer', 'status', 'type'
         ));
     }
 

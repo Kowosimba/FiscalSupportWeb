@@ -1,4 +1,4 @@
-@extends('layouts.calllogs')
+@extends('layouts.app')
 
 @section('title', 'Job Card Reports')
 
@@ -7,17 +7,17 @@
 <div class="container-fluid">
     <!-- Page Header -->
     <div class="page-header-card mb-4">
-        <div class="page-header-content">
+        <div class="page-header-content d-flex justify-content-between align-items-center flex-wrap">
             <div class="header-text">
-                <h3 class="page-title">
+                <h3 class="page-title mb-1">
                     <i class="fa fa-chart-bar me-2"></i>
                     Job Card Reports
                 </h3>
-                <p class="page-subtitle">Analytics and reporting dashboard for IT support services</p>
+                <p class="page-subtitle mb-0 text-muted">Analytics and reporting dashboard for IT support services</p>
             </div>
-            <div class="page-actions">
+            <div class="page-actions mt-2 mt-md-0">
                 @if(auth()->user()->role === 'admin')
-                    <button class="btn btn-primary btn-enhanced" data-bs-toggle="modal" data-bs-target="#generateReportModal">
+                    <button type="button" class="btn btn-primary btn-enhanced" data-bs-toggle="modal" data-bs-target="#generateReportModal" aria-label="Generate Job Card Report">
                         <i class="fa fa-file-export me-2"></i>
                         Generate Report
                     </button>
@@ -29,83 +29,60 @@
     <!-- Filter Card -->
     <div class="content-card mb-4">
         <div class="content-card-header">
-            <h5 class="card-title">
+            <h5 class="card-title mb-0">
                 <i class="fa fa-filter me-2"></i>
                 Report Filters
             </h5>
         </div>
         <div class="content-card-body">
-            <form method="GET" action="{{ route('admin.call-logs.reports') }}">
-                <div class="row">
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label class="form-label">Date From</label>
-                            <input type="date" class="form-control form-control-enhanced" name="date_from" value="{{ $dateFrom }}">
-                        </div>
-                    </div>
+            <form method="GET" action="{{ route('admin.call-logs.reports') }}" class="row g-3 align-items-end">
+                <div class="col-12 col-md-2">
+                    <label for="date_from" class="form-label">Date From</label>
+                    <input type="date" id="date_from" name="date_from" class="form-control form-control-enhanced" value="{{ $dateFrom }}" max="{{ date('Y-m-d') }}">
+                </div>
 
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label class="form-label">Date To</label>
-                            <input type="date" class="form-control form-control-enhanced" name="date_to" value="{{ $dateTo }}">
-                        </div>
-                    </div>
+                <div class="col-12 col-md-2">
+                    <label for="date_to" class="form-label">Date To</label>
+                    <input type="date" id="date_to" name="date_to" class="form-control form-control-enhanced" value="{{ $dateTo }}" max="{{ date('Y-m-d') }}">
+                </div>
 
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label class="form-label">Engineer</label>
-                            <select class="form-control form-control-enhanced" name="engineer">
-                                <option value="">All Engineers</option>
-                                <option value="Benson" {{ $engineer == 'Benson' ? 'selected' : '' }}>Benson</option>
-                                <option value="Malvine" {{ $engineer == 'Malvine' ? 'selected' : '' }}>Malvine</option>
-                                <option value="Mukai" {{ $engineer == 'Mukai' ? 'selected' : '' }}>Mukai</option>
-                                <option value="Tapera" {{ $engineer == 'Tapera' ? 'selected' : '' }}>Tapera</option>
-                            </select>
-                        </div>
-                    </div>
+                <div class="col-12 col-md-2">
+                    <label for="engineer" class="form-label">Engineer</label>
+                    <select id="engineer" name="engineer" class="form-control form-control-enhanced" aria-label="Select engineer filter">
+                        <option value="">All Engineers</option>
+                        @foreach(['Benson', 'Malvine', 'Mukai', 'Tapera'] as $eng)
+                            <option value="{{ $eng }}" {{ $engineer == $eng ? 'selected' : '' }}>{{ $eng }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label class="form-label">Status</label>
-                            <select class="form-control form-control-enhanced" name="status">
-                                <option value="">All Status</option>
-                                <option value="pending" {{ $status == 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="assigned" {{ $status == 'assigned' ? 'selected' : '' }}>Assigned</option>
-                                <option value="in_progress" {{ $status == 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                                <option value="complete" {{ $status == 'complete' ? 'selected' : '' }}>Complete</option>
-                                <option value="cancelled" {{ $status == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                            </select>
-                        </div>
-                    </div>
+                <div class="col-12 col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select id="status" name="status" class="form-control form-control-enhanced" aria-label="Select status filter">
+                        <option value="">All Status</option>
+                        @foreach(['pending', 'assigned', 'in_progress', 'complete', 'cancelled'] as $stat)
+                            <option value="{{ $stat }}" {{ $status == $stat ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $stat)) }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label class="form-label">Job Type</label>
-                            <select class="form-control form-control-enhanced" name="type">
-                                <option value="">All Types</option>
-                                <option value="normal" {{ $type == 'normal' ? 'selected' : '' }}>Normal</option>
-                                <option value="maintenance" {{ $type == 'maintenance' ? 'selected' : '' }}>Maintenance</option>
-                                <option value="repair" {{ $type == 'repair' ? 'selected' : '' }}>Repair</option>
-                                <option value="installation" {{ $type == 'installation' ? 'selected' : '' }}>Installation</option>
-                                <option value="consultation" {{ $type == 'consultation' ? 'selected' : '' }}>Consultation</option>
-                                <option value="emergency" {{ $type == 'emergency' ? 'selected' : '' }}>Emergency</option>
-                            </select>
-                        </div>
-                    </div>
+                <div class="col-12 col-md-2">
+                    <label for="type" class="form-label">Job Type</label>
+                    <select id="type" name="type" class="form-control form-control-enhanced" aria-label="Select job type filter">
+                        <option value="">All Types</option>
+                        @foreach(['normal', 'emergency'] as $typeOption)
+                            <option value="{{ $typeOption }}" {{ $type == $typeOption ? 'selected' : '' }}>{{ ucfirst($typeOption) }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label class="form-label">&nbsp;</label>
-                            <div class="d-flex flex-column gap-2">
-                                <button type="submit" class="btn btn-primary btn-enhanced">
-                                    <i class="fa fa-search me-1"></i>Update Report
-                                </button>
-                                <a href="{{ route('admin.call-logs.reports') }}" class="btn btn-outline-secondary btn-enhanced">
-                                    <i class="fa fa-times me-1"></i>Reset
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-12 col-md-2 d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-enhanced" aria-label="Update report filters">
+                        <i class="fa fa-search me-1"></i>Update Report
+                    </button>
+                    <a href="{{ route('admin.call-logs.reports') }}" class="btn btn-outline-secondary btn-enhanced" aria-label="Reset filters">
+                        <i class="fa fa-times me-1"></i>Reset
+                    </a>
                 </div>
             </form>
         </div>
@@ -113,105 +90,37 @@
 
     <!-- Statistics Cards -->
     <div class="stats-grid mb-4">
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon primary">
-                    <i class="fa fa-clipboard"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number">{{ $stats['total_jobs'] ?? 0 }}</div>
-                    <div class="stat-label">Total Jobs</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-calendar me-1"></i>
-                        Selected period
+        @php
+            $statCards = [
+                ['icon'=>'clipboard', 'label'=>'Total Jobs', 'value'=>$stats['total_jobs'] ?? 0, 'footer'=>'Selected period', 'iconClass'=>'primary'],
+                ['icon'=>'check-circle', 'label'=>'Completed', 'value'=>$stats['completed_jobs'] ?? 0, 'footer'=>($stats['total_jobs'] ?? 0) > 0 ? round(($stats['completed_jobs'] ?? 0)/max($stats['total_jobs'],1)*100,1).'%' : '0% completion rate', 'iconClass'=>'success'],
+                ['icon'=>'dollar-sign', 'label'=>'Total Revenue', 'value'=>"USD $".number_format($stats['total_revenue'] ?? 0, 2), 'footer'=>'From completed jobs', 'iconClass'=>'info'],
+                ['icon'=>'clock', 'label'=>'Avg Completion Time', 'value'=>($stats['avg_completion_time'] ?? 0).'h', 'footer'=>'Per completed job', 'iconClass'=>'warning'],
+                ['icon'=>'tools', 'label'=>'Total Billed Hours', 'value'=>($stats['total_billed_hours'] ?? 0).'h', 'footer'=>'Engineering time', 'iconClass'=>'purple'],
+                ['icon'=>'exclamation-triangle', 'label'=>'Emergency Jobs', 'value'=>$stats['emergency_jobs'] ?? 0, 'footer'=>'High priority', 'iconClass'=>'danger'],
+            ];
+        @endphp
+        @foreach($statCards as $card)
+            <div class="stat-card">
+                <div class="stat-card-body">
+                    <div class="stat-icon {{ $card['iconClass'] }}">
+                        <i class="fa fa-{{ $card['icon'] }}"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ $card['value'] }}</div>
+                        <div class="stat-label">{{ $card['label'] }}</div>
+                        <div class="stat-footer">
+                            <i class="fa fa-calendar me-1"></i>
+                            {!! $card['footer'] !!}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon success">
-                    <i class="fa fa-check-circle"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number">{{ $stats['completed_jobs'] ?? 0 }}</div>
-                    <div class="stat-label">Completed</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-percentage me-1"></i>
-                        {{ ($stats['total_jobs'] ?? 0) > 0 ? round((($stats['completed_jobs'] ?? 0) / ($stats['total_jobs'] ?? 1)) * 100, 1) : 0 }}% completion rate
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon info">
-                    <i class="fa fa-dollar-sign"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number">USD ${{ number_format($stats['total_revenue'] ?? 0, 2) }}</div>
-                    <div class="stat-label">Total Revenue</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-chart-line me-1"></i>
-                        From completed jobs
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon warning">
-                    <i class="fa fa-clock"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number">{{ $stats['avg_completion_time'] ?? 0 }}h</div>
-                    <div class="stat-label">Avg Completion Time</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-stopwatch me-1"></i>
-                        Per completed job
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon purple">
-                    <i class="fa fa-tools"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number">{{ $stats['total_billed_hours'] ?? 0 }}h</div>
-                    <div class="stat-label">Total Billed Hours</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-clock me-1"></i>
-                        Engineering time
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-card-body">
-                <div class="stat-icon danger">
-                    <i class="fa fa-exclamation-triangle"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-number">{{ $stats['emergency_jobs'] ?? 0 }}</div>
-                    <div class="stat-label">Emergency Jobs</div>
-                    <div class="stat-footer">
-                        <i class="fa fa-fire me-1"></i>
-                        High priority
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    <div class="row">
-        <!-- Engineer Performance -->
+    <!-- Engineer Performance & Daily Statistics -->
+    <div class="row g-4">
         <div class="col-lg-6">
             <div class="content-card">
                 <div class="content-card-header">
@@ -219,11 +128,11 @@
                         <i class="fa fa-users me-2"></i>
                         Engineer Performance
                     </h5>
-                    <p class="card-subtitle">Performance metrics by engineer</p>
+                    <p class="card-subtitle mb-0">Performance metrics by engineer</p>
                 </div>
-                <div class="content-card-body">
+                <div class="content-card-body p-0">
                     <div class="table-responsive">
-                        <table class="enhanced-table">
+                        <table class="enhanced-table mb-0">
                             <thead>
                                 <tr>
                                     <th>Engineer</th>
@@ -238,13 +147,13 @@
                                 @foreach($engineerStats as $engineerName => $engineerData)
                                     <tr>
                                         <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm me-2">
-                                                    <div class="avatar-initial rounded-circle bg-light-primary">
-                                                        {{ substr($engineerName, 0, 1) }}
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="avatar-sm">
+                                                    <div class="avatar-initial rounded-circle bg-light-primary" title="{{ $engineerName }}">
+                                                        {{ strtoupper($engineerName[0]) }}
                                                     </div>
                                                 </div>
-                                                <strong>{{ $engineerName }}</strong>
+                                                {{ $engineerName }}
                                             </div>
                                         </td>
                                         <td>{{ $engineerData['total'] }}</td>
@@ -261,7 +170,6 @@
             </div>
         </div>
 
-        <!-- Daily Statistics -->
         <div class="col-lg-6">
             <div class="content-card">
                 <div class="content-card-header">
@@ -269,11 +177,11 @@
                         <i class="fa fa-chart-line me-2"></i>
                         Daily Statistics
                     </h5>
-                    <p class="card-subtitle">Daily job volume and completion</p>
+                    <p class="card-subtitle mb-0">Daily job volume and completion</p>
                 </div>
-                <div class="content-card-body">
+                <div class="content-card-body p-0">
                     <div class="table-responsive">
-                        <table class="enhanced-table">
+                        <table class="enhanced-table mb-0">
                             <thead>
                                 <tr>
                                     <th>Date</th>
@@ -287,7 +195,7 @@
                             <tbody>
                                 @foreach($dailyStats->sortKeysDesc() as $date => $dayStats)
                                     <tr>
-                                        <td>{{ Carbon\Carbon::parse($date)->format('M j, Y') }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($date)->format('M j, Y') }}</td>
                                         <td>{{ $dayStats['total'] }}</td>
                                         <td>{{ $dayStats['completed'] }}</td>
                                         <td>{{ $dayStats['in_progress'] }}</td>
@@ -304,7 +212,7 @@
     </div>
 
     <!-- Job Type & Company Distribution -->
-    <div class="row mt-4">
+    <div class="row g-4 mt-4">
         <div class="col-lg-6">
             <div class="content-card">
                 <div class="content-card-header">
@@ -313,9 +221,9 @@
                         Job Type Distribution
                     </h5>
                 </div>
-                <div class="content-card-body">
+                <div class="content-card-body p-0">
                     <div class="table-responsive">
-                        <table class="enhanced-table">
+                        <table class="enhanced-table mb-0">
                             <thead>
                                 <tr>
                                     <th>Type</th>
@@ -328,9 +236,7 @@
                             <tbody>
                                 @foreach($jobTypeStats as $type => $typeData)
                                     <tr>
-                                        <td>
-                                            @include('admin.calllogs.partials.type-badge', ['type' => $type])
-                                        </td>
+                                        <td>@include('admin.calllogs.partials.type-badge', ['type' => $type])</td>
                                         <td>{{ $typeData['count'] }}</td>
                                         <td>{{ $typeData['percentage'] }}%</td>
                                         <td>{{ number_format($typeData['avg_hours'], 1) }}h</td>
@@ -351,11 +257,11 @@
                         <i class="fa fa-building me-2"></i>
                         Top Companies
                     </h5>
-                    <p class="card-subtitle">Companies with most service requests</p>
+                    <p class="card-subtitle mb-0">Companies with most service requests</p>
                 </div>
-                <div class="content-card-body">
+                <div class="content-card-body p-0">
                     <div class="table-responsive">
-                        <table class="enhanced-table">
+                        <table class="enhanced-table mb-0">
                             <thead>
                                 <tr>
                                     <th>Company</th>
@@ -368,13 +274,11 @@
                             <tbody>
                                 @foreach($companyStats as $company => $companyData)
                                     <tr>
-                                        <td>
-                                            <strong>{{ $company }}</strong>
-                                        </td>
+                                        <td><strong>{{ $company }}</strong></td>
                                         <td>{{ $companyData['total'] }}</td>
                                         <td>{{ $companyData['completed'] }}</td>
                                         <td>USD ${{ number_format($companyData['revenue'], 2) }}</td>
-                                        <td>{{ $companyData['last_service'] ? Carbon\Carbon::parse($companyData['last_service'])->format('M j, Y') : 'N/A' }}</td>
+                                        <td>{{ $companyData['last_service'] ? \Carbon\Carbon::parse($companyData['last_service'])->format('M j, Y') : 'N/A' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -388,19 +292,21 @@
 
 <!-- Generate Report Modal -->
 @if(auth()->user()->role === 'admin')
-<div class="modal fade" id="generateReportModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="generateReportModal" tabindex="-1" aria-labelledby="generateReportModalLabel" aria-hidden="true" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Generate Report</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="generateReportForm">
+            <form id="generateReportForm" method="POST" action="{{ route('admin.call-logs.export') }}">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="generateReportModalLabel">Generate Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
+                    {{-- Report Type --}}
                     <div class="mb-3">
                         <label for="report_type" class="form-label">Report Type</label>
-                        <select class="form-control form-control-enhanced" id="report_type" name="report_type" required>
-                            <option value="">Select report type...</option>
+                        <select id="report_type" name="report_type" class="form-control form-control-enhanced" required>
+                            <option value="" disabled selected>Select report type...</option>
                             <option value="summary">Summary Report</option>
                             <option value="detailed">Detailed Report</option>
                             <option value="engineer">Engineer Performance</option>
@@ -410,74 +316,61 @@
                         </select>
                     </div>
 
-                    <div class="row">
+                    <div class="row g-3">
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="report_date_from" class="form-label">Date From</label>
-                                <input type="date" class="form-control form-control-enhanced" id="report_date_from" name="date_from" value="{{ $dateFrom }}" required>
-                            </div>
+                            <label for="report_date_from" class="form-label">Date From</label>
+                            <input type="date" id="report_date_from" name="date_from" class="form-control form-control-enhanced" value="{{ $dateFrom }}" required max="{{ date('Y-m-d') }}">
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="report_date_to" class="form-label">Date To</label>
-                                <input type="date" class="form-control form-control-enhanced" id="report_date_to" name="date_to" value="{{ $dateTo }}" required>
-                            </div>
+                            <label for="report_date_to" class="form-label">Date To</label>
+                            <input type="date" id="report_date_to" name="date_to" class="form-control form-control-enhanced" value="{{ $dateTo }}" required max="{{ date('Y-m-d') }}">
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="report_engineer" class="form-label">Engineer (Optional)</label>
-                        <select class="form-control form-control-enhanced" id="report_engineer" name="engineer">
-                            <option value="">All Engineers</option>
-                            <option value="Benson">Benson</option>
-                            <option value="Malvine">Malvine</option>
-                            <option value="Mukai">Mukai</option>
-                            <option value="Tapera">Tapera</option>
-                        </select>
-                    </div>
-
-                    <div class="row">
+                    <div class="row g-3 mt-3">
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="report_status" class="form-label">Status (Optional)</label>
-                                <select class="form-control form-control-enhanced" id="report_status" name="status">
-                                    <option value="">All Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="assigned">Assigned</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="complete">Complete</option>
-                                    <option value="cancelled">Cancelled</option>
-                                </select>
-                            </div>
+                            <label for="report_engineer" class="form-label">Engineer (Optional)</label>
+                            <select id="report_engineer" name="engineer" class="form-control form-control-enhanced" aria-label="Select engineer filter">
+                                <option value="">All Engineers</option>
+                                @foreach(['Benson', 'Malvine', 'Mukai', 'Tapera'] as $eng)
+                                    <option value="{{ $eng }}">{{ $eng }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="report_type_filter" class="form-label">Job Type (Optional)</label>
-                                <select class="form-control form-control-enhanced" id="report_type_filter" name="type">
-                                    <option value="">All Types</option>
-                                    <option value="normal">Normal</option>
-                                    <option value="maintenance">Maintenance</option>
-                                    <option value="repair">Repair</option>
-                                    <option value="installation">Installation</option>
-                                    <option value="consultation">Consultation</option>
-                                    <option value="emergency">Emergency</option>
-                                </select>
-                            </div>
+                            <label for="report_status" class="form-label">Status (Optional)</label>
+                            <select id="report_status" name="status" class="form-control form-control-enhanced" aria-label="Select status filter">
+                                <option value="">All Status</option>
+                                @foreach(['pending', 'assigned', 'in_progress', 'complete', 'cancelled'] as $stat)
+                                    <option value="{{ $stat }}">{{ ucfirst(str_replace('_', ' ', $stat)) }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="report_format" class="form-label">Format</label>
-                        <select class="form-control form-control-enhanced" id="report_format" name="format" required>
-                            <option value="">Select format...</option>
-                            <option value="pdf">PDF</option>
-                            <option value="excel">Excel</option>
-                            <option value="csv">CSV</option>
-                        </select>
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-6">
+                            <label for="report_type_filter" class="form-label">Job Type (Optional)</label>
+                            <select id="report_type_filter" name="type" class="form-control form-control-enhanced" aria-label="Select job type filter">
+                                <option value="">All Types</option>
+                                @foreach(['normal', 'maintenance', 'repair', 'installation', 'consultation', 'emergency'] as $typeOption)
+                                    <option value="{{ $typeOption }}">{{ ucfirst($typeOption) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="report_format" class="form-label">Format</label>
+                            <select id="report_format" name="format" class="form-control form-control-enhanced" required>
+                                <option value="" disabled selected>Select format...</option>
+                                <option value="pdf">PDF</option>
+                                <option value="excel">Excel</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
+                </div> <!-- modal-body -->
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-enhanced" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-secondary btn-enhanced" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary btn-enhanced">Generate Report</button>
                 </div>
             </form>
@@ -485,101 +378,116 @@
     </div>
 </div>
 @endif
+</div>
 
+@push('styles')
 <style>
-    .dashboard-nav-wrapper { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); padding: 0.5rem; margin-bottom: 2rem;}
-    .panel-nav { border: none; gap: 0.5rem; }
-    .panel-nav .nav-link { border: none; padding: 0.75rem 1.5rem; border-radius: 8px; color: var(--light-text); font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; }
-    .panel-nav .nav-link:hover { background: var(--hover-bg); color: var(--medium-text);}
-    .panel-nav .nav-link.active { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); color: var(--white); box-shadow: var(--shadow-hover);}
-    .page-header-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--border-color); overflow: hidden;}
-    .page-header-content { padding: 2rem; background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%); display: flex; justify-content: space-between; align-items: center;}
-    .page-title { font-size: 1.5rem; font-weight: 600; color: var(--primary-green-dark); margin: 0;}
-    .page-subtitle { color: var(--light-text); margin: 0.5rem 0 0 0; font-size: 0.95rem;}
-    .content-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 2rem;}
-    .content-card-header { padding: 1.5rem 2rem; background: linear-gradient(135deg, var(--ultra-light-green) 0%, var(--light-green) 100%); border-bottom: 1px solid var(--border-color);}
-    .content-card-header .card-title { font-size: 1.25rem; font-weight: 600; color: var(--primary-green); margin: 0;}
-    .card-subtitle { color: var(--light-text); font-size: 0.9rem; margin: 0.25rem 0 0 0;}
-    .content-card-body { padding: 2rem;}
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;}
-    .stat-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border-color); transition: all 0.3s ease;}
-    .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover);}
-    .stat-card-body { padding: 1.5rem; display: flex; align-items: center; gap: 1rem;}
-    .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
-    .stat-icon.primary { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); }
-    .stat-icon.success { background: linear-gradient(135deg, var(--success-green) 0%, var(--primary-green) 100%); }
-    .stat-icon.info { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-    .stat-icon.warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-    .stat-icon.purple { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
-    .stat-icon.danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
-    .stat-icon i { font-size: 1.5rem; color: var(--white);}
-    .stat-content { flex: 1;}
-    .stat-number { font-size: 2rem; font-weight: 700; color: var(--dark-text); margin: 0; line-height: 1;}
-    .stat-label { color: var(--light-text); font-size: 0.9rem; margin: 0.25rem 0; font-weight: 500;}
-    .stat-footer { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.25rem; color: var(--primary-green);}
-    .form-group { margin-bottom: 1.5rem;}
-    .form-label { font-weight: 600; color: var(--dark-text); margin-bottom: 0.5rem; display: block;}
-    .form-control-enhanced { border: 2px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.95rem; transition: all 0.3s ease; background: var(--white);}
-    .form-control-enhanced:focus { border-color: var(--primary-green); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1); outline: none;}
-    .btn-enhanced { padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; border: none; display: flex; align-items: center; text-decoration: none;}
-    .btn-primary.btn-enhanced { background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-dark) 100%); color: var(--white);}
-    .btn-primary.btn-enhanced:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover);}
-    .btn-outline-secondary.btn-enhanced { border: 2px solid var(--border-color); color: var(--medium-text); background: transparent;}
-    .btn-outline-secondary.btn-enhanced:hover { background: var(--medium-text); color: var(--white);}
-    .enhanced-table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 0;}
-    .enhanced-table thead th { background: var(--ultra-light-green); color: var(--primary-green); font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem 1.5rem; border-bottom: 2px solid var(--light-green);}
-    .enhanced-table tbody tr { transition: all 0.2s ease; border-bottom: 1px solid var(--border-color);}
-    .enhanced-table tbody tr:hover { background: var(--ultra-light-green);}
-    .enhanced-table tbody td { padding: 1rem 1.5rem; vertical-align: middle;}
-    .avatar-sm { width: 32px; height: 32px;}
-    .avatar-initial { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--primary-green);}
-    .bg-light-primary { background-color: var(--ultra-light-green);}
-    @media (max-width: 768px) {
-        .page-header-content { flex-direction: column; align-items: flex-start; gap: 1rem;}
-        .stats-grid { grid-template-columns: 1fr;}
-        .content-card-header, .content-card-body { padding: 1rem;}
+    /* Keep your existing styles or add more specific styling adjustments here */
+    .form-control-enhanced {
+        border-radius: 8px;
+        border: 2px solid var(--border-color, #ccc);
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
+    .form-control-enhanced:focus {
+        border-color: var(--primary-green, #22c55e);
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        outline: none;
+    }
+    .btn-enhanced {
+        border-radius: 8px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 600;
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .btn-enhanced:hover, .btn-enhanced:focus {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(34, 197, 94, 0.3);
+        outline: none;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    .stat-card {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color, #ddd);
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover, 0 10px 25px rgba(34, 197, 94, 0.2));
+    }
+    .stat-icon {
+        font-size: 2rem;
+        padding: 1rem;
+        border-radius: 12px;
+        color: var(--white);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    /* Define your color variables or use existing CSS variables */
+    .stat-icon.primary { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+    .stat-icon.success { background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%); }
+    .stat-icon.info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .stat-icon.warning { background: linear-gradient(135deg, #fbbf24 0%, #ca8a04 100%); }
+    .stat-icon.purple { background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); }
+    .stat-icon.danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
 </style>
+@endpush
 
 @push('scripts')
+@if(auth()->user()->role === 'admin')
 <script>
-    @if(auth()->user()->role === 'admin')
-    document.getElementById('generateReportForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
+document.addEventListener('DOMContentLoaded', function() {
+    const generateReportForm = document.getElementById('generateReportForm');
+    if (!generateReportForm) return;
+
+    generateReportForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+
         const formData = new FormData(this);
-        
+
         fetch('{{ route("admin.call-logs.export") }}', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 'Accept': 'application/json'
             },
-            body: formData
+            body: formData,
         })
         .then(response => {
-            if (response.ok) {
-                return response.blob();
-            }
-            throw new Error('Network response was not ok');
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.blob();
         })
         .then(blob => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
-            a.download = 'job_cards_report.' + document.getElementById('report_format').value;
+
+            const fileExt = document.getElementById('report_format').value || 'pdf';
+            a.download = `job_cards_report.${fileExt}`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
+
             bootstrap.Modal.getInstance(document.getElementById('generateReportModal')).hide();
         })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error generating report');
+        .catch(err => {
+            console.error('Error generating report:', err);
+            alert('An error occurred while generating the report. Please try again.');
         });
     });
-    @endif
+});
 </script>
+@endif
 @endpush
+
 @endsection

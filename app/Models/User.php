@@ -6,12 +6,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Auth\Passwords\CanResetPassword;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use Notifiable;
+    use CanResetPassword;
 
     /**
      * The attributes that are mass assignable.
@@ -22,12 +24,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', 
+        'role',
+        'is_active',
+        'activation_token',
     ];
-    public function role()
-        {
-            return $this->role;
-        }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -51,49 +51,54 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
     public function hasRole($role)
     {
         return $this->role === $role;
     }
 
     public function routeNotificationForMail()
-{
-    return $this->email; // Or use a different field if you have notification_email
-}
+    {
+        return $this->email;
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
     public function ticket()
     {
         return $this->belongsTo(Ticket::class);
     }
 
     public function assignedJobs()
-{
-    return $this->hasMany(CallLog::class, 'assigned_to');
-}
+    {
+        return $this->hasMany(CallLog::class, 'assigned_to');
+    }
 
-public function approvedJobs()
-{
-    return $this->hasMany(CallLog::class, 'approved_by');
-}
+    public function approvedJobs()
+    {
+        return $this->hasMany(CallLog::class, 'approved_by');
+    }
 
-public function isTechnician()
-{
-    return $this->role === 'technician';
-}
+    public function isTechnician()
+    {
+        return $this->role === 'technician';
+    }
 
-public function isAdmin()
-{
-    return $this->role === 'admin';
-}
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
 
-public function isAccounts()
-{
-    return $this->role === 'accounts';
-}
+    public function isAccounts()
+    {
+        return $this->role === 'accounts';
+    }
 
-    
+    public function isEngineer()
+    {
+        return in_array($this->role, ['technician', 'manager']);
+    }
 }
-

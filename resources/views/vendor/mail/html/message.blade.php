@@ -21,7 +21,16 @@
 {{-- Footer --}}
 <x-slot:footer>
 <x-mail::footer>
-© {{ date('Y') }} {{ config('app.name') }}. {{ __('All rights reserved.') }}
+  <p class="ct-footer-text">
+                This is a system-generated email, please do not reply directly to this message.
+            </p>    
+            <p class="ct-footer-text">
+                If you have any questions, feel free to call 
+                <a href="tel:+2638677187169" class="ct-link">
+                    +263 867 718 7169
+                </a>.
+            </p>  
+    © {{ date('Y') }} {{ config('app.name') }}. {{ __('All rights reserved.') }}
 </x-mail::footer>
 </x-slot:footer>
 </x-mail::layout>
