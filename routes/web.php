@@ -277,3 +277,17 @@ Route::prefix('admin/contacts')->name('admin.contacts.')->middleware(['auth'])->
     Route::put('/{contact}', [App\Http\Controllers\Admin\CustomerContactController::class, 'update'])->name('update');
     Route::delete('/{contact}', [App\Http\Controllers\Admin\CustomerContactController::class, 'destroy'])->name('destroy');
 });
+
+// Add this to routes/web.php for testing
+Route::get('/test-email', function () {
+    try {
+        Mail::raw('Test email from FiscalSupportWeb', function ($message) {
+            $message->to('supporthre2@fiscalsupportservices.com')
+                   ->subject('Email Configuration Test');
+        });
+        
+        return 'Test email sent successfully!';
+    } catch (\Exception $e) {
+        return 'Email failed: ' . $e->getMessage();
+    }
+});
