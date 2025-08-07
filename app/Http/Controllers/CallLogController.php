@@ -712,7 +712,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
             })->count(),
         ];
 
-        return view('admin.calllogs.unassigned', [
+        return view('admin.CallLogs.unassigned', [
             'callLogs' => $callLogs,
             'technicians' => $technicians,
             'stats' => $stats,
@@ -723,17 +723,17 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
 
     public function assigned(Request $request): View
     {
-        return $this->buildFilteredView($request, ['status' => 'assigned'], 'admin.calllogs.assigned', 'Assigned Jobs');
+        return $this->buildFilteredView($request, ['status' => 'assigned'], 'admin.CallLogs.assigned', 'Assigned Jobs');
     }
 
     public function pending(Request $request): View
     {
-        return $this->buildFilteredView($request, ['status' => 'pending'], 'admin.calllogs.pending', 'Pending Jobs');
+        return $this->buildFilteredView($request, ['status' => 'pending'], 'admin.CallLogs.pending', 'Pending Jobs');
     }
 
     public function inProgress(Request $request): View
     {
-        return $this->buildFilteredView($request, ['status' => 'in_progress'], 'admin.calllogs.in-progress', 'In Progress Jobs');
+        return $this->buildFilteredView($request, ['status' => 'in_progress'], 'admin.CallLogs.in-progress', 'In Progress Jobs');
     }
 
     public function completed(Request $request): View
@@ -845,7 +845,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
 
     public function cancelled(Request $request): View
     {
-        return $this->buildFilteredView($request, ['status' => 'cancelled'], 'admin.calllogs.cancelled', 'Cancelled Jobs');
+        return $this->buildFilteredView($request, ['status' => 'cancelled'], 'admin.CallLogs.cancelled', 'Cancelled Jobs');
     }
 
     public function myJobs(Request $request): View
@@ -857,7 +857,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
             'completed' => CallLog::where('assigned_to', $userId)->where('status', 'complete')->count(),
         ];
 
-        $view = $this->buildFilteredView($request, ['assigned_to' => $userId], 'admin.calllogs.my-jobs', 'My Jobs');
+        $view = $this->buildFilteredView($request, ['assigned_to' => $userId], 'admin.CallLogs.my-jobs', 'My Jobs');
 
         return $view->with('stats', $stats);
     }
@@ -917,7 +917,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
 
         $technicians = $this->getTechnicians();
 
-        return view('admin.calllogs.alljobs', [
+        return view('admin.CallLogs.alljobs', [
             'callLogs' => $callLogs,
             'stats' => $stats,
             'technicians' => $technicians,
