@@ -74,6 +74,12 @@ Route::prefix('newsletter')->name('newsletter.')->group(function () {
     Route::get('/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])->name('unsubscribe');
 });
 
+Route::prefix('admin/users')->name('admin.users.')->controller(AdminUserController::class)->group(function () {
+    Route::get('/activate/{token}', 'showActivationPage')->name('activate');
+    Route::post('/activate', 'processActivation')->name('processActivation');
+    Route::post('/{user}/toggle-activation', 'toggleActivation')->name('toggle-activation');
+});
+
 // Public FAQ listing
 Route::get('/faqs', [FaqController::class, 'index'])->name('faqs');
 
@@ -125,8 +131,6 @@ Route::middleware('auth')->group(function () {
     });
 
 });
-Route::post('/{user}/toggle-activation', 'toggleActivation')->controller(AdminUserController::class)->name('toggle-activation');
-
 // =============================================================================
 // ADMIN ROUTES (Authenticated + Role-Based Access)
 // =============================================================================
@@ -139,9 +143,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::prefix('users')->name('users.')->controller(AdminUserController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/{user}/assign-role', 'assignRole')->name('assign-role');
-        
-        Route::get('/activate/{token}', 'showActivationPage')->name('activate');
-        Route::post('/activate', 'processActivation')->name('processActivation');
     });
 
     // FAQ Management
