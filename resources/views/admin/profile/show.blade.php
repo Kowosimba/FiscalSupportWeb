@@ -4,6 +4,37 @@
 
 @section('content')
 <div class="dashboard-container">
+    {{-- Success/Error Messages --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    {{-- Validation Errors --}}
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Please fix the following errors:</strong>
+            <ul class="mb-0 mt-2">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     {{-- Compact Header --}}
     <div class="dashboard-header mb-2">
         <div class="header-content">
@@ -28,7 +59,6 @@
                 <i class="fas fa-arrow-left me-1"></i>
                 Back to Dashboard
             </button>
-          
         </div>
     </div>
 
@@ -65,6 +95,8 @@
             </span>
         </div>
     </div>
+
+   
 
     <div class="row g-3">
         {{-- Main Content --}}
@@ -129,16 +161,16 @@
                                             <div class="input-group">
                                                 <input type="password" 
                                                        class="form-control @error('current_password') is-invalid @enderror" 
-                                                       id="current_password" 
+                                                       id="current_password_profile" 
                                                        name="current_password" 
                                                        placeholder="Enter current password to confirm changes"
                                                        required>
-                                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password')">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password_profile')">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                             </div>
                                             @error('current_password')
-                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
                                             @enderror
                                         </div>
                                         
@@ -188,13 +220,14 @@
                                                        class="form-control @error('current_password') is-invalid @enderror" 
                                                        id="current_password_change" 
                                                        name="current_password" 
+                                                       placeholder="Enter current password"
                                                        required>
                                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password_change')">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                             </div>
                                             @error('current_password')
-                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
@@ -211,6 +244,7 @@
                                                        class="form-control @error('password') is-invalid @enderror" 
                                                        id="password" 
                                                        name="password" 
+                                                       placeholder="Enter new password"
                                                        minlength="8"
                                                        required>
                                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
@@ -218,8 +252,11 @@
                                                 </button>
                                             </div>
                                             <div class="password-strength mt-1" id="passwordStrength"></div>
+                                            <small class="form-text text-muted">
+                                                Must be at least 8 characters with uppercase, lowercase, and numbers
+                                            </small>
                                             @error('password')
-                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
@@ -233,9 +270,10 @@
                                             <div class="info-label">Confirm Password</div>
                                             <div class="input-group">
                                                 <input type="password" 
-                                                       class="form-control" 
+                                                       class="form-control @error('password_confirmation') is-invalid @enderror" 
                                                        id="password_confirmation" 
                                                        name="password_confirmation" 
+                                                       placeholder="Confirm new password"
                                                        minlength="8"
                                                        required>
                                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password_confirmation')">
@@ -243,6 +281,9 @@
                                                 </button>
                                             </div>
                                             <div class="password-match mt-1" id="passwordMatch"></div>
+                                            @error('password_confirmation')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -337,13 +378,28 @@
                                 <img src="{{ $user->avatar_url }}" 
                                      alt="{{ $user->name }}" 
                                      class="profile-avatar" 
-                                     width="80" height="80">
+                                     width="80" height="80"
+                                     onerror="this.src='https://www.gravatar.com/avatar/{{ md5(strtolower(trim($user->email))) }}?d=mp&s=80'">
                                 <button type="button" 
                                         class="btn btn-primary btn-sm position-absolute bottom-0 end-0 rounded-circle avatar-update-btn" 
                                         data-bs-toggle="modal" 
-                                        data-bs-target="#avatarModal">
+                                        data-bs-target="#avatarModal"
+                                        title="Update Avatar">
                                     <i class="fas fa-camera"></i>
                                 </button>
+                            </div>
+                            <div class="mt-2">
+                                @if($user->avatar)
+                                    <form action="{{ route('profile.avatar.delete') }}" method="POST" class="d-inline" 
+                                          onsubmit="return confirm('Are you sure you want to remove your avatar?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash me-1"></i>
+                                            Remove Avatar
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
 
@@ -369,12 +425,14 @@
                             </div>
                             <div class="stat-item">
                                 <div class="stat-value">
-                                    @if($user->isAdmin())
+                                    @if(method_exists($user, 'isAdmin') && $user->isAdmin())
                                         <i class="fas fa-crown text-warning"></i>
-                                    @elseif($user->isAccounts())
+                                    @elseif(method_exists($user, 'isAccounts') && $user->isAccounts())
                                         <i class="fas fa-calculator text-info"></i>
-                                    @elseif($user->isTechnician())
+                                    @elseif(method_exists($user, 'isTechnician') && $user->isTechnician())
                                         <i class="fas fa-tools text-primary"></i>
+                                    @elseif(method_exists($user, 'isManager') && $user->isManager())
+                                        <i class="fas fa-user-tie text-success"></i>
                                     @else
                                         <i class="fas fa-user text-secondary"></i>
                                     @endif
@@ -389,8 +447,6 @@
                     </div>
                 </div>
             </div>
-
-          
 
             {{-- Account Timeline Card --}}
             <div class="content-card">
@@ -467,15 +523,15 @@
 </div>
 
 <!-- Avatar Upload Modal -->
-<div class="modal fade" id="avatarModal" tabindex="-1">
+<div class="modal fade" id="avatarModal" tabindex="-1" aria-labelledby="avatarModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
+                <h5 class="modal-title" id="avatarModalLabel">
                     <i class="fas fa-camera me-2"></i>
                     Update Avatar
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ route('profile.avatar') }}" method="POST" enctype="multipart/form-data" id="avatarForm">
                 @csrf
@@ -486,7 +542,8 @@
                              class="rounded-circle border border-3 border-white shadow" 
                              width="100" height="100"
                              style="object-fit: cover;"
-                             id="avatarPreview">
+                             id="avatarPreview"
+                             onerror="this.src='https://www.gravatar.com/avatar/{{ md5(strtolower(trim($user->email))) }}?d=mp&s=100'">
                     </div>
                     
                     <div class="mb-3">
@@ -495,17 +552,22 @@
                                class="form-control @error('avatar') is-invalid @enderror" 
                                id="avatar" 
                                name="avatar" 
-                               accept="image/*"
+                               accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
                                required>
-                        <div class="form-text">Maximum file size: 2MB. Supported formats: JPEG, PNG, JPG, GIF</div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Maximum file size: 2MB. Supported formats: JPEG, PNG, JPG, GIF, WebP
+                        </div>
                         @error('avatar')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="uploadAvatarBtn">
                         <i class="fas fa-upload me-1"></i> Upload Avatar
                     </button>
                 </div>
@@ -758,7 +820,8 @@
 
 .profile-avatar-section {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
 }
 
 .profile-avatar {
@@ -926,12 +989,6 @@
 }
 
 /* Action Buttons */
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
 .action-btn {
     display: inline-flex;
     align-items: center;
@@ -1130,6 +1187,23 @@
     color: var(--gray-800);
 }
 
+/* Alert improvements */
+.alert {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.alert .fas {
+    opacity: 0.8;
+}
+
+/* Loading states */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .dashboard-header {
@@ -1188,7 +1262,7 @@
 }
 
 @media (max-width: 480px) {
-    .action-buttons .action-btn {
+    .action-btn {
         font-size: 0.8rem;
         padding: 0.4rem 0.8rem;
     }
@@ -1248,9 +1322,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Validate file type
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
                 if (!allowedTypes.includes(file.type)) {
-                    showToast('Please select a valid image file (JPEG, PNG, JPG, GIF)', 'error');
+                    showToast('Please select a valid image file (JPEG, PNG, JPG, GIF, WebP)', 'error');
                     this.value = '';
                     return;
                 }
@@ -1273,6 +1347,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.id === 'passwordForm') {
                     const password = this.querySelector('#password').value;
                     const confirmPassword = this.querySelector('#password_confirmation').value;
+                    const currentPassword = this.querySelector('#current_password_change').value;
+                    
+                    if (!currentPassword) {
+                        e.preventDefault();
+                        showToast('Please enter your current password', 'error');
+                        return;
+                    }
                     
                     if (password !== confirmPassword) {
                         e.preventDefault();
@@ -1285,20 +1366,61 @@ document.addEventListener('DOMContentLoaded', function() {
                         showToast('Password must be at least 8 characters long', 'error');
                         return;
                     }
+                    
+                    // Check password strength
+                    const strength = calculatePasswordStrength(password);
+                    if (strength < 3) {
+                        e.preventDefault();
+                        showToast('Password must contain uppercase, lowercase, and numbers', 'error');
+                        return;
+                    }
+                }
+                
+                // Validate profile form
+                if (this.id === 'profileForm') {
+                    const currentPassword = this.querySelector('#current_password_profile').value;
+                    if (!currentPassword) {
+                        e.preventDefault();
+                        showToast('Please enter your current password to confirm changes', 'error');
+                        return;
+                    }
+                }
+                
+                // Validate avatar form
+                if (this.id === 'avatarForm') {
+                    const fileInput = this.querySelector('#avatar');
+                    if (!fileInput.files.length) {
+                        e.preventDefault();
+                        showToast('Please select an image file', 'error');
+                        return;
+                    }
                 }
                 
                 submitBtn.disabled = true;
                 const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+                const loadingText = this.id === 'avatarForm' ? 
+                    '<i class="fas fa-spinner fa-spin me-1"></i> Uploading...' : 
+                    '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+                submitBtn.innerHTML = loadingText;
                 
-                // Re-enable after 10 seconds as fallback
+                // Re-enable after 15 seconds as fallback
                 setTimeout(() => {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
-                }, 10000);
+                }, 15000);
             }
         });
     });
+    
+    // Auto-dismiss alerts after 5 seconds
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert.alert-dismissible');
+        alerts.forEach(alert => {
+            if (alert && alert.querySelector('.btn-close')) {
+                alert.querySelector('.btn-close').click();
+            }
+        });
+    }, 5000);
     
     function calculatePasswordStrength(password) {
         let strength = 0;
@@ -1353,7 +1475,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function togglePassword(fieldId) {
     const field = document.getElementById(fieldId);
+    if (!field) return;
+    
     const button = field.nextElementSibling.querySelector('i');
+    if (!button) return;
     
     if (field.type === 'password') {
         field.type = 'text';
@@ -1407,16 +1532,6 @@ function showToast(message, type = 'info') {
                 notification.remove();
             }
         }, 5000);
-    }
-}
-
-// Smooth scroll for internal navigation
-function smoothScrollTo(element) {
-    if (element) {
-        element.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-        });
     }
 }
 </script>

@@ -24,6 +24,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar',
         'role',
         'is_active',
         'activation_token',
@@ -34,6 +35,17 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
+
+    public function getAvatarUrlAttribute()
+{
+    if ($this->avatar) {
+        return asset('storage/' . $this->avatar);
+    }
+    
+    // Default avatar - you can use a service like Gravatar or a default image
+    return asset('assets/img/default-avatar.png'); // or use Gravatar
+    // return 'https://www.gravatar.com/avatar/' . md5(strtolower(trim($this->email))) . '?d=mp&s=80';
+}
     protected $hidden = [
         'password',
         'remember_token',

@@ -21,7 +21,7 @@ class BlogController extends Controller
         try {
             $validated = $this->processImage($request, $validated);
             $validated = $this->processSlug($request, $validated);
-            $validated = $this->processStatusAndPublishedAt($validated);
+            $validated = $this->processStatusAndPublishedAt($request, $validated);
             $validated['author'] = $validated['author'] ?? Auth::user()?->name ?? 'Admin';
 
             Blog::create($validated);
@@ -47,7 +47,7 @@ class BlogController extends Controller
         try {
             $validated = $this->processImage($request, $validated, $blog);
             $validated = $this->processSlug($request, $validated, $blog);
-            $validated = $this->processStatusAndPublishedAt($validated);
+            $validated = $this->processStatusAndPublishedAt($request, $validated);
             $validated['author'] = $validated['author'] ?? $blog->author;
 
             if ($request->has('remove_image') && $request->remove_image && $blog->image) {
@@ -221,9 +221,11 @@ class BlogController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Remove status and remove_image from validated data as they are not database fields
-        unset($validated['status']);
-        if (isset($validated['remove_image'])) unset($validated['remove_image']);
+        // Don't remove status here - we need it for processing
+        // Only remove remove_image as it's not a database field
+        if (isset($validated['remove_image'])) {
+            unset($validated['remove_image']);
+        }
 
         return $validated;
     }
@@ -259,13 +261,20 @@ class BlogController extends Controller
         return $validated;
     }
 
-    protected function processStatusAndPublishedAt(array $validated)
+    protected function processStatusAndPublishedAt($request, array $validated)
     {
-        if ($validated['status'] === 'published' && empty($validated['published_at'])) {
+        // Get the status from request or validated data
+        $status = $request->input('status', $validated['status'] ?? 'draft');
+        
+        if ($status === 'published' && empty($validated['published_at'])) {
             $validated['published_at'] = now();
-        } elseif ($validated['status'] === 'draft') {
+        } elseif ($status === 'draft') {
             $validated['published_at'] = null;
         }
+        
+        // Remove status from validated data as it's not a database field
+        unset($validated['status']);
+        
         return $validated;
     }
 }
