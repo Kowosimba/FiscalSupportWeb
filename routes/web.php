@@ -119,17 +119,6 @@ Route::middleware('auth')->group(function () {
         Route::put('/preferences', 'updatePreferences')->name('preferences');
     });
 
-    // Notifications - Consolidated and cleaned up
-    Route::prefix('notifications')->name('notifications.')->controller(NotificationController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/recent', 'getRecent')->name('recent');
-        Route::get('/count', 'getUnreadCount')->name('count');
-        Route::post('/mark-all-read', 'markAllAsRead')->name('mark-all-read');
-        Route::get('/{notification}/redirect', 'redirect')->name('redirect');
-        Route::post('/{notification}/read', 'markAsRead')->name('read');
-        Route::delete('/{notification}', 'destroy')->name('destroy');
-    });
-
 });
 // =============================================================================
 // ADMIN ROUTES (Authenticated + Role-Based Access)
@@ -226,6 +215,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::post('/', 'store')->name('store');
         Route::get('/dashboard', 'dashboard')->name('dashboard');
         Route::get('/export', 'export')->name('export');
+        Route::get('/completed/export', [CallLogController::class, 'exportCompleted'])->name('completed.export');
         Route::post('/export', [CallReportController::class, 'export'])->name('export-post');
         
         // Status-based listing routes (all static)
@@ -278,5 +268,18 @@ Route::prefix('admin/contacts')->name('admin.contacts.')->middleware(['auth'])->
     Route::get('/{contact}/edit', [App\Http\Controllers\Admin\CustomerContactController::class, 'edit'])->name('edit');
     Route::put('/{contact}', [App\Http\Controllers\Admin\CustomerContactController::class, 'update'])->name('update');
     Route::delete('/{contact}', [App\Http\Controllers\Admin\CustomerContactController::class, 'destroy'])->name('destroy');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/recent', [NotificationController::class, 'getRecent'])->name('notifications.recent');
+    Route::get('/notifications/count', [NotificationController::class, 'getUnreadCount'])->name('notifications.count');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::patch('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::get('/notifications/{notificationId}/redirect', [NotificationController::class, 'redirect'])->name('notifications.redirect');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::get('/notifications/tickets', [NotificationController::class, 'getTicketNotifications'])
+    ->name('notifications.tickets');
+
 });
 

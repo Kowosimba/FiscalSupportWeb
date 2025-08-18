@@ -99,7 +99,7 @@
                         <option value="">All Status</option>
                         <option value="pending" @selected(request('status') == 'pending')>Pending</option>
                         <option value="in_progress" @selected(request('status') == 'in_progress')>In Progress</option>
-                        <option value="completed" @selected(request('status') == 'completed')>Completed</option>
+                        <option value="complete" @selected(request('status') == 'complete')>Completed</option>
                     </select>
                 </div>
                 

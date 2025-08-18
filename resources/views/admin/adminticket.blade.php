@@ -266,10 +266,377 @@
 </div>
 @endsection
 
+
 @push('styles')
 <style>
-/* -- Your original CSS here -- */
-/* Keep your styles as they are, no changes needed */
+/* Exact original CSS you provided */
+:root {
+    --primary: #059669;
+    --success: #059669;
+    --danger: #DC2626;
+    --secondary: #6B7280;
+    --info: #0EA5E9;
+    --white: #FFFFFF;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --border-radius: 6px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --transition: all 0.2s ease;
+}
+
+/* Compact Dashboard Header */
+.dashboard-header {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: 0.5rem 0.75rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboard-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.125rem;
+}
+
+.header-meta .badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+/* Minimized Progress Indicator */
+.progress-indicator {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: 0.5rem 0.75rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
+}
+
+.completion-badge {
+    background: var(--gray-100);
+    color: var(--gray-600);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: 1px solid var(--gray-300);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--gray-200);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success), var(--primary));
+    transition: width 0.3s ease;
+}
+
+/* Compact Content Card */
+.content-card {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+}
+
+.content-card-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+/* Compact Form Sections */
+.form-section {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.form-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.section-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.indicator-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gray-200);
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    border: 2px solid var(--gray-300);
+    transition: var(--transition);
+}
+
+.form-section.completed .indicator-number {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+.indicator-line {
+    width: 2px;
+    height: 30px;
+    background: var(--gray-200);
+    margin-top: 0.25rem;
+    transition: var(--transition);
+}
+
+.form-section:last-child .indicator-line {
+    display: none;
+}
+
+.form-section.completed .indicator-line {
+    background: var(--success);
+}
+
+.section-title {
+    color: var(--gray-700);
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+/* Compact Form Groups */
+.form-group.compact {
+    margin-bottom: 0.75rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 0.25rem;
+    display: block;
+    font-size: 0.8rem;
+}
+
+.form-label.required::after {
+    content: ' *';
+    color: var(--danger);
+}
+
+/* Compact Form Controls */
+.form-control,
+.form-select {
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    font-size: 0.8rem;
+    transition: var(--transition);
+    background: var(--white);
+    height: 34px;
+    padding: 0.375rem 0.5rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.1);
+    outline: none;
+}
+
+textarea.form-control {
+    height: auto;
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Compact Input Group */
+.input-group-text {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-300);
+    color: var(--gray-600);
+    font-weight: 500;
+    font-size: 0.8rem;
+    padding: 0.375rem 0.5rem;
+}
+
+.currency-symbol {
+    min-width: 40px;
+    justify-content: center;
+}
+
+/* Inline Character Count */
+.char-count-inline {
+    text-align: right;
+    margin-top: 0.25rem;
+}
+
+.char-count {
+    font-size: 0.7rem;
+    color: var(--gray-500);
+    background: var(--gray-100);
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+}
+
+/* Compact Form Actions */
+.form-actions {
+    background: var(--gray-50);
+    margin: 1rem -1rem -1rem -1rem;
+    padding: 0.75rem;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    border-top: 1px solid var(--gray-200);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* Compact Button Styles */
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: var(--border-radius);
+}
+
+.btn-success {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+.btn-outline-secondary {
+    color: var(--secondary);
+    border-color: var(--secondary);
+}
+
+.btn-outline-secondary:hover {
+    background: var(--secondary);
+    color: white;
+}
+
+/* Alert Styles */
+.alert {
+    border-radius: var(--border-radius);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    border: none;
+}
+
+.alert-danger {
+    background: #FEF2F2;
+    color: #DC2626;
+    border-left: 3px solid #DC2626;
+}
+
+.alert-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+/* Validation */
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: var(--danger);
+}
+
+.invalid-feedback {
+    color: var(--danger);
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+}
+
+/* Job Type Styling */
+#type.emergency-selected {
+    color: var(--danger) !important;
+    font-weight: 600;
+}
+
+/* Currency Styling */
+#currency.usd-selected {
+    color: var(--success) !important;
+    font-weight: 600;
+}
+
+#currency.zwg-selected {
+    color: #F59E0B !important;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    
+    .section-header {
+        gap: 0.5rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+    }
+}
 </style>
 @endpush
 

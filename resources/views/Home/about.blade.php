@@ -30,22 +30,22 @@
                 <div class="col-xl-6">
                     <div class="section__title">
                         <span class="sub-title text-anim">About Fiscal Support Services</span>
-                        <h2 class="title text-anim2">Trusted Technology Solutions Provider Across Africa</h2>
+                        <h2 class="title text-anim2">Leading Technology Solutions Provider Across Africa</h2>
                     </div>
-                    <p class="mt-20 mb-30">Fiscal Support Services (Private) Limited is an information technology company focused on delivering cost-effective and efficient technology solutions. Founded by former employees of First Computers, we have been reliably supporting fiscal devices across Africa for the past eight years, with our team bringing over 48 years of collective IT support experience.</p>
+                    <p class="mt-20 mb-30">Fiscal Support Services (Private) Limited is a specialized information technology company focused on delivering cost-effective and efficient technology solutions. We have been reliably supporting fiscal devices and providing comprehensive IT services across Africa for over eight years, with our team bringing more than 80 years of collective IT support experience to every project.</p>
                     <div class="checklist-wrap">
                         <ul class="list-wrap">
                             <li>
                                 <span class="icon"><i class="fas fa-check-circle"></i></span>
-                                Over 25 years' experience in fiscal devices support among our staff
+                                Over 80 years' combined experience in fiscal device support and IT solutions
                             </li>
                             <li>
                                 <span class="icon"><i class="fas fa-check-circle"></i></span>
-                                Supporting more than 1,000 category C clients' fiscal devices
+                                Successfully supporting more than 1,000 category C clients with their fiscal devices
                             </li>
                             <li>
                                 <span class="icon"><i class="fas fa-check-circle"></i></span>
-                                Extensive experience across Botswana, Zimbabwe, Namibia, Kenya and South Africa
+                                Proven track record across Botswana, Zimbabwe, Namibia, Kenya and South Africa
                             </li>
                         </ul>
                     </div>
@@ -69,7 +69,7 @@
         <div class="row gy-3 justify-content-center">
             <div class="col-lg-4 col-md-6" data-aos="fade-up">
                 <div class="stats-card">
-                    <h3 class="stats-card_number"><span class="counter-number" data-count="48">48</span>+</h3>
+                    <h3 class="stats-card_number"><span class="counter-number" data-count="80">80+</span>+</h3>
                     <p class="stats-card_title">Years Combined Experience</p>
                     <p class="stats-card_text">Our team brings decades of hands-on IT support experience across multiple African markets.</p>
                 </div>
@@ -78,14 +78,14 @@
                 <div class="stats-card">
                     <h3 class="stats-card_number"><span class="counter-number" data-count="1000">1000</span>+</h3>
                     <p class="stats-card_title">Clients Supported</p>
-                    <p class="stats-card_text">We currently support over 1,000 category C clients with their fiscal device needs.</p>
+                    <p class="stats-card_text">We currently support over 1,000 category C clients with their fiscal device needs and IT requirements.</p>
                 </div>
             </div>
             <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
                 <div class="stats-card">
                     <h3 class="stats-card_number"><span class="counter-number" data-count="5">5</span></h3>
                     <p class="stats-card_title">African Countries</p>
-                    <p class="stats-card_text">We operate in Botswana, Zimbabwe, Namibia, Kenya and South Africa.</p>
+                    <p class="stats-card_text">We operate across Botswana, Zimbabwe, Namibia, Kenya and South Africa.</p>
                 </div>
             </div>
         </div>
@@ -106,10 +106,15 @@
         <div class="row justify-content-center">
             <div class="col-lg-10" data-aos="fade-up" data-aos-delay="100">
                 <div class="profile-content">
-                    <p>Fiscal Support Services (Private) Limited has been reliably supporting fiscal devices supplied by First Computers for the past eight years since First Computers closed down and handed over its business to us. We have gained valuable experience in this industry with collectively more than 25 years' experience in fiscal devices support amongst our staff members.</p>
-                    <p>The scarcity of Information Technology (I.T) services which are right-sized for the emerging markets of Africa resulted in the incorporation of our technologically driven enterprise. We help businesses acquire hardware through financed models and deploy solutions that align IT investment cycles to business strategy.</p>
-                    <p>The growing number of SMEs in Zimbabwe and the region that experience operating complexity due to the misalignment of technology investments and business processes require strategic technology consulting services. These services enable them to grow while maintaining control over their organization's operations. Fiscal Support Services (Private) Limited has come to fill this gap in the market.</p>
-                    <p>More than 75% of our staff members have had hands-on experience supporting fiscal devices since the launch of the project in Zimbabwe. This deep expertise allows us to provide unmatched service quality to our growing client base.</p>
+                    <p>Fiscal Support Services (Private) Limited has established itself as a leading provider of fiscal device support and comprehensive IT solutions across Africa. Over the past eight years, we have built an unparalleled reputation for reliability, expertise, and innovative technology solutions that drive business growth.</p>
+                    
+                    <p>Our team collectively brings more than 25 years of specialized experience in fiscal device support, making us the go-to partner for businesses seeking robust, compliant, and efficient fiscalization solutions. We understand the unique challenges facing African businesses and have developed tailored approaches to address them effectively.</p>
+                    
+                    <p>The scarcity of Information Technology (I.T) services that are properly scaled for the emerging markets of Africa led to the incorporation of our technologically driven enterprise. We help businesses acquire hardware through innovative financing models and deploy solutions that strategically align IT investment cycles with business objectives and growth plans.</p>
+                    
+                    <p>The growing number of SMEs in Zimbabwe and the broader African region often experience operational complexity due to misaligned technology investments and business processes. These organizations require strategic technology consulting services that enable sustainable growth while maintaining operational control. Fiscal Support Services (Private) Limited was founded specifically to address this critical gap in the market.</p>
+                    
+                    <p>More than 75% of our staff members have extensive hands-on experience in fiscal device support and implementation since the early days of fiscalization projects across Africa. This deep, specialized expertise allows us to provide unmatched service quality, rapid problem resolution, and innovative solutions to our expanding client base throughout the continent.</p>
                 </div>
             </div>
         </div>
@@ -134,19 +139,23 @@
                     <ul class="mission-list">
                         <li>
                             <i class="fas fa-check"></i>
-                            <span>Develop differentiated services covering OSS (Operations Support Systems) and BSS (Business Support Systems)</span>
+                            <span>Develop innovative services covering OSS (Operations Support Systems) and BSS (Business Support Systems) for African markets</span>
                         </li>
                         <li>
                             <i class="fas fa-check"></i>
-                            <span>Recruit, hire and retain the best technology skills in the market</span>
+                            <span>Recruit, develop and retain the most skilled technology professionals in the industry</span>
                         </li>
                         <li>
                             <i class="fas fa-check"></i>
-                            <span>Refine our value chain to create new value points for our customers</span>
+                            <span>Continuously refine our value chain to create exceptional value for our customers</span>
                         </li>
                         <li>
                             <i class="fas fa-check"></i>
-                            <span>Ensure our employees and partners uphold our values in all actions</span>
+                            <span>Ensure all team members and partners consistently uphold our core values in every interaction</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            <span>Bridge the technology gap for emerging markets through strategic consulting and implementation</span>
                         </li>
                     </ul>
                 </div>
@@ -160,7 +169,7 @@
                         </div>
                         <div class="value-content">
                             <h4>Integrity</h4>
-                            <p>We consistently align our actions, methods, measures, principles, expectations and outcomes to our values.</p>
+                            <p>We consistently align our actions, methods, principles, and outcomes with our values, maintaining transparency in all business dealings.</p>
                         </div>
                     </div>
                     <div class="value-item">
@@ -169,7 +178,7 @@
                         </div>
                         <div class="value-content">
                             <h4>Passion</h4>
-                            <p>We show unusual excitement and enthusiasm for our people, customers, partners and our technology.</p>
+                            <p>We demonstrate exceptional enthusiasm and dedication to our people, customers, partners, and cutting-edge technology solutions.</p>
                         </div>
                     </div>
                     <div class="value-item">
@@ -177,8 +186,8 @@
                             <i class="fas fa-chart-line"></i>
                         </div>
                         <div class="value-content">
-                            <h4>Continual Improvement</h4>
-                            <p>We're committed to building our people and technology through continuous learning and self-improvement.</p>
+                            <h4>Continuous Excellence</h4>
+                            <p>We're committed to developing our people and technology through continuous learning, innovation, and strategic improvement.</p>
                         </div>
                     </div>
                 </div>
@@ -193,8 +202,8 @@
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="heading-container center" data-aos="fade-up">
-                    <span class="section-tag">What Guides Us</span>
-                    <h2 class="main-heading">Our Extended Values</h2>
+                    <span class="section-tag">What Drives Excellence</span>
+                    <h2 class="main-heading">Our Leadership Principles</h2>
                 </div>
             </div>
         </div>
@@ -204,8 +213,8 @@
                     <div class="value-icon-box">
                         <i class="fas fa-mountain"></i>
                     </div>
-                    <h4 class="value-feature-title">Taking on Big Challenges</h4>
-                    <p class="value-feature-text">We take on complex business and technology projects that challenge and stimulate our capacity to deliver, and we see them through. Heroes happen at Fiscal Support Services.</p>
+                    <h4 class="value-feature-title">Embracing Complex Challenges</h4>
+                    <p class="value-feature-text">We actively pursue complex business and technology projects that push the boundaries of innovation and challenge our capacity to deliver exceptional results. Every team member has the opportunity to become a technology hero at Fiscal Support Services.</p>
                 </div>
             </div>
             <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
@@ -213,8 +222,26 @@
                     <div class="value-icon-box">
                         <i class="fas fa-clipboard-check"></i>
                     </div>
-                    <h4 class="value-feature-title">Being Accountable</h4>
-                    <p class="value-feature-text">We hold ourselves accountable to our customers, shareholders, partners, and employees by honoring our commitments, providing results, and striving for the highest quality.</p>
+                    <h4 class="value-feature-title">Unwavering Accountability</h4>
+                    <p class="value-feature-text">We hold ourselves to the highest standards of accountability to our customers, stakeholders, partners, and employees by consistently honoring commitments, delivering measurable results, and maintaining exceptional quality standards.</p>
+                </div>
+            </div>
+            <div class="col-lg-6" data-aos="fade-up" data-aos-delay="200">
+                <div class="value-feature-card">
+                    <div class="value-icon-box">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h4 class="value-feature-title">Innovation Leadership</h4>
+                    <p class="value-feature-text">We lead the market through innovative thinking, cutting-edge solutions, and forward-thinking approaches that anticipate and address future business needs across African markets.</p>
+                </div>
+            </div>
+            <div class="col-lg-6" data-aos="fade-up" data-aos-delay="300">
+                <div class="value-feature-card">
+                    <div class="value-icon-box">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h4 class="value-feature-title">Partnership Excellence</h4>
+                    <p class="value-feature-text">We build lasting partnerships with our clients by deeply understanding their business objectives and delivering technology solutions that drive sustainable growth and competitive advantage.</p>
                 </div>
             </div>
         </div>
@@ -228,60 +255,103 @@
             <div class="col-lg-8">
                 <div class="heading-container center" data-aos="fade-up">
                     <span class="section-tag">Our Expertise</span>
-                    <h2 class="main-heading">African Market Experience</h2>
+                    <h2 class="main-heading">Pan-African Market Leadership</h2>
                 </div>
             </div>
         </div>
         <div class="row gy-3">
             <div class="col-lg-6" data-aos="fade-up">
                 <div class="client-section">
-                    <h3 class="client-section__title">Regional Presence</h3>
-                    <p>Our staff have hands-on experience in multiple African markets including:</p>
+                    <h3 class="client-section__title">Regional Excellence</h3>
+                    <p>Our experienced team has successfully delivered technology solutions across multiple African markets, with deep understanding of local business environments and regulatory requirements:</p>
                     <ul class="country-list">
-                        <li><i class="fas fa-map-marker-alt"></i> Botswana</li>
-                        <li><i class="fas fa-map-marker-alt"></i> Zimbabwe</li>
-                        <li><i class="fas fa-map-marker-alt"></i> Namibia</li>
-                        <li><i class="fas fa-map-marker-alt"></i> Kenya</li>
-                        <li><i class="fas fa-map-marker-alt"></i> South Africa</li>
+                        <li><i class="fas fa-map-marker-alt"></i> <strong>Zimbabwe</strong> - Headquarters and primary market focus</li>
+                        <li><i class="fas fa-map-marker-alt"></i> <strong>Botswana</strong> - Expanding fiscal device support services</li>
+                        <li><i class="fas fa-map-marker-alt"></i> <strong>Namibia</strong> - Strategic technology consulting</li>
+                        <li><i class="fas fa-map-marker-alt"></i> <strong>Kenya</strong> - IT infrastructure and support</li>
+                        <li><i class="fas fa-map-marker-alt"></i> <strong>South Africa</strong> - Regional partnership development</li>
                     </ul>
                 </div>
             </div>
             <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
                 <div class="client-section">
-                    <h3 class="client-section__title">Notable Clients</h3>
-                    <p>We've worked with leading organizations across Zimbabwe:</p>
+                    <h3 class="client-section__title">Trusted by Industry Leaders</h3>
+                    <p>We've earned the trust of leading organizations across Zimbabwe's key economic sectors:</p>
                     <div class="company-card-container">
                         <div class="company-card">
                             <h5>Zimgold Oil Industries</h5>
                             <p>Leading petroleum products manufacturer and distributor</p>
-                            <span class="industry">Energy Sector</span>
+                            <span class="industry">Energy & Petroleum</span>
                         </div>
                         <div class="company-card">
-                            <h5>Zesa Holdings</h5>
+                            <h5>ZESA Holdings</h5>
                             <p>National electricity generation and distribution company</p>
-                            <span class="industry">Utilities</span>
+                            <span class="industry">Power & Utilities</span>
                         </div>
                         <div class="company-card">
                             <h5>First Mutual Holdings</h5>
-                            <p>Diversified financial services group</p>
+                            <p>Diversified financial services and insurance group</p>
                             <span class="industry">Financial Services</span>
                         </div>
                         <div class="company-card">
                             <h5>Auto Control</h5>
                             <p>Automotive parts and accessories distributor</p>
-                            <span class="industry">Automotive</span>
+                            <span class="industry">Automotive Retail</span>
                         </div>
                         <div class="company-card">
                             <h5>Innscor Africa</h5>
-                            <p>Diversified industrial conglomerate</p>
+                            <p>Diversified industrial and manufacturing conglomerate</p>
                             <span class="industry">Manufacturing</span>
                         </div>
                         <div class="company-card">
                             <h5>CBZ Holdings</h5>
                             <p>Leading banking and financial services group</p>
-                            <span class="industry">Banking</span>
+                            <span class="industry">Banking & Finance</span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Our Approach Section -->
+<section class="approach-section pt-60 pb-60" style="background-color: #f8f9fa;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="heading-container center" data-aos="fade-up">
+                    <span class="section-tag">Our Methodology</span>
+                    <h2 class="main-heading">Strategic Technology Approach</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row gy-4">
+            <div class="col-lg-4" data-aos="fade-up">
+                <div class="approach-card">
+                    <div class="approach-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h4>Analysis & Assessment</h4>
+                    <p>We begin with comprehensive analysis of your business processes, technology infrastructure, and growth objectives to identify optimization opportunities.</p>
+                </div>
+            </div>
+            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="approach-card">
+                    <div class="approach-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h4>Strategic Planning</h4>
+                    <p>We develop customized technology roadmaps that align IT investments with your business strategy, ensuring sustainable growth and operational efficiency.</p>
+                </div>
+            </div>
+            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="approach-card">
+                    <div class="approach-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h4>Implementation & Support</h4>
+                    <p>We execute solutions with precision and provide ongoing support to ensure your technology investments continue delivering value as your business grows.</p>
                 </div>
             </div>
         </div>
@@ -295,13 +365,13 @@
             <div class="col-lg-8">
                 <div class="cta-content text-center">
                     <h2 class="cta-title">Ready to Transform Your Business Technology?</h2>
-                    <p class="cta-text">Our team of experts is ready to help you align your IT investments with your business strategy for optimal growth.</p>
+                    <p class="cta-text">Partner with Africa's leading fiscal device and IT solutions provider. Our team of experts is ready to help you align your technology investments with your business strategy for optimal growth and competitive advantage.</p>
                     <div class="cta-button mt-30">
                         <a href="{{ route('contact') }}" class="btn btn-white">
                             <span class="btn-text">Get In Touch</span>
                         </a>
                         <a href="{{ route('services.index') }}" class="btn btn-border-white">
-                            <span class="btn-text">Our Services</span>
+                            <span class="btn-text">Explore Our Services</span>
                         </a>
                     </div>
                 </div>

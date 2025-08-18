@@ -12,9 +12,9 @@
                 Job Card Details
             </h1>
             <div class="header-meta">
-                <span class="badge bg-secondary me-2">
+                <span class="badge bg-primary me-2">
                     <i class="fas fa-hashtag me-1"></i>
-                    {{ $callLog->job_card ?? 'TBD-' . $callLog->id }}
+                    Job Card: {{ $callLog->job_card ?? 'TBD-' . $callLog->id }}
                 </span>
                 <span class="badge bg-info me-2">
                     <i class="fas fa-calendar me-1"></i>
@@ -34,9 +34,6 @@
                     Edit
                 </button>
             @endif
-            <div class="dropdown">
-                
-            </div>
         </div>
     </div>
 
@@ -103,6 +100,23 @@
                 </div>
                 
                 <div class="content-card-body" style="padding: 1rem;">
+                    {{-- Job Card Prominent Display --}}
+                    <div class="job-card-header mb-3">
+                        <div class="job-card-display">
+                            <div class="job-card-number">
+                                <i class="fas fa-id-card me-2"></i>
+                                <span class="job-card-label">Job Card:</span>
+                                <span class="job-card-value">{{ $callLog->job_card ?? 'TBD-' . $callLog->id }}</span>
+                            </div>
+                            <div class="job-id">
+                                <small class="text-muted">
+                                    <i class="fas fa-hashtag me-1"></i>
+                                    Job ID: {{ $callLog->id }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row g-3">
                         {{-- Customer Details --}}
                         <div class="col-md-6">
@@ -206,7 +220,7 @@
                                                 @if($callLog->time_start)
                                                     <span class="time-badge start">
                                                         <i class="fas fa-play me-1"></i>
-                                                        {{ $callLog->time_start->format('g:i A') }}
+                                                        {{ $callLog->formatted_time_start ?? $callLog->time_start->format('g:i A') }}
                                                     </span>
                                                 @else
                                                     <span class="time-badge placeholder">
@@ -219,7 +233,7 @@
                                                     <span class="time-separator">→</span>
                                                     <span class="time-badge finish">
                                                         <i class="fas fa-stop me-1"></i>
-                                                        {{ $callLog->time_finish->format('g:i A') }}
+                                                        {{ $callLog->formatted_time_finish ?? $callLog->time_finish->format('g:i A') }}
                                                     </span>
                                                 @endif
                                             </div>
@@ -497,7 +511,7 @@
                                     <div class="timeline-title">Work Started</div>
                                     <div class="timeline-date">
                                         @if($callLog->time_start)
-                                            {{ $callLog->date_booked->format('M j, Y') }} at {{ $callLog->time_start->format('g:i A') }}
+                                            {{ $callLog->date_booked->format('M j, Y') }} at {{ $callLog->formatted_time_start ?? $callLog->time_start->format('g:i A') }}
                                         @else
                                             {{ $callLog->updated_at->format('M j, Y g:i A') }}
                                         @endif
@@ -519,7 +533,7 @@
                                         @if($callLog->date_resolved)
                                             {{ $callLog->date_resolved->format('M j, Y') }}
                                             @if($callLog->time_finish)
-                                                at {{ $callLog->time_finish->format('g:i A') }}
+                                                at {{ $callLog->formatted_time_finish ?? $callLog->time_finish->format('g:i A') }}
                                             @endif
                                         @else
                                             {{ $callLog->updated_at->format('M j, Y g:i A') }}
@@ -647,6 +661,55 @@
     --border-radius: 8px;
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --transition: all 0.2s ease;
+}
+
+/* Job Card Header Display */
+.job-card-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+}
+
+.job-card-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.job-card-number {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.job-card-label {
+    opacity: 0.9;
+}
+
+.job-card-value {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.job-id {
+    opacity: 0.8;
+}
+
+/* Update the header badge to primary color */
+.bg-primary {
+    background: var(--primary) !important;
+    color: white;
 }
 
 .dashboard-header {
@@ -1380,6 +1443,12 @@
         flex-wrap: wrap;
     }
     
+    .job-card-display {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
     .status-overview {
         flex-direction: column;
         gap: 0.5rem;
@@ -1429,6 +1498,13 @@
     
     .assignment-summary {
         padding: 0.75rem;
+    }
+    
+    .job-card-number {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        font-size: 1rem;
     }
 }
 </style>
@@ -1631,7 +1707,7 @@ function showToast(message, type = 'info') {
                 <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
                 <span>${message}</span>
                 <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-            </div>
+                        </div>
         `;
         
         document.body.appendChild(notification);

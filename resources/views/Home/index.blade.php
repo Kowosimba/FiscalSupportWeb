@@ -47,7 +47,7 @@
                     <i class="fas fa-phone-alt"></i>
                 </div>
                 <div class="info-card_content">
-                    <a href="tel:+263292270666" class="info-card_link">+263292270666</a>
+                    <a href="tel:+2638677187169" class="info-card_link">+2638677187169</a>
                 </div>
             </div>
             <div class="divider"></div>

@@ -444,7 +444,7 @@ Company Overview Area
                             </div>
                         </div>
                         <div class="about-experience-wrap movingX">
-                            <h3 class="counter-title"><span class="counter-number">48</span>+</h3>
+                            <h3 class="counter-title"><span class="counter-number">80</span>+</h3>
                             <span class="counter-text">Years Combined Experience</span>
                         </div>
                     </div>
@@ -454,7 +454,7 @@ Company Overview Area
                         <span class="sub-title text-anim">About Fiscal Support Services</span>
                         <h2 class="title text-anim2">Trusted Technology Solutions Provider Across Africa</h2>
                     </div>
-                    <p class="mt-30 mb-30">Fiscal Support Services (Private) Limited is an information technology company focused on delivering cost-effective and efficient technology solutions. We have been reliably supporting fiscal devices across Africa for the past eight years, with our team bringing over 48 years of collective IT support experience.</p>
+                    <p class="mt-30 mb-30">Fiscal Support Services (Private) Limited is an information technology company focused on delivering cost-effective and efficient technology solutions. We have been reliably supporting fiscal devices across Africa for the past eight years, with our team bringing over 80 years of collective IT support experience.</p>
                     
                     <div class="about-grid-card">
                         <div class="box-icon">

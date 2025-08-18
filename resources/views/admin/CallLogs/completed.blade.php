@@ -41,6 +41,14 @@
         </div>
     @endif
 
+    @if(session('warning'))
+        <div class="alert alert-warning alert-dismissible fade show mb-2">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            {{ session('warning') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     {{-- Statistics Cards --}}
     <div class="stats-section mb-3">
         <div class="row g-2">
@@ -94,7 +102,7 @@
 
     {{-- Compact Filter Card --}}
     <div class="filter-card mb-2">
-        <form method="GET" action="{{ route('admin.call-logs.completed') }}" class="filter-form">
+        <form method="GET" action="{{ route('admin.call-logs.completed') }}" class="filter-form" id="filterForm">
             <div class="filter-row">
                 <div class="filter-group search-group">
                     <div class="search-input-wrapper">
@@ -108,7 +116,7 @@
                 </div>
 
                 <div class="filter-group">
-                    <select name="engineer" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select name="engineer" class="form-select form-select-sm">
                         <option value="">All Engineers</option>
                         @php
                             $selectedEngineer = request('engineer');
@@ -127,7 +135,7 @@
                         $types = ['normal','emergency'];
                         $selectedType = request('type');
                     @endphp
-                    <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <select name="type" class="form-select form-select-sm">
                         <option value="">All Types</option>
                         @foreach($types as $type)
                             <option value="{{ $type }}" @selected($selectedType == $type)>{{ ucfirst($type) }}</option>
@@ -135,23 +143,20 @@
                     </select>
                 </div>
 
-                <div class="filter-group">
-                    @php
-                        $dateRanges = [
-                            '' => 'All Dates',
-                            'today' => 'Today',
-                            'this_week' => 'This Week',
-                            'this_month' => 'This Month',
-                            'last_month' => 'Last Month',
-                            'last_3_months' => 'Last 3 Months',
-                            'this_year' => 'This Year',
-                        ];
-                    @endphp
-                    <select name="date_range" class="form-select form-select-sm" onchange="this.form.submit()">
-                        @foreach($dateRanges as $key => $label)
-                            <option value="{{ $key }}" @selected(request('date_range') == $key)>{{ $label }}</option>
-                        @endforeach
-                    </select>
+                <div class="filter-group date-filter">
+                    <input type="date" name="date_from" 
+                           value="{{ request('date_from') }}"
+                           placeholder="From Date"
+                           class="form-control form-control-sm"
+                           title="Filter from date">
+                </div>
+
+                <div class="filter-group date-filter">
+                    <input type="date" name="date_to" 
+                           value="{{ request('date_to') }}"
+                           placeholder="To Date"
+                           class="form-control form-control-sm"
+                           title="Filter to date">
                 </div>
 
                 <div class="filter-actions">
@@ -159,11 +164,39 @@
                         <i class="fas fa-filter me-1"></i>
                         Filter
                     </button>
-                    <a href="{{ route('admin.call-logs.completed') }}" class="btn btn-sm btn-outline-secondary">
+                    <a href="{{ route('admin.call-logs.completed') }}" class="btn btn-sm btn-outline-secondary" title="Clear all filters">
                         <i class="fas fa-times"></i>
                     </a>
                 </div>
             </div>
+            
+            {{-- Show active filters info --}}
+            @if(request()->hasAny(['search', 'engineer', 'type', 'date_from', 'date_to']))
+                <div class="active-filters mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-filter me-1"></i>
+                        Active filters:
+                        @if(request('search'))
+                            <span class="badge bg-light text-dark me-1">Search: "{{ request('search') }}"</span>
+                        @endif
+                        @if(request('engineer'))
+                            @php
+                                $engineer = $technicians->find(request('engineer'));
+                            @endphp
+                            <span class="badge bg-light text-dark me-1">Engineer: {{ $engineer?->name ?? 'Unknown' }}</span>
+                        @endif
+                        @if(request('type'))
+                            <span class="badge bg-light text-dark me-1">Type: {{ ucfirst(request('type')) }}</span>
+                        @endif
+                        @if(request('date_from'))
+                            <span class="badge bg-light text-dark me-1">From: {{ \Carbon\Carbon::parse(request('date_from'))->format('M d, Y') }}</span>
+                        @endif
+                        @if(request('date_to'))
+                            <span class="badge bg-light text-dark me-1">To: {{ \Carbon\Carbon::parse(request('date_to'))->format('M d, Y') }}</span>
+                        @endif
+                    </small>
+                </div>
+            @endif
         </form>
     </div>
 
@@ -178,11 +211,14 @@
                 @if($callLogs->count() > 0)
                     <p class="card-subtitle mb-0">
                         Showing {{ $callLogs->firstItem() }} to {{ $callLogs->lastItem() }} of {{ $callLogs->total() }} jobs
+                        @if(request()->hasAny(['search', 'engineer', 'type', 'date_from', 'date_to']))
+                            (filtered)
+                        @endif
                     </p>
                 @endif
             </div>
             <div class="header-actions">
-                <button class="btn btn-sm btn-outline-secondary" onclick="exportResults()">
+                <button class="btn btn-sm btn-outline-secondary" onclick="exportResults()" title="Export filtered results to Excel">
                     <i class="fas fa-download me-1"></i>
                     Export
                 </button>
@@ -308,7 +344,14 @@
                                 <div class="empty-content">
                                     <i class="fas fa-check-circle"></i>
                                     <h6>No Completed Jobs Found</h6>
-                                    <p>No completed jobs match your search criteria.</p>
+                                    <p>
+                                        @if(request()->hasAny(['search', 'engineer', 'type', 'date_from', 'date_to']))
+                                            No completed jobs match your current filter criteria.
+                                            <a href="{{ route('admin.call-logs.completed') }}" class="text-decoration-none">Clear filters</a> to see all jobs.
+                                        @else
+                                            No completed jobs available at this time.
+                                        @endif
+                                    </p>
                                 </div>
                             </td>
                         </tr>
@@ -464,6 +507,12 @@
     border: 1px solid #FECACA;
 }
 
+.alert-warning {
+    background: #FFFBEB;
+    color: #D97706;
+    border: 1px solid #FDE68A;
+}
+
 /* Compact Statistics Section */
 .stats-section {
     background: var(--white);
@@ -557,6 +606,10 @@
     min-width: 200px;
 }
 
+.date-filter {
+    min-width: 150px;
+}
+
 .search-input-wrapper {
     position: relative;
 }
@@ -600,6 +653,33 @@
 .form-select-sm:focus, .form-control-sm:focus {
     border-color: var(--secondary);
     box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.1);
+}
+
+/* Date input styles */
+.form-control[type="date"] {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    height: 32px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+}
+
+.form-control[type="date"]:focus {
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.1);
+}
+
+/* Active filters display */
+.active-filters {
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.active-filters .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    margin-right: 0.25rem;
+    border: 1px solid var(--gray-300);
 }
 
 /* Content Card */
@@ -944,7 +1024,7 @@
         gap: 0.5rem;
     }
     
-    .filter-group, .search-group {
+    .filter-group, .search-group, .date-filter {
         min-width: 100%;
     }
     
@@ -1023,9 +1103,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Auto-submit on filter change (for selects)
-    const filterSelects = document.querySelectorAll('select[name="engineer"], select[name="type"], select[name="date_range"]');
+    const filterSelects = document.querySelectorAll('select[name="engineer"], select[name="type"]');
     filterSelects.forEach(select => {
         select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+
+    // Auto-submit on date change
+    const dateInputs = document.querySelectorAll('input[name="date_from"], input[name="date_to"]');
+    dateInputs.forEach(input => {
+        input.addEventListener('change', function() {
             this.closest('form').submit();
         });
     });
@@ -1039,61 +1127,35 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.show();
     };
 
-    // Export functionality placeholder
+    // Export functionality with current filters
     window.exportResults = function() {
-        alert('Export functionality is not implemented yet.');
-    };
-
-    // Table row click to view job details, except buttons
-    document.querySelectorAll('tbody tr').forEach(row => {
-        row.addEventListener('click', event => {
-            if (!event.target.closest('.action-buttons') && !event.target.closest('button')) {
-                const btnView = row.querySelector('.view-btn');
-                if (btnView) btnView.click();
-            }
-        });
-    });
-});
-</script>
-@endpush
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Refresh button functionality
-    const refreshBtn = document.getElementById('refreshJobs');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
-            const originalContent = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing';
-            this.disabled = true;
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 800);
-        });
-    }
-
-    // Auto-submit on filter change (for selects)
-    const filterSelects = document.querySelectorAll('select[name="engineer"], select[name="type"], select[name="date_range"]');
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            this.closest('form').submit();
-        });
-    });
-
-    // Comments modal function
-    window.showComments = function(comments) {
-        const commentsContent = document.getElementById('commentsContent');
-        commentsContent.textContent = comments || 'No comments available for this job.';
-
-        const modal = new bootstrap.Modal(document.getElementById('commentsModal'));
-        modal.show();
-    };
-
-    // Export functionality placeholder
-    window.exportResults = function() {
-        alert('Export functionality is not implemented yet.');
+        // Get current filter values
+        const form = document.getElementById('filterForm');
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+        
+        // Build export URL with current filters
+        const exportUrl = '{{ route("admin.call-logs.completed.export") }}?' + params.toString();
+        
+        // Show loading state
+        const exportBtn = event.target.closest('button');
+        const originalContent = exportBtn.innerHTML;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Exporting...';
+        exportBtn.disabled = true;
+        
+        // Create a temporary link to trigger download
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Reset button after a delay
+        setTimeout(() => {
+            exportBtn.innerHTML = originalContent;
+            exportBtn.disabled = false;
+        }, 2000);
     };
 
     // Table row click to view job details, except buttons

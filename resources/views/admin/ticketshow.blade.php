@@ -173,55 +173,63 @@
             </div>
 
             {{-- Status Update Form (only if assigned to current user) --}}
-            @if(auth()->id() === $ticket->assigned_to)
-                <div class="content-card mb-3">
-                    <div class="content-card-header">
-                        <div class="header-content">
-                            <h4 class="card-title">
-                                <i class="fas fa-edit me-2"></i>
-                                Update Ticket
-                            </h4>
-                            <p class="card-subtitle mb-0">
-                                Modify ticket status and priority
-                            </p>
+@php
+    $currentUserId = (int)auth()->id();
+    $assignedToId = (int)$ticket->assigned_to;
+    $isAssigned = $currentUserId === $assignedToId || 
+                  auth()->id() == $ticket->assigned_to ||
+                  (auth()->user()->hasRole('admin') ?? false);
+@endphp
+
+@if($isAssigned)
+    <div class="content-card mb-3">
+        <div class="content-card-header">
+            <div class="header-content">
+                <h4 class="card-title">
+                    <i class="fas fa-edit me-2"></i>
+                    Update Ticket
+                </h4>
+                <p class="card-subtitle mb-0">
+                    Modify ticket status and priority
+                </p>
+            </div>
+        </div>
+        
+        <div class="content-card-body" style="padding: 1rem;">
+            <form action="{{ route('admin.tickets.updateStatusPriority', $ticket->id) }}" method="POST">
+                @csrf
+                @method('PATCH')
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <div class="info-item">
+                            <div class="info-label">Priority</div>
+                            <select name="priority" id="priority" class="form-select">
+                                <option value="low" {{ $ticket->priority == 'low' ? 'selected' : '' }}>Low</option>
+                                <option value="medium" {{ $ticket->priority == 'medium' ? 'selected' : '' }}>Medium</option>
+                                <option value="high" {{ $ticket->priority == 'high' ? 'selected' : '' }}>High</option>
+                            </select>
                         </div>
                     </div>
-                    
-                    <div class="content-card-body" style="padding: 1rem;">
-                        <form action="{{ route('admin.tickets.updateStatusPriority', $ticket->id) }}" method="POST">
-                            @csrf
-                            @method('PATCH')
-                            <div class="row g-3 align-items-end">
-                                <div class="col-md-5">
-                                    <div class="info-item">
-                                        <div class="info-label">Priority</div>
-                                        <select name="priority" id="priority" class="form-select">
-                                            <option value="low" {{ $ticket->priority == 'low' ? 'selected' : '' }}>Low</option>
-                                            <option value="medium" {{ $ticket->priority == 'medium' ? 'selected' : '' }}>Medium</option>
-                                            <option value="high" {{ $ticket->priority == 'high' ? 'selected' : '' }}>High</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="info-item">
-                                        <div class="info-label">Status</div>
-                                        <select name="status" id="status" class="form-select">
-                                            <option value="pending" {{ $ticket->status == 'pending' ? 'selected' : '' }}>Pending</option>
-                                            <option value="in_progress" {{ $ticket->status == 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                                            <option value="resolved" {{ $ticket->status == 'resolved' ? 'selected' : '' }}>Resolved</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 d-grid">
-                                    <button type="submit" class="action-btn primary">
-                                        Update
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                    <div class="col-md-5">
+                        <div class="info-item">
+                            <div class="info-label">Status</div>
+                            <select name="status" id="status" class="form-select">
+                                <option value="pending" {{ $ticket->status == 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="in_progress" {{ $ticket->status == 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                                <option value="resolved" {{ $ticket->status == 'resolved' ? 'selected' : '' }}>Resolved</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="action-btn primary">
+                            Update
+                        </button>
                     </div>
                 </div>
-            @endif
+            </form>
+        </div>
+    </div>
+@endif
 
             {{-- Engineer Comments Section --}}
             <div class="content-card">

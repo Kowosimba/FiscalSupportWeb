@@ -7,6 +7,14 @@ use App\Mail\JobAssignedToTechnician;
 use App\Mail\JobCompletionNotification;
 use App\Models\CallLog;
 use App\Models\User;
+use App\Notifications\CustomerTicketCreatedNotification;
+use App\Notifications\CustomerTicketResolvedNotification;
+use App\Notifications\JobAssigned;
+use App\Notifications\JobCreatedNotification;
+use App\Notifications\JobStatusUpdated;
+use App\Notifications\NewTicketForAssignmentNotification;
+use App\Notifications\TechnicianOutstandingTicketNotification;
+use App\Notifications\TicketAssignedNotification;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +24,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Rap2hpoutre\FastExcel\FastExcel;
 
@@ -30,14 +39,10 @@ class CallLogController extends Controller
         'cancelled' => 'Cancelled',
     ];
 
-    // Job types and descriptions
+    // Job types and descriptions - ONLY normal and emergency
     private const JOB_TYPES = [
         'normal' => 'Normal',
         'emergency' => 'Emergency',
-        'maintenance' => 'Maintenance',
-        'repair' => 'Repair',
-        'installation' => 'Installation',
-        'consultation' => 'Consultation',
     ];
 
     private const DEFAULT_PAGINATION = 25;
@@ -54,7 +59,6 @@ class CallLogController extends Controller
             ->select([
                 'id',
                 'customer_name',
-                'company_name',
                 'job_card',
                 'fault_description',
                 'status',
@@ -104,86 +108,158 @@ class CallLogController extends Controller
      * Store a new call log.
      */
     public function store(Request $request): RedirectResponse
-    {
-        Log::info('Store method called', ['data' => $request->all()]);
+{
+    Log::info('Store method called', [
+        'data' => $request->all(),
+        'timestamp' => '2025-08-14 13:03:20',
+        'user' => 'Sire-bit'
+    ]);
 
-        if (!in_array(Auth::user()->role ?? '', ['admin', 'accounts'])) {
-            Log::warning('Unauthorized attempt to create job', ['user_id' => Auth::id()]);
-            return redirect()->back()->with('error', 'You do not have permission to create a new job.');
-        }
-
-        // Validation
-        $validated = $request->validate([
-            'customer_name' => 'required|string|max:255',
-            'customer_email' => 'required|email|max:255',
-            'customer_phone' => 'nullable|string|max:20',
-            'customer_address' => 'nullable|string|max:500',
-            'zimra_ref' => 'nullable|string|max:255',
-            'type' => ['required', Rule::in(array_keys(self::JOB_TYPES))],
-            'amount_charged' => 'required|numeric|min:0|max:999999.99',
-            'currency' => 'required|in:USD,ZWG',
-            'date_booked' => 'required|date|after_or_equal:' . now()->subYear()->format('Y-m-d'),
-            'fault_description' => 'required|string|max:1000',
-            'assigned_to' => 'nullable|exists:users,id',
-        ], [
-            'customer_name.required' => 'Customer name is required.',
-            'customer_email.required' => 'Customer email is required.',
-            'customer_email.email' => 'Please provide a valid email address.',
-            'fault_description.required' => 'Please describe the fault or issue.',
-            'amount_charged.required' => 'Please specify the amount to be charged.',
-            'amount_charged.numeric' => 'Amount must be a valid number.',
-            'amount_charged.min' => 'Amount cannot be negative.',
-            'currency.required' => 'Please select a currency.',
-            'currency.in' => 'Currency must be either USD or ZWG.',
-            'type.required' => 'Please select a job type.',
-            'assigned_to.exists' => 'Selected engineer does not exist.',
-        ]);
-
-        // Set default fields
-        $jobData = array_merge($validated, [
-            'status' => 'pending',
-            'approved_by' => Auth::id(),
-            'approved_by_name' => Auth::user()->name,
-            'booked_by' => Auth::user()->name,
-        ]);
-
-        DB::beginTransaction();
-
-        try {
-            $callLog = CallLog::create($jobData);
-
-            if ($callLog->assigned_to) {
-                $callLog->load('assignedTo');
-                $this->handleStatusChangeNotifications($callLog, 'pending', 'assigned');
-            }
-
-            DB::commit();
-
-            Log::info('Job created successfully', [
-                'job_id' => $callLog->id,
-                'customer' => $callLog->customer_name,
-                'type' => $callLog->type,
-                'assigned_to' => $callLog->assigned_to,
-            ]);
-
-            $redirectUrl = $this->getRedirectUrl($request);
-            $assignedEngineerName = $callLog->assignedTo ? ' - Assigned to ' . $callLog->assignedTo->name : '';
-
-            return redirect($redirectUrl)->with('success', 'Job card created successfully! Job ID: #' . $callLog->id . $assignedEngineerName);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            Log::error('Failed to create job', [
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-                'data' => $jobData,
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->back()->withInput()->with('error', 'Failed to create job card. Please try again.');
-        }
+    if (!in_array(Auth::user()->role ?? '', ['admin', 'accounts'])) {
+        Log::warning('Unauthorized attempt to create job', ['user_id' => Auth::id()]);
+        return redirect()->back()->with('error', 'You do not have permission to create a new job.');
     }
+
+    // Validation
+    $validated = $request->validate([
+        'customer_name' => 'required|string|max:255',
+        'customer_email' => 'required|email|max:255',
+        'customer_phone' => 'nullable|string|max:20',
+        'customer_address' => 'nullable|string|max:500',
+        'zimra_ref' => 'nullable|string|max:255',
+        'type' => ['required', Rule::in(array_keys(self::JOB_TYPES))],
+        'amount_charged' => 'required|numeric|min:0|max:999999.99',
+        'currency' => 'required|in:USD,ZWG',
+        'date_booked' => 'required|date|after_or_equal:' . now()->subYear()->format('Y-m-d'),
+        'fault_description' => 'required|string|max:1000',
+        'assigned_to' => 'nullable|exists:users,id',
+    ], [
+        'customer_name.required' => 'Customer name is required.',
+        'customer_email.required' => 'Customer email is required.',
+        'customer_email.email' => 'Please provide a valid email address.',
+        'fault_description.required' => 'Please describe the fault or issue.',
+        'amount_charged.required' => 'Please specify the amount to be charged.',
+        'amount_charged.numeric' => 'Amount must be a valid number.',
+        'amount_charged.min' => 'Amount cannot be negative.',
+        'currency.required' => 'Please select a currency.',
+        'currency.in' => 'Currency must be either USD or ZWG.',
+        'type.required' => 'Please select a job type.',
+        'assigned_to.exists' => 'Selected engineer does not exist.',
+    ]);
+
+    // Set default fields
+    $jobData = array_merge($validated, [
+        'status' => 'pending',
+        'approved_by' => Auth::id(),
+        'approved_by_name' => Auth::user()->name,
+        'booked_by' => Auth::user()->name,
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        $callLog = CallLog::create($jobData);
+
+        Log::info('Job created successfully', [
+            'job_id' => $callLog->id,
+            'customer' => $callLog->customer_name,
+            'type' => $callLog->type,
+            'assigned_to' => $callLog->assigned_to,
+            'created_by' => Auth::user()->name,
+            'timestamp' => '2025-08-14 13:03:20'
+        ]);
+
+        // Create notification for managers ONLY about new job
+        $managers = User::where('role', 'manager')->get();
+        Log::info('Found managers to notify', [
+            'job_id' => $callLog->id,
+            'managers_count' => $managers->count(),
+            'manager_ids' => $managers->pluck('id')->toArray(),
+            'timestamp' => '2025-08-14 13:03:20'
+        ]);
+
+        foreach ($managers as $manager) {
+            if ($manager->id !== Auth::id()) { // Don't notify the creator if they're also a manager
+                try {
+                    $manager->notify(new JobCreatedNotification($callLog, Auth::user()));
+                    Log::info('Job created notification sent to manager', [
+                        'job_id' => $callLog->id,
+                        'notified_user_id' => $manager->id,
+                        'notified_user_name' => $manager->name,
+                        'notification_type' => 'JobCreatedNotification',
+                        'notification_data' => [
+                            'job_card' => $callLog->job_card ?? 'TBD-' . $callLog->id,
+                            'customer' => $callLog->customer_name,
+                            'type' => $callLog->type,
+                            'requires_assignment' => empty($callLog->assigned_to)
+                        ],
+                        'timestamp' => '2025-08-14 13:03:20'
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send job created notification to manager', [
+                        'job_id' => $callLog->id,
+                        'manager_id' => $manager->id,
+                        'manager_name' => $manager->name,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                        'timestamp' => '2025-08-14 13:03:20'
+                    ]);
+                }
+            }
+        }
+
+        // If job is assigned during creation, send assignment notifications
+        if ($callLog->assigned_to) {
+            $callLog->load('assignedTo');
+            
+            if ($callLog->assignedTo) {
+                try {
+                    $callLog->assignedTo->notify(new JobAssigned($callLog, Auth::user()));
+                    Log::info('Job assignment notification sent during creation', [
+                        'job_id' => $callLog->id,
+                        'assigned_to_id' => $callLog->assigned_to,
+                        'assigned_to_name' => $callLog->assignedTo->name,
+                        'assigned_by' => Auth::id(),
+                        'assigned_by_name' => Auth::user()->name,
+                        'notification_type' => 'JobAssignedNotification',
+                        'timestamp' => '2025-08-14 13:03:20'
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send job assignment notification during creation', [
+                        'job_id' => $callLog->id,
+                        'assigned_to' => $callLog->assigned_to,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                        'timestamp' => '2025-08-14 13:03:20'
+                    ]);
+                }
+            }
+            
+            $this->handleStatusChangeNotifications($callLog, 'pending', 'assigned');
+        }
+
+        DB::commit();
+
+        $redirectUrl = $this->getRedirectUrl($request);
+        $assignedEngineerName = $callLog->assignedTo ? ' - Assigned to ' . $callLog->assignedTo->name : '';
+
+        return redirect($redirectUrl)->with('success', 'Job card created successfully! Job ID: #' . $callLog->id . $assignedEngineerName);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        Log::error('Failed to create job', [
+            'error' => $e->getMessage(),
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'data' => $jobData,
+            'trace' => $e->getTraceAsString(),
+            'timestamp' => '2025-08-14 13:03:20'
+        ]);
+
+        return redirect()->back()->withInput()->with('error', 'Failed to create job card. Please try again.');
+    }
+}
 
     /**
      * Display a specific call log.
@@ -202,19 +278,50 @@ class CallLogController extends Controller
     /**
      * Show edit form for existing call log.
      */
-    public function edit(CallLog $callLog): View
-    {
-        if (!$this->canEditJob($callLog)) {
-            abort(403, 'You do not have permission to edit this job.');
-        }
-
-        return view('admin.CallLogs.edit', [
-            'callLog' => $callLog,
-            'technicians' => $this->getTechnicians(),
-            'statuses' => self::JOB_STATUSES,
-            'types' => self::JOB_TYPES,
-        ]);
+    public function edit(CallLog $callLog)
+{
+    $user = auth::user();
+    
+    // Permission checks
+    $canEditBasicInfo = in_array($user->role, ['admin', 'accounts', 'manager']);
+    $canEditEngineering = $callLog->assigned_to === $user->id && in_array($user->role, ['technician', 'manager']);
+    $canEditStatus = $callLog->assigned_to === $user->id || in_array($user->role, ['admin', 'accounts', 'manager']);
+    
+    if (!$canEditBasicInfo && !$canEditEngineering) {
+        return redirect()->route('admin.call-logs.show', $callLog)
+            ->with('error', 'You do not have permission to edit this job.');
     }
+
+    $types = [
+        'normal' => 'Normal',
+        'emergency' => 'Emergency',
+        'maintenance' => 'Maintenance',
+        'repair' => 'Repair',
+        'installation' => 'Installation',
+        'consultation' => 'Consultation',
+    ];
+
+    $statuses = [
+        'pending' => 'Pending',
+        'assigned' => 'Assigned',
+        'in_progress' => 'In Progress',
+        'complete' => 'Complete',
+    ];
+
+    $technicians = User::whereIn('role', ['admin', 'manager', 'technician'])
+        ->orderBy('name')
+        ->get();
+
+    return view('admin.CallLogs.edit', compact(
+        'callLog', 
+        'types', 
+        'statuses', 
+        'technicians',
+        'canEditBasicInfo',
+        'canEditEngineering',
+        'canEditStatus'
+    ));
+}
 
     /**
      * Update existing call log.
@@ -225,19 +332,28 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
         return redirect()->route('admin.call-logs.show', $callLog)->with('error', 'Unauthorized to edit this job.');
     }
 
-    $user = auth::user();
+    $user = Auth::user();
     $isEngineerUpdate = in_array($user->role, ['technician', 'manager']) &&
                         !in_array($user->role, ['admin', 'accounts']) &&
                         $callLog->assigned_to === $user->id;
 
-    // Base rules
-    $rules = [];
-
+    // Define which fields each role can modify
     if (!$isEngineerUpdate) {
-        // Admin/Account full edit fields required
+        // Admin/Account full edit fields
+        $allowedFields = [
+            'customer_name', 'customer_email', 'customer_phone', 'customer_address',
+            'zimra_ref', 'type', 'amount', 'amount_charged', 'currency', 
+            'date_booked', 'assigned_to', 'status', 'fault_description',
+            'job_card', 'date_resolved', 'engineer_comments', 'time_start', 
+            'time_finish', 'billed_hours'
+        ];
+        
         $rules = [
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
+            'customer_phone' => 'nullable|string|max:20',
+            'customer_address' => 'nullable|string|max:500',
+            'zimra_ref' => 'nullable|string|max:255',
             'type' => ['required', Rule::in(array_keys(self::JOB_TYPES))],
             'amount' => 'sometimes|numeric|min:0',
             'amount_charged' => 'required|numeric|min:0',
@@ -246,13 +362,24 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
             'assigned_to' => 'nullable|exists:users,id',
             'status' => ['required', Rule::in(array_keys(self::JOB_STATUSES))],
             'fault_description' => 'required|string|max:1000',
+            'job_card' => ['nullable', 'string', 'max:50', Rule::unique('call_logs')->ignore($callLog->id)],
+            'date_resolved' => 'nullable|date|after_or_equal:date_booked',
+            'engineer_comments' => 'nullable|string|max:200',
+            'time_start' => 'nullable|date_format:H:i',
+            'time_finish' => 'nullable|date_format:H:i|after:time_start',
+            'billed_hours' => 'nullable|string|max:10',
         ];
     } else {
-        // Engineer limited fields allowed
+        // Engineer limited fields only
+        $allowedFields = [
+            'job_card', 'status', 'date_resolved', 'engineer_comments', 
+            'time_start', 'time_finish', 'billed_hours'
+        ];
+        
         $rules = [
             'job_card' => ['nullable', 'string', 'max:50', Rule::unique('call_logs')->ignore($callLog->id)],
             'status' => ['required', Rule::in(array_keys(self::JOB_STATUSES))],
-            'date_resolved' => 'nullable|date|after_or_equal:date_booked',
+            'date_resolved' => 'nullable|date|after_or_equal:' . $callLog->date_booked->format('Y-m-d'),
             'engineer_comments' => 'nullable|string|max:200',
             'time_start' => 'nullable|date_format:H:i',
             'time_finish' => 'nullable|date_format:H:i|after:time_start',
@@ -263,7 +390,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
     // Additional requirements if status is complete
     if ($request->input('status') === 'complete') {
         $rules['job_card'] = ['required', 'string', 'max:50', Rule::unique('call_logs')->ignore($callLog->id)];
-        $rules['date_resolved'] = 'required|date|after_or_equal:date_booked';
+        $rules['date_resolved'] = 'required|date|after_or_equal:' . ($isEngineerUpdate ? $callLog->date_booked->format('Y-m-d') : 'date_booked');
         $rules['engineer_comments'] = 'required|string|min:10|max:200';
 
         if ($isEngineerUpdate) {
@@ -273,7 +400,10 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
         }
     }
 
-    $validated = $request->validate($rules, [
+    // Only validate the fields that this role is allowed to modify
+    $dataToValidate = $request->only($allowedFields);
+    
+    $validated = Validator::make($dataToValidate, $rules, [
         'customer_name.required' => 'Customer name is required.',
         'customer_email.required' => 'Customer email is required.',
         'fault_description.required' => 'Fault description is required.',
@@ -295,14 +425,18 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
         'time_finish.required' => 'Finish time required when completing.',
         'time_finish.after' => 'Finish time must be after start time.',
         'billed_hours.required' => 'Billed hours required when completing.',
-    ]);
+    ])->validate();
 
-    // Prevent engineer from modifying other fields
+    // For engineers, preserve the restricted fields from the original record
     if ($isEngineerUpdate) {
         $validated = array_merge($validated, [
             'customer_name' => $callLog->customer_name,
             'customer_email' => $callLog->customer_email,
+            'customer_phone' => $callLog->customer_phone,
+            'customer_address' => $callLog->customer_address,
+            'zimra_ref' => $callLog->zimra_ref,
             'type' => $callLog->type,
+            'amount' => $callLog->amount,
             'amount_charged' => $callLog->amount_charged,
             'currency' => $callLog->currency,
             'date_booked' => $callLog->date_booked,
@@ -311,6 +445,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
         ]);
     }
 
+    // Auto-fill completion fields if missing
     if ($request->input('status') === 'complete') {
         if (empty($validated['date_resolved'])) {
             $validated['date_resolved'] = now()->toDateString();
@@ -348,14 +483,11 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
     }
 }
 
-
-
-
-    /**
-     * Delete (soft delete) a call log.
-     */
-    public function destroy(CallLog $callLog): RedirectResponse
-    {
+/**
+ * Delete (soft delete) a call log.
+ */
+public function destroy(CallLog $callLog): RedirectResponse
+{
         if (!$this->canDeleteJob($callLog)) {
             return redirect()->back()->with('error', 'Unauthorized to delete this job.');
         }
@@ -370,6 +502,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
                 'error' => $e->getMessage(),
                 'job_id' => $callLog->id,
                 'user_id' => Auth::id(),
+                'timestamp' => '2025-08-14 12:51:10'
             ]);
 
             return redirect()->back()->with('error', 'Failed to delete job. Please try again.');
@@ -395,7 +528,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
         ];
 
         $recentJobs = CallLog::with(['assignedTo:id,name'])
-            ->select(['id', 'customer_name', 'company_name', 'status', 'type', 'date_booked', 'assigned_to'])
+            ->select(['id', 'customer_name', 'status', 'type', 'date_booked', 'assigned_to'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
@@ -441,6 +574,52 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
                 'assigned_at' => now(),
             ]);
 
+            // Send notification to assigned engineer
+            try {
+                $engineer->notify(new JobAssigned($callLog, Auth::user()));
+                Log::info('Job assignment notification sent', [
+                    'job_id' => $callLog->id,
+                    'assigned_to_id' => $engineer->id,
+                    'assigned_to_name' => $engineer->name,
+                    'assigned_by' => Auth::id(),
+                    'assigned_by_name' => Auth::user()->name,
+                    'notification_type' => 'JobAssignedNotification',
+                    'timestamp' => '2025-08-14 12:51:10'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send job assignment notification', [
+                    'job_id' => $callLog->id,
+                    'engineer_id' => $engineer->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+
+            // Notify managers and admins about the assignment (except the assignor)
+            $managersAndAdmins = User::whereIn('role', ['admin', 'manager'])
+                ->where('id', '!=', Auth::id())
+                ->where('id', '!=', $engineer->id)
+                ->get();
+                
+            foreach ($managersAndAdmins as $user) {
+                try {
+                    $user->notify(new JobStatusUpdated($callLog, 'pending', 'assigned', Auth::user()));
+                    Log::info('Job assignment status notification sent to manager', [
+                        'job_id' => $callLog->id,
+                        'notified_user_id' => $user->id,
+                        'notified_user_name' => $user->name,
+                        'notification_type' => 'JobStatusUpdated',
+                        'timestamp' => '2025-08-14 12:51:10'
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send assignment status notification', [
+                        'job_id' => $callLog->id,
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
             $this->sendJobAssignmentNotifications($callLog, $engineer);
 
             DB::commit();
@@ -449,6 +628,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
                 'job_id' => $callLog->id,
                 'engineer_id' => $engineer->id,
                 'assigned_by' => Auth::id(),
+                'timestamp' => '2025-08-14 12:51:10'
             ]);
 
             return redirect()->back()->with('success', "Job #{$callLog->id} assigned to {$engineer->name} successfully!");
@@ -461,6 +641,8 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
                 'engineer_id' => $validated['engineer'] ?? null,
                 'error' => $e->getMessage(),
                 'user_id' => Auth::id(),
+                'user_name' => Auth::user()->name,
+                'timestamp' => '2025-08-14 12:51:10'
             ]);
 
             return redirect()->back()->with('error', 'Assignment failed. Please try again.');
@@ -485,6 +667,8 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
             'time_finish' => 'nullable|date_format:H:i',
             'date_resolved' => 'nullable|date',
             'engineer_comments' => 'nullable|string|max:' . self::MAX_ENGINEER_COMMENTS,
+            'job_card' => 'nullable|string|max:50',
+            'billed_hours' => 'nullable|string|max:50',
         ]);
 
         if (!$this->isValidStatusTransition($callLog->status, $validated['status'])) {
@@ -505,8 +689,30 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
 
             if ($validated['status'] === 'complete') {
                 $updateData['date_resolved'] = $validated['date_resolved'] ?? now()->format('Y-m-d');
+                $updateData['job_card'] = $validated['job_card'] ?? ('TBD-' . $callLog->id);
+                
                 if ($request->filled('time_finish')) {
                     $updateData['time_finish'] = $validated['time_finish'];
+                } else {
+                    $updateData['time_finish'] = '17:00';
+                }
+                
+                if ($request->filled('time_start')) {
+                    $updateData['time_start'] = $validated['time_start'];
+                } else if (!$callLog->time_start) {
+                    $updateData['time_start'] = '08:00';
+                }
+                
+                if ($request->filled('billed_hours')) {
+                    $updateData['billed_hours'] = $validated['billed_hours'];
+                } else if (!$callLog->billed_hours) {
+                    $updateData['billed_hours'] = '8';
+                }
+
+                if ($request->filled('engineer_comments')) {
+                    $updateData['engineer_comments'] = $validated['engineer_comments'];
+                } else if (!$callLog->engineer_comments) {
+                    $updateData['engineer_comments'] = 'Job completed successfully.';
                 }
             }
 
@@ -517,7 +723,8 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
             $oldStatus = $callLog->status;
             $callLog->update($updateData);
 
-            $this->handleStatusChangeNotifications($callLog, $oldStatus, $validated['status']);
+            // Send status change notifications
+            $this->sendStatusChangeNotifications($callLog, $oldStatus, $validated['status']);
 
             DB::commit();
 
@@ -536,6 +743,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
                 'job_id' => $callLog->id,
                 'new_status' => $validated['status'],
                 'user_id' => Auth::id(),
+                'timestamp' => '2025-08-14 12:51:10'
             ]);
 
             return response()->json([
@@ -553,7 +761,6 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
         try {
             $query = CallLog::with(['assignedTo:id,name', 'approver:id,name']);
             $this->applyFiltersToQuery($query, $request);
-
             $callLogs = $query->orderBy('date_booked', 'desc')->get();
 
             if ($callLogs->isEmpty()) {
@@ -565,37 +772,41 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
             return (new FastExcel($callLogs))->download($filename, function ($job) {
                 return [
                     'Job ID' => $job->id,
-                    'Job Card' => $job->job_card ?: 'TBD-' . $job->id,
-                    'Customer Name' => $job->customer_name ?: $job->company_name,
+                    'Job Card' => $job->job_card ?: ('TBD-' . $job->id),
+                    'Customer Name' => $job->customer_name ?: 'N/A',
                     'Customer Email' => $job->customer_email ?: 'N/A',
                     'Customer Phone' => $job->customer_phone ?: 'N/A',
-                    'Company Name' => $job->company_name ?: 'N/A',
-                    'Fault Description' => $job->fault_description,
+                    'Customer Address' => $job->customer_address ?: 'N/A',
+                    'Company Name' => $job->customer_name ?: 'N/A', // Same as customer name
+                    'Fault Description' => $job->fault_description ?: 'N/A',
                     'ZIMRA Reference' => $job->zimra_ref ?: 'N/A',
-                    'Date Booked' => optional($job->date_booked)->format('Y-m-d') ?: 'N/A',
-                    'Date Resolved' => optional($job->date_resolved)->format('Y-m-d') ?: 'N/A',
-                    'Time Start' => $job->time_start ?: 'N/A',
-                    'Time Finish' => $job->time_finish ?: 'N/A',
+                    'Date Booked' => $job->date_booked ? $job->date_booked->format('Y-m-d') : 'N/A',
+                    'Date Resolved' => $job->date_resolved ? $job->date_resolved->format('Y-m-d') : 'N/A',
+                    'Time Start' => $job->formatted_time_start,
+                    'Time Finish' => $job->formatted_time_finish,
                     'Job Type' => ucfirst($job->type ?: 'normal'),
                     'Status' => ucfirst($job->status ?: 'pending'),
-                    'Billed Hours' => $job->billed_hours ?: 0,
+                    'Billed Hours' => $job->billed_hours ?: 'N/A',
                     'Amount Charged' => number_format($job->amount_charged ?: 0, 2),
+                    'Hourly Rate' => $job->hourly_rate ? number_format($job->hourly_rate, 2) : 'N/A',
                     'Currency' => $job->currency ?: 'USD',
-                    'Assigned Technician' => optional($job->assignedTo)->name ?: 'Unassigned',
-                    'Approved By' => optional($job->approver)->name ?: 'N/A',
+                    'Assigned Technician' => $job->assignedTo?->name ?: 'Unassigned',
+                    'Approved By' => $job->approver?->name ?: 'N/A',
                     'Engineer Comments' => $job->engineer_comments ?: 'N/A',
                     'Booked By' => $job->booked_by ?: 'N/A',
-                    'Created At' => $job->created_at->format('Y-m-d H:i:s'),
-                    'Updated At' => $job->updated_at->format('Y-m-d H:i:s'),
+                    'Created At' => $job->created_at?->format('Y-m-d H:i:s') ?: 'N/A',
+                    'Updated At' => $job->updated_at?->format('Y-m-d H:i:s') ?: 'N/A',
                 ];
             });
         } catch (\Exception $e) {
-            Log::error('Export failed', [
+            \Log::error('Export failed', [
                 'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
+                'user_id' => \Auth::id(),
+                'trace' => $e->getTraceAsString(),
+                'timestamp' => '2025-08-14 12:51:10'
             ]);
 
-            return redirect()->back()->with('error', 'Export failed. Please try again.');
+            return redirect()->back()->with('error', 'Export failed: ' . $e->getMessage());
         }
     }
 
@@ -632,6 +843,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
                 'job_id' => $callLog->id,
                 'customer_email' => $callLog->customer_email,
                 'sent_by' => Auth::user()->name,
+                'timestamp' => '2025-08-14 12:51:10'
             ]);
 
             return response()->json([
@@ -644,6 +856,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
                 'job_id' => $callLog->id,
                 'customer_email' => $callLog->customer_email,
                 'error' => $e->getMessage(),
+                'timestamp' => '2025-08-14 12:51:10'
             ]);
 
             return response()->json([
@@ -667,7 +880,6 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('customer_name', 'like', "%{$search}%")
-                  ->orWhere('company_name', 'like', "%{$search}%")
                   ->orWhere('fault_description', 'like', "%{$search}%");
             });
         }
@@ -737,111 +949,189 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
     }
 
     public function completed(Request $request): View
-    {
-        try {
-            $query = CallLog::where('status', 'complete');
+{
+    try {
+        $query = CallLog::where('status', 'complete');
 
-            // Apply filters for date range
-            if ($request->filled('date_range')) {
-                switch ($request->date_range) {
-                    case 'today':
-                        $query->whereDate('date_resolved', today());
-                        break;
-                    case 'this_week':
-                        $query->whereBetween('date_resolved', [now()->startOfWeek(), now()->endOfWeek()]);
-                        break;
-                    case 'this_month':
-                        $query->whereMonth('date_resolved', now()->month)
-                              ->whereYear('date_resolved', now()->year);
-                        break;
-                    case 'last_month':
-                        $query->whereMonth('date_resolved', now()->subMonth()->month)
-                              ->whereYear('date_resolved', now()->subMonth()->year);
-                        break;
-                    case 'last_3_months':
-                        $query->where('date_resolved', '>=', now()->subMonths(3));
-                        break;
-                    case 'this_year':
-                        $query->whereYear('date_resolved', now()->year);
-                        break;
-                }
+        // Apply filters for actual date range instead of predefined ranges
+        if ($request->filled('date_from') || $request->filled('date_to')) {
+            $dateFrom = $request->filled('date_from') ? Carbon::parse($request->date_from)->startOfDay() : null;
+            $dateTo = $request->filled('date_to') ? Carbon::parse($request->date_to)->endOfDay() : null;
+
+            if ($dateFrom && $dateTo) {
+                $query->whereBetween('date_resolved', [$dateFrom, $dateTo]);
+            } elseif ($dateFrom) {
+                $query->where('date_resolved', '>=', $dateFrom);
+            } elseif ($dateTo) {
+                $query->where('date_resolved', '<=', $dateTo);
             }
-
-            // Additional filters
-            if ($request->filled('engineer')) {
-                $query->where('assigned_to', $request->engineer);
-            }
-
-            if ($request->filled('type')) {
-                $query->where('type', $request->type);
-            }
-
-            if ($request->filled('search')) {
-                $search = trim($request->search);
-                $query->where(function ($q) use ($search) {
-                    $q->where('customer_name', 'like', "%{$search}%")
-                      ->orWhere('customer_email', 'like', "%{$search}%")
-                      ->orWhere('fault_description', 'like', "%{$search}%")
-                      ->orWhere('job_card', 'like', "%{$search}%");
-                });
-            }
-
-            $callLogs = $query->with(['assignedTo', 'approver'])
-                              ->orderBy('date_resolved', 'desc')
-                              ->paginate(15)
-                              ->appends($request->query());
-
-            $technicians = User::whereIn('role', ['technician', 'manager', 'admin', 'accounts'])
-                               ->orderBy('name')
-                               ->get();
-
-            $baseQuery = CallLog::where('status', 'complete');
-            $totalRevenue = $baseQuery->sum('amount_charged') ?? 0;
-            $avgRevenue = $baseQuery->avg('amount_charged') ?? 0;
-
-            $completedJobs = $baseQuery->whereNotNull('billed_hours')
-                                      ->where('billed_hours', '!=', '')
-                                      ->get();
-
-            $numericHours = $completedJobs->map(function($job) {
-                $hours = $job->billed_hours;
-                if (str_contains($hours, '%')) {
-                    return 0.1;
-                }
-                return is_numeric($hours) ? (float)$hours : 0;
-            })->filter(function($hour) {
-                return $hour > 0;
-            });
-
-            $avgDuration = $numericHours->avg() ?? 0;
-
-            $stats = [
-                'total_completed' => $baseQuery->count(),
-                'this_month' => $baseQuery->whereMonth('date_resolved', now()->month)
-                                         ->whereYear('date_resolved', now()->year)
-                                         ->count(),
-                'total_revenue' => $totalRevenue,
-                'avg_duration' => round($avgDuration, 2),
-            ];
-
-            return view('admin.CallLogs.completed', compact('callLogs', 'stats', 'technicians'));
-
-        } catch (\Exception $e) {
-            Log::error('Error loading completed jobs: ' . $e->getMessage());
-
-            return view('admin.CallLogs.completed', [
-                'callLogs' => CallLog::where('status', 'complete')->paginate(15),
-                'stats' => [
-                    'total_completed' => 0,
-                    'this_month' => 0,
-                    'total_revenue' => 0,
-                    'avg_duration' => 0,
-                ],
-                'technicians' => collect(),
-                'error' => 'Error loading completed jobs. Please try again.',
-            ]);
         }
+
+        // Additional filters (keep existing logic)
+        if ($request->filled('engineer')) {
+            $query->where('assigned_to', $request->engineer);
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                  ->orWhere('customer_email', 'like', "%{$search}%")
+                  ->orWhere('fault_description', 'like', "%{$search}%")
+                  ->orWhere('job_card', 'like', "%{$search}%");
+            });
+        }
+
+        $callLogs = $query->with(['assignedTo', 'approver'])
+                          ->orderBy('date_resolved', 'desc')
+                          ->paginate(15)
+                          ->appends($request->query());
+
+        $technicians = User::whereIn('role', ['technician', 'manager', 'admin', 'accounts'])
+                           ->orderBy('name')
+                           ->get();
+
+        // Stats calculations (keep existing logic)
+        $baseQuery = CallLog::where('status', 'complete');
+        $totalRevenue = $baseQuery->sum('amount_charged') ?? 0;
+        $avgRevenue = $baseQuery->avg('amount_charged') ?? 0;
+
+        $completedJobs = $baseQuery->whereNotNull('billed_hours')
+                                  ->where('billed_hours', '!=', '')
+                                  ->get();
+
+        $numericHours = $completedJobs->map(function($job) {
+            $hours = $job->billed_hours;
+            if (str_contains($hours, '%')) {
+                return 0.1;
+            }
+            return is_numeric($hours) ? (float)$hours : 0;
+        })->filter(function($hour) {
+            return $hour > 0;
+        });
+
+        $avgDuration = $numericHours->avg() ?? 0;
+
+        $stats = [
+            'total_completed' => $baseQuery->count(),
+            'this_month' => $baseQuery->whereMonth('date_resolved', now()->month)
+                                     ->whereYear('date_resolved', now()->year)
+                                     ->count(),
+            'total_revenue' => $totalRevenue,
+            'avg_duration' => round($avgDuration, 2),
+        ];
+
+        return view('admin.CallLogs.completed', compact('callLogs', 'stats', 'technicians'));
+
+    } catch (\Exception $e) {
+        Log::error('Error loading completed jobs: ' . $e->getMessage(), [
+            'timestamp' => now()->toDateTimeString()
+        ]);
+
+        return view('admin.CallLogs.completed', [
+            'callLogs' => CallLog::where('status', 'complete')->paginate(15),
+            'stats' => [
+                'total_completed' => 0,
+                'this_month' => 0,
+                'total_revenue' => 0,
+                'avg_duration' => 0,
+            ],
+            'technicians' => collect(),
+            'error' => 'Error loading completed jobs. Please try again.',
+        ]);
     }
+}
+
+public function exportCompleted(Request $request)
+{
+    try {
+        $query = CallLog::where('status', 'complete')->with(['assignedTo:id,name', 'approver:id,name']);
+        
+        // Apply the same filters as the completed view
+        if ($request->filled('date_from') || $request->filled('date_to')) {
+            $dateFrom = $request->filled('date_from') ? Carbon::parse($request->date_from)->startOfDay() : null;
+            $dateTo = $request->filled('date_to') ? Carbon::parse($request->date_to)->endOfDay() : null;
+
+            if ($dateFrom && $dateTo) {
+                $query->whereBetween('date_resolved', [$dateFrom, $dateTo]);
+            } elseif ($dateFrom) {
+                $query->where('date_resolved', '>=', $dateFrom);
+            } elseif ($dateTo) {
+                $query->where('date_resolved', '<=', $dateTo);
+            }
+        }
+
+        if ($request->filled('engineer')) {
+            $query->where('assigned_to', $request->engineer);
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                  ->orWhere('customer_email', 'like', "%{$search}%")
+                  ->orWhere('fault_description', 'like', "%{$search}%")
+                  ->orWhere('job_card', 'like', "%{$search}%");
+            });
+        }
+
+        $callLogs = $query->orderBy('date_resolved', 'desc')->get();
+
+        if ($callLogs->isEmpty()) {
+            return redirect()->back()->with('warning', 'No completed jobs found matching your criteria.');
+        }
+
+        $filename = 'completed_jobs_export_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+
+        return (new FastExcel($callLogs))->download($filename, function ($job) {
+            return [
+                'Job ID' => $job->id,
+                'Job Card' => $job->job_card ?: ('TBD-' . $job->id),
+                'Customer Name' => $job->customer_name ?: 'N/A',
+                'Customer Email' => $job->customer_email ?: 'N/A',
+                'Customer Phone' => $job->customer_phone ?: 'N/A',
+                'Customer Address' => $job->customer_address ?: 'N/A',
+                'Company Name' => $job->company_name ?: $job->customer_name ?: 'N/A',
+                'Fault Description' => $job->fault_description ?: 'N/A',
+                'ZIMRA Reference' => $job->zimra_ref ?: 'N/A',
+                'Date Booked' => $job->date_booked ? $job->date_booked->format('Y-m-d') : 'N/A',
+                'Date Resolved' => $job->date_resolved ? $job->date_resolved->format('Y-m-d') : 'N/A',
+                'Time Start' => $job->formatted_time_start ?: 'N/A',
+                'Time Finish' => $job->formatted_time_finish ?: 'N/A',
+                'Job Type' => ucfirst($job->type ?: 'normal'),
+                'Status' => ucfirst($job->status ?: 'pending'),
+                'Billed Hours' => $job->billed_hours ?: 'N/A',
+                'Amount Charged' => number_format($job->amount_charged ?: 0, 2),
+                'Hourly Rate' => $job->hourly_rate ? number_format($job->hourly_rate, 2) : 'N/A',
+                'Currency' => $job->currency ?: 'USD',
+                'Assigned Technician' => $job->assignedTo?->name ?: 'Unassigned',
+                'Approved By' => $job->approver?->name ?: 'N/A',
+                'Engineer Comments' => $job->engineer_comments ?: 'N/A',
+                'Booked By' => $job->booked_by ?: 'N/A',
+                'Created At' => $job->created_at?->format('Y-m-d H:i:s') ?: 'N/A',
+                'Updated At' => $job->updated_at?->format('Y-m-d H:i:s') ?: 'N/A',
+            ];
+        });
+    } catch (\Exception $e) {
+        \Log::error('Completed jobs export failed', [
+            'error' => $e->getMessage(),
+            'user_id' => \Auth::id(),
+            'trace' => $e->getTraceAsString(),
+            'timestamp' => now()->toDateTimeString()
+        ]);
+
+        return redirect()->back()->with('error', 'Export failed: ' . $e->getMessage());
+    }
+}
+
 
     public function cancelled(Request $request): View
     {
@@ -929,6 +1219,62 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
     // ---------------------- PRIVATE HELPERS ---------------------- //
 
     /**
+     * Send status change notifications to relevant users
+     */
+    private function sendStatusChangeNotifications(CallLog $callLog, string $oldStatus, string $newStatus): void
+    {
+        Log::info('Sending status change notifications', [
+            'job_id' => $callLog->id,
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+            'changed_by' => Auth::id(),
+            'changed_by_name' => Auth::user()->name,
+            'timestamp' => '2025-08-14 12:51:10'
+        ]);
+
+        // Collect users to notify
+        $usersToNotify = collect();
+
+        // Always notify admins and managers
+        $adminsAndManagers = User::whereIn('role', ['admin', 'manager'])->get();
+        $usersToNotify = $usersToNotify->merge($adminsAndManagers);
+
+        // Notify the assigned engineer if someone else changed the status
+        if ($callLog->assigned_to && $callLog->assigned_to !== Auth::id()) {
+            $assignedEngineer = User::find($callLog->assigned_to);
+            if ($assignedEngineer) {
+                $usersToNotify->push($assignedEngineer);
+            }
+        }
+
+        // Remove the current user from notifications and ensure unique users
+        $usersToNotify = $usersToNotify->where('id', '!=', Auth::id())->unique('id');
+
+        foreach ($usersToNotify as $user) {
+            try {
+                $user->notify(new JobStatusUpdated($callLog, $oldStatus, $newStatus, Auth::user()));
+                Log::info('Status change notification sent', [
+                    'job_id' => $callLog->id,
+                    'notified_user_id' => $user->id,
+                    'notified_user_name' => $user->name,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'notification_type' => 'JobStatusUpdated',
+                    'timestamp' => '2025-08-14 12:51:10'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send status change notification', [
+                    'job_id' => $callLog->id,
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        }
+    }
+
+    /**
      * Builds a filtered view with base filters and applies request filters.
      */
     private function buildFilteredView(Request $request, array $baseFilters, string $viewPath, string $title): View
@@ -965,7 +1311,6 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
             $search = trim($request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('customer_name', 'like', "%{$search}%")
-                    ->orWhere('company_name', 'like', "%{$search}%")
                     ->orWhere('job_card', 'like', "%{$search}%")
                     ->orWhere('fault_description', 'like', "%{$search}%")
                     ->orWhere('zimra_ref', 'like', "%{$search}%")
@@ -1083,7 +1428,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
     {
         $user = Auth::user();
 
-        return in_array($user->role ?? '', ['admin', 'manager'], true) ||
+        return in_array($user->role ?? '', ['admin', 'manager', 'accounts'], true) ||
             $callLog->assigned_to === $user->id ||
             $callLog->approved_by === $user->id;
     }
@@ -1151,6 +1496,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
                 'job_id' => $callLog->id,
                 'engineer_id' => $engineer->id,
                 'error' => $e->getMessage(),
+                'timestamp' => '2025-08-14 12:51:10'
             ]);
         }
     }
@@ -1170,6 +1516,7 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
                     'old_status' => $oldStatus,
                     'new_status' => $newStatus,
                     'error' => $e->getMessage(),
+                    'timestamp' => '2025-08-14 12:51:10'
                 ]);
             }
         }
@@ -1228,5 +1575,4 @@ public function update(Request $request, CallLog $callLog): RedirectResponse
 
         return true;
     }
-
 }

@@ -206,12 +206,22 @@
                                 </div>
                             </td>
                             <td>
+                                {{-- In the action buttons section for each job --}}
                                 <div class="action-buttons">
                                     <button onclick="window.location.href='{{ route('admin.call-logs.show', $job->id) }}'" 
-                                       class="action-btn view-btn" 
-                                       title="View Details" type="button" aria-label="View Job #{{ $job->id }}">
+                                        class="action-btn view-btn" 
+                                        title="View Details" type="button" aria-label="View Job #{{ $job->id }}">
                                         <i class="fas fa-eye"></i>
                                     </button>
+                                    
+                                    {{-- Add edit button for managers --}}
+                                    @if(in_array(auth()->user()->role ?? 'user', ['admin', 'manager']))
+                                        <button onclick="window.location.href='{{ route('admin.call-logs.edit', $job->id) }}'" 
+                                            class="action-btn edit-btn" 
+                                            title="Edit Job" type="button" aria-label="Edit Job #{{ $job->id }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    @endif    
                                     @if(in_array(auth()->user()->role ?? 'user', ['admin', 'manager']))
                                         <button type="button" class="action-btn assign-btn"
                                             data-bs-toggle="modal" 

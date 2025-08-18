@@ -13,6 +13,7 @@
     <link rel="preload" href="{{ asset('assets/css/bootstrap.min.css') }}" as="style">
     <link rel="preload" href="{{ asset('assets/css/style.css') }}" as="style">
     <link rel="preload" href="{{ asset('assets/js/vendor/jquery-3.7.1.min.js') }}" as="script">
+    <script src="https://cdn.jsdelivr.net/npm/altcha@latest/dist/altcha.min.js"></script>
 
     <!-- Core CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
@@ -30,8 +31,7 @@
 
     @stack('styles')
     
-
-        <style>
+    <style>
         /* Enhanced Mobile Navigation Styles */
         .tgmobile__menu {
             position: fixed;
@@ -288,15 +288,13 @@
                 display: none !important;
             }
         }
-    </style>
-    <!-- Enhanced Create Ticket Button Styles -->
-    <style>
+
         /* Enhanced Support Ticket Button */
         .support-ticket-trigger {
             position: fixed;
             bottom: 25px;
             right: 25px;
-            background: linear-gradient(135deg, #16582f), #0f8447);
+            background: linear-gradient(135deg, #035121, #015e2e);
             color: white;
             border: none;
             border-radius: 50px;
@@ -304,7 +302,7 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 20px rgba(10, 73, 24, 0.3);
+            box-shadow: 0 4px 20px rgba(4, 79, 20, 0.3);
             transition: all 0.3s ease;
             z-index: 1000;
             display: flex;
@@ -317,9 +315,9 @@
         }
 
         .support-ticket-trigger:hover {
-            background: linear-gradient(135deg, #45a216, #16582f);
+            background: linear-gradient(135deg, #214d0b, #16582f);
             transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(6, 173, 224, 0.4);
+            box-shadow: 0 6px 25px rgba(4, 75, 7, 0.4);
             color: white;
         }
 
@@ -362,30 +360,53 @@
         }
 
         /* Compact mobile version */
-@media (max-width: 768px) {
-    .support-ticket-trigger span {
-        display: none; /* Hide text on mobile */
-    }
-    
-    .support-ticket-trigger {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        padding: 0;
-        justify-content: center;
-        bottom: 20px !important;
-        right: 20px !important;
-        z-index: 99999 !important;
-        display: flex !important;
-        visibility: visible !important;
-    }
-    
-    .support-ticket-trigger i {
-        font-size: 18px !important;
-        margin: 0;
-    }
-}
+        @media (max-width: 768px) {
+            .support-ticket-trigger span {
+                display: none; /* Hide text on mobile */
+            }
+            
+            .support-ticket-trigger {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                padding: 0;
+                justify-content: center;
+                bottom: 20px !important;
+                right: 20px !important;
+                z-index: 99999 !important;
+                display: flex !important;
+                visibility: visible !important;
+            }
+            
+            .support-ticket-trigger i {
+                font-size: 18px !important;
+                margin: 0;
+            }
+        }
 
+        /* Altcha styling */
+        #altcha {
+            margin: 15px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Center Altcha on mobile */
+        @media (max-width: 768px) {
+            #altcha {
+                transform: scale(0.85);
+                transform-origin: 0 0;
+                margin-bottom: 10px;
+            }
+        }
+
+        /* Error styling */
+        .altcha-error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 8px;
+        }
     </style>
     
     <!-- Session message handling -->
@@ -516,7 +537,6 @@
                                             <option value="Fiscal Device Setup" {{ old('service') == 'Fiscal Device Setup' ? 'selected' : '' }}>Fiscal Device Setup</option>
                                             <option value="Technical Support" {{ old('service') == 'Technical Support' ? 'selected' : '' }}>Technical Support</option>
                                             <option value="Billing Inquiry" {{ old('service') == 'Billing Inquiry' ? 'selected' : '' }}>Billing Inquiry</option>
-                                            <option value="Software Update" {{ old('service') == 'Software Update' ? 'selected' : '' }}>Software Update</option>
                                             <option value="Other" {{ old('service') == 'Other' ? 'selected' : '' }}>Other</option>
                                         </select>
 
@@ -526,7 +546,6 @@
                                                 <span class="custom-option" data-value="Fiscal Device Setup">Fiscal Device Setup</span>
                                                 <span class="custom-option" data-value="Technical Support">Technical Support</span>
                                                 <span class="custom-option" data-value="Billing Inquiry">Billing Inquiry</span>
-                                                
                                                 <span class="custom-option" data-value="Other">Other</span>
                                             </div>
                                         </div>
@@ -572,7 +591,25 @@
                                         @enderror
                                     </div>
                                 </div>
+                                <input type="text" name="website" style="display: none !important;" tabindex="-1" autocomplete="off">
 
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label class="form-label">Security Verification</label>
+                                        <!-- Altcha widget container -->
+                                        <div id="altcha-container" style="min-height: 80px;">
+                                            <div id="altcha" data-theme="light"></div>
+                                        </div>
+                                        <input type="hidden" name="altcha-token" id="altcha-token" />
+                                        <div id="altcha-error" class="text-danger mt-2" style="display: none;">
+                                            Please complete the security verification.
+                                        </div>
+                                        <small class="text-muted mt-1 d-block">
+                                            Please complete the security verification above to submit your ticket.
+                                        </small>
+                                    </div>
+                                </div>
+                                </div>
                                 <div class="col-12">
                                     <button type="submit" class="submit-btn" id="submitTicketBtn">
                                         <span class="btn-text">Submit Ticket</span>
@@ -604,24 +641,24 @@
                                 <ul class="list-wrap d-flex align-items-center">
                                     <li>Follow Us On: </li>
                                     <li>
-                                        <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                                        <a href="https://www.facebook.com/people/FIscal-Support-Services/100032786814929/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                                             <i class="fab fa-facebook-f"></i>
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                                        <a href="https://x.com/fssservices" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
                                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <path d="M8.33192 5.92804L13.5438 0H12.3087L7.78328 5.14724L4.16883 0H0L5.46575 7.78353L0 14H1.2351L6.01407 8.56431L9.83119 14H14L8.33192 5.92804ZM6.64027 7.85211L6.08648 7.07704L1.68013 0.909771H3.57718L7.13316 5.88696L7.68694 6.66202L12.3093 13.1316H10.4123L6.64027 7.85211Z" fill="var(--tg-heading-color)" />
                                             </svg>
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                                        <a href="https://zw.linkedin.com/company/fiscalsupport" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
                                             <i class="fab fa-linkedin-in"></i>
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                                        <a href="https://www.instagram.com/fiscal_supportservices/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                                             <i class="fab fa-instagram"></i>
                                         </a>
                                     </li>
@@ -692,46 +729,46 @@
         </div>
         
         <!-- Enhanced Mobile Navigation -->
-    <div class="tgmobile__menu">
-        <div class="tgmobile__menu-box">
-            <div class="close-btn"><i class="fas fa-times"></i></div>
-            <div class="tgmobile__menu-outer">
-            </div>
-             <!-- Mobile Login Button -->
-                <div class="mobile-login-container" style="margin-bottom: 20px;">
-                    @auth
-                        <a href="{{ route('admin.index') }}" class="mobile-login-btn" style="display: block; text-align: center;">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    @else
-                        <a href="{{ route('show.login') }}" class="mobile-login-btn" style="display: block; text-align: center;">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </a>
-                    @endauth
+        <div class="tgmobile__menu">
+            <div class="tgmobile__menu-box">
+                <div class="close-btn"><i class="fas fa-times"></i></div>
+                <div class="tgmobile__menu-outer">
                 </div>
-            
-            <div class="tgmobile__menu-bottom">
+                 <!-- Mobile Login Button -->
+                    <div class="mobile-login-container" style="margin-bottom: 20px;">
+                        @auth
+                            <a href="{{ route('admin.index') }}" class="mobile-login-btn" style="display: block; text-align: center;">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        @else
+                            <a href="{{ route('show.login') }}" class="mobile-login-btn" style="display: block; text-align: center;">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                        @endauth
+                    </div>
                 
-                <div class="contact-info">
-                    <ul class="list-wrap">
-                        <li><i class="fas fa-envelope"></i> <a href="mailto:sales@fiscalsupportservices.com">sales@fiscalsupportservices.com</a></li>
-                        <li><i class="fas fa-phone"></i> <a href="tel:+263292270666">+263 292 270666</a></li>
-                        <li><i class="fas fa-map-marker-alt"></i> 36 East Road, Belgravia, Harare</li>
-                    </ul>
-                </div>
-                <div class="social-links">
+                <div class="tgmobile__menu-bottom">
                     
-                    <ul class="list-wrap">
-                        <li><a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
-                        <li><a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
-                        <li><a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></li>
-                        <li><a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
-                        <li><a href="https://wa.me/263780526944" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a></li>
-                    </ul>
+                    <div class="contact-info">
+                        <ul class="list-wrap">
+                            <li><i class="fas fa-envelope"></i> <a href="mailto:sales@fiscalsupportservices.com">sales@fiscalsupportservices.com</a></li>
+                            <li><i class="fas fa-phone"></i> <a href="tel:+2638677187169">+2638677187169</a></li>
+                            <li><i class="fas fa-map-marker-alt"></i> 36 East Road, Belgravia, Harare</li>
+                        </ul>
+                    </div>
+                    <div class="social-links">
+                        
+                        <ul class="list-wrap">
+                            <li><a href="https://www.facebook.com/people/FIscal-Support-Services/100032786814929/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
+                            <li><a href="https://x.com/fssservices" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)"><i class="fab fa-twitter"></i></a></li>
+                            <li><a href="https://zw.linkedin.com/company/fiscalsupport" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></li>
+                            <li><a href="https://www.instagram.com/fiscal_supportservices/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
+                            <li><a href="https://wa.me/263780526944" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
     </header>
 
@@ -762,14 +799,14 @@
                                     </p>
                                     <div class="social-links style3">
                                         <ul class="list-wrap">
-                                            <li><a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
-                                            <li><a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                                            <li><a href="https://www.facebook.com/people/FIscal-Support-Services/100032786814929/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
+                                            <li><a href="https://x.com/fssservices" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
                                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M8.33192 5.92804L13.5438 0H12.3087L7.78328 5.14724L4.16883 0H0L5.46575 7.78353L0 14H1.2351L6.01407 8.56431L9.83119 14H14L8.33192 5.92804ZM6.64027 7.85211L6.08648 7.07704L1.68013 0.909771H3.57718L7.13316 5.88696L7.68694 6.66202L12.3093 13.1316H10.4123L6.64027 7.85211Z" fill="currentColor" />
                                                 </svg>
                                             </a></li>
-                                            <li><a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></li>
-                                            <li><a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
+                                            <li><a href="https://zw.linkedin.com/company/fiscalsupport" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></li>
+                                            <li><a href="https://www.instagram.com/fiscal_supportservices/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
                                             <li><a href="https://www.skype.com/" target="_blank" rel="noopener noreferrer" aria-label="Skype"><i class="fab fa-skype"></i></a></li>
                                         </ul>
                                     </div>
@@ -847,7 +884,7 @@
     <script src="{{ asset('assets/js/isotope.pkgd.min.js') }}" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 
-    <!-- Enhanced JavaScript with Draggable Functionality -->
+    <!-- Enhanced JavaScript with Draggable Functionality and Altcha Integration -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Cache DOM elements
@@ -1053,16 +1090,6 @@
                 });
             }
 
-            // Form submission handling
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    // Show loading state
-                    submitBtn.disabled = true;
-                    submitBtn.querySelector('.btn-text').textContent = 'Submitting...';
-                    submitBtn.querySelector('.spinner-border').classList.remove('d-none');
-                });
-            }
-
             // Initialize selected service if exists
             if (hiddenSelect && hiddenSelect.value) {
                 const selectedOption = document.querySelector(`.custom-option[data-value="${hiddenSelect.value}"]`);
@@ -1082,11 +1109,17 @@
                     submitBtn.querySelector('.btn-text').textContent = 'Submit Ticket';
                     submitBtn.querySelector('.spinner-border').classList.add('d-none');
                 }
+                // Reset Altcha
+                if (document.getElementById('altcha-token')) {
+                    document.getElementById('altcha-token').value = '';
+                }
+                if (document.getElementById('altcha-error')) {
+                    document.getElementById('altcha-error').style.display = 'none';
+                }
             };
         });
-    </script>
 
-     <script>
+        // Mobile menu functionality
         document.addEventListener('DOMContentLoaded', function() {
             // Mobile menu toggle
             const mobileMenu = document.querySelector('.tgmobile__menu');
@@ -1147,6 +1180,92 @@
                 headerWrap.insertBefore(mobileLoginBtn, document.querySelector('.mobile-nav-toggler'));
             }
         });
+
+       document.addEventListener('DOMContentLoaded', function() {
+    // Altcha widget setup with better error handling
+    function initializeAltcha() {
+        const altchaElement = document.getElementById('altcha');
+        const altchaToken = document.getElementById('altcha-token');
+        const altchaError = document.getElementById('altcha-error');
+        
+        if (!altchaElement || !altchaToken || !altchaError) {
+            console.error('Altcha elements not found');
+            return;
+        }
+
+        try {
+            // Check if Altcha library is loaded
+            if (typeof Altcha === 'undefined') {
+                console.error('Altcha library not loaded');
+                altchaError.style.display = 'block';
+                altchaError.textContent = 'Security verification temporarily unavailable. Please refresh the page.';
+                return;
+            }
+
+            // Initialize Altcha widget
+            Altcha.render(altchaElement, {
+                theme: 'light',
+                callback: function(token) {
+                    console.log('Altcha token received:', token ? 'Yes' : 'No');
+                    altchaToken.value = token;
+                    altchaError.style.display = 'none';
+                },
+                error: function(error) {
+                    console.error('Altcha error:', error);
+                    altchaError.style.display = 'block';
+                    altchaError.textContent = 'Security verification failed. Please refresh the page.';
+                }
+            });
+            
+            console.log('Altcha widget initialized successfully');
+            
+        } catch (error) {
+            console.error('Altcha initialization failed:', error);
+            altchaError.style.display = 'block';
+            altchaError.textContent = 'Security verification unavailable. Please refresh the page and try again.';
+        }
+    }
+
+    // Initialize Altcha when modal opens
+    document.addEventListener('modalOpened', function() {
+        setTimeout(initializeAltcha, 100); // Small delay to ensure DOM is ready
+    });
+
+    // Also initialize immediately if modal is already open
+    const modal = document.getElementById('supportTicketModal');
+    if (modal && modal.style.display === 'block') {
+        initializeAltcha();
+    }
+
+    // Ticket form submission with enhanced validation
+    const form = document.getElementById('supportTicketForm');
+    const submitBtn = document.getElementById('submitTicketBtn');
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const token = document.getElementById('altcha-token').value;
+            const altchaError = document.getElementById('altcha-error');
+            
+            if (!token) {
+                e.preventDefault();
+                altchaError.style.display = 'block';
+                altchaError.textContent = 'Please complete the security verification.';
+                document.getElementById('altcha').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+                return false;
+            }
+
+            // Show loading state
+            submitBtn.disabled = true;
+            const btnText = submitBtn.querySelector('.btn-text');
+            if (btnText) btnText.textContent = 'Submitting...';
+            const spinner = submitBtn.querySelector('.spinner-border');
+            if (spinner) spinner.classList.remove('d-none');
+        });
+    }
+});
     </script>
 
     @stack('scripts')

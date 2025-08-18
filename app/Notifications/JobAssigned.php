@@ -6,41 +6,69 @@ use App\Models\CallLog;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Log;
 
-class JobAssigned extends Notification implements ShouldQueue
+class JobAssigned extends Notification
 {
     use Queueable;
 
-    public $callLog;
-    public $assignedBy;
+    protected $callLog;
+    protected $assignedBy;
 
     public function __construct(CallLog $callLog, User $assignedBy)
     {
         $this->callLog = $callLog;
         $this->assignedBy = $assignedBy;
+        
+        Log::info('JobAssignedNotification constructed', [
+            'job_id' => $callLog->id,
+            'assigned_by' => $assignedBy->id,
+            'timestamp' => '2025-08-14 13:27:28'
+        ]);
     }
 
     public function via($notifiable)
     {
-        return ['database']; // ONLY database notifications
+        Log::info('JobAssignedNotification via method called', [
+            'notifiable_id' => $notifiable->id,
+            'notifiable_type' => get_class($notifiable),
+            'timestamp' => '2025-08-14 13:27:28'
+        ]);
+        
+        return ['database'];
     }
 
     public function toDatabase($notifiable)
     {
-        return [
+        $data = [
             'type' => 'job_assigned',
             'title' => 'New Job Assignment',
-            'message' => 'You have been assigned job #' . ($this->callLog->job_card ?? $this->callLog->id) . ' for ' . ($this->callLog->customer_name ?? $this->callLog->company_name),
+            'message' => "You have been assigned to job card {$this->getJobCardNumber()} for customer {$this->callLog->customer_name}",
             'job_id' => $this->callLog->id,
-            'job_card' => $this->callLog->job_card ?? 'TBD-' . $this->callLog->id,
-            'customer_name' => $this->callLog->customer_name ?? $this->callLog->company_name,
-            'job_type' => $this->callLog->type ?? 'normal',
-            'amount' => $this->callLog->amount_charged ?? 0,
+            'job_card' => $this->getJobCardNumber(),
+            'customer_name' => $this->callLog->customer_name,
             'assigned_by' => $this->assignedBy->name,
-            'url' => route('admin.call-logs.show', $this->callLog->id),
             'priority' => $this->callLog->type === 'emergency' ? 'high' : 'normal',
-            'created_at' => now()
+            'url' => route('admin.call-logs.show', $this->callLog->id),
+            'timestamp' => '2025-08-14 13:27:28',
         ];
+        
+        Log::info('JobAssignedNotification toDatabase method called', [
+            'notifiable_id' => $notifiable->id,
+            'data' => $data,
+            'timestamp' => '2025-08-14 13:27:28'
+        ]);
+        
+        return $data;
+    }
+
+    private function getJobCardNumber(): string
+    {
+        return $this->callLog->job_card ?? 'TBD-' . $this->callLog->id;
+    }
+
+    public function toArray($notifiable)
+    {
+        return $this->toDatabase($notifiable);
     }
 }

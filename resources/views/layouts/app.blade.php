@@ -1905,6 +1905,237 @@ function updateTimeAndGreeting() {
             "showMethod": "fadeIn",
             "hideMethod": "fadeOut"
         };
+
+
+
+        class NotificationManager {
+    constructor() {
+        this.pollInterval = 30000; // 30 seconds
+        this.isPolling = false;
+        this.notificationPanel = document.getElementById('notification-dropdown');
+        this.notificationBadge = document.querySelector('.notification-badge');
+        this.notificationCount = document.querySelector('.notification-count');
+        this.init();
+    }
+    
+    init() {
+        this.loadNotifications();
+        this.startPolling();
+        this.bindEvents();
+    }
+    
+    async loadNotifications() {
+        try {
+            const [recentResponse, countResponse] = await Promise.all([
+                fetch('/notifications/recent', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                }),
+                fetch('/notifications/count', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                })
+            ]);
+            
+            const notifications = await recentResponse.json();
+            const countData = await countResponse.json();
+            
+            this.updateNotificationPanel(notifications);
+            this.updateNotificationCount(countData.count);
+            
+        } catch (error) {
+            console.error('Failed to load notifications:', error);
+        }
+    }
+    
+    updateNotificationPanel(notifications) {
+        if (!this.notificationPanel) return;
+        
+        const notificationList = this.notificationPanel.querySelector('.notification-list');
+        if (!notificationList) return;
+        
+        if (notifications.length === 0) {
+            notificationList.innerHTML = `
+                <div class="notification-item empty">
+                    <div class="text-center py-4">
+                        <i class="fas fa-bell-slash text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No new notifications</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        notificationList.innerHTML = notifications.map(notification => {
+            const isUnread = !notification.read_at;
+            const iconClass = this.getIconClass(notification.type);
+            const priorityClass = this.getPriorityClass(notification.priority);
+            
+            return `
+                <div class="notification-item ${isUnread ? 'unread' : ''}" data-id="${notification.id}">
+                    <div class="notification-icon ${priorityClass}">
+                        <i class="fas fa-${iconClass}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-header">
+                            <span class="notification-title">${notification.title}</span>
+                            ${isUnread ? '<span class="unread-indicator"></span>' : ''}
+                        </div>
+                        <div class="notification-message">${notification.message}</div>
+                        ${notification.job_card ? `<div class="notification-meta">Job Card: ${notification.job_card}</div>` : ''}
+                        ${notification.customer_name ? `<div class="notification-meta">Customer: ${notification.customer_name}</div>` : ''}
+                        <div class="notification-time">${notification.created_at}</div>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="btn btn-sm btn-link" onclick="notificationManager.markAsRead('${notification.id}')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <a href="${notification.url}" class="btn btn-sm btn-link">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    updateNotificationCount(count) {
+        if (this.notificationCount) {
+            this.notificationCount.textContent = count;
+            this.notificationCount.style.display = count > 0 ? 'inline' : 'none';
+        }
+        
+        if (this.notificationBadge) {
+            if (count > 0) {
+                this.notificationBadge.textContent = count > 99 ? '99+' : count;
+                this.notificationBadge.style.display = 'inline';
+            } else {
+                this.notificationBadge.style.display = 'none';
+            }
+        }
+    }
+    
+    async markAsRead(notificationId) {
+        try {
+            const response = await fetch(`/notifications/${notificationId}/read`, {
+                method: 'PATCH',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Remove unread class from notification
+                const notificationItem = document.querySelector(`[data-id="${notificationId}"]`);
+                if (notificationItem) {
+                    notificationItem.classList.remove('unread');
+                    const unreadIndicator = notificationItem.querySelector('.unread-indicator');
+                    if (unreadIndicator) {
+                        unreadIndicator.remove();
+                    }
+                }
+                
+                // Update count
+                this.loadNotifications();
+                
+                this.showToast('Notification marked as read', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to mark notification as read:', error);
+            this.showToast('Failed to mark notification as read', 'error');
+        }
+    }
+    
+    async markAllAsRead() {
+        try {
+            const response = await fetch('/notifications/mark-all-read', {
+                method: 'PATCH',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.loadNotifications();
+                this.showToast('All notifications marked as read', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to mark all notifications as read:', error);
+            this.showToast('Failed to mark all notifications as read', 'error');
+        }
+    }
+    
+    startPolling() {
+        if (this.isPolling) return;
+        
+        this.isPolling = true;
+        setInterval(() => {
+            this.loadNotifications();
+        }, this.pollInterval);
+    }
+    
+    bindEvents() {
+        // Mark all as read button
+        const markAllBtn = document.getElementById('mark-all-notifications-read');
+        if (markAllBtn) {
+            markAllBtn.addEventListener('click', () => this.markAllAsRead());
+        }
+        
+        // Refresh notifications button
+        const refreshBtn = document.getElementById('refresh-notifications');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadNotifications());
+        }
+    }
+    
+    getIconClass(type) {
+        const icons = {
+            'job_assigned': 'user-plus',
+            'job_completed': 'check-circle',
+            'job_cancelled': 'times-circle',
+            'job_created': 'plus-circle',
+            'status_changed': 'exchange-alt',
+            'default': 'bell'
+        };
+        
+        return icons[type] || icons.default;
+    }
+    
+    getPriorityClass(priority) {
+        const classes = {
+            'high': 'priority-high',
+            'medium': 'priority-medium',
+            'low': 'priority-low',
+            'urgent': 'priority-urgent'
+        };
+        
+        return classes[priority] || 'priority-normal';
+    }
+    
+    showToast(message, type = 'info') {
+        // Use your existing toast notification system
+        if (typeof showToast === 'function') {
+            showToast(message, type);
+        } else {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+    }
+}
+
+// Initialize notification manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    window.notificationManager = new NotificationManager();
+});
     </script>
 
     @stack('scripts')

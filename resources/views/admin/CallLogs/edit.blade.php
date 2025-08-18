@@ -16,7 +16,15 @@
                     <i class="fas fa-file-text me-1"></i>
                     {{ $callLog->job_card ?? 'TBD-' . $callLog->id }}
                 </span>
-                <small class="text-muted">Modify job card details and status</small>
+                <small class="text-muted">
+                    @if($canEditBasicInfo)
+                        Full edit access
+                    @elseif($canEditEngineering)
+                        Engineering updates only
+                    @else
+                        View only
+                    @endif
+                </small>
             </div>
         </div>
         <div class="header-actions">
@@ -69,7 +77,13 @@
                     <i class="fas fa-clipboard-list me-2"></i>
                     Edit Job Card Details
                 </h4>
-                <p class="card-subtitle mb-0">Update job information and status</p>
+                <p class="card-subtitle mb-0">
+                    @if($callLog->assigned_to && $callLog->assigned_to !== auth()->id() && !in_array(auth()->user()->role, ['admin', 'accounts', 'manager']))
+                        This job is assigned to {{ $callLog->assignedTo?->name ?? 'another user' }} - you can only view details
+                    @else
+                        Update job information and status
+                    @endif
+                </p>
             </div>
             <div class="header-actions">
                 <span class="status-badge {{ strtolower(str_replace('_', '-', $callLog->status)) }}">
@@ -85,12 +99,53 @@
                 @method('PUT')
                 
                 @php
-                    $isEngineer = $callLog->assigned_to === auth()->id() && in_array(auth()->user()->role, ['technician', 'manager']);
+                    $isAssignedEngineer = $callLog->assigned_to === auth()->id();
                     $isAdmin = in_array(auth()->user()->role, ['admin', 'accounts']);
+                    $isManager = auth()->user()->role === 'manager';
+                    $canEditAll = $isAdmin || $isManager;
+                    $canEditEngineering = $isAssignedEngineer && in_array(auth()->user()->role, ['technician', 'manager']);
                 @endphp
 
-                @if($isEngineer && !$isAdmin)
-                    {{-- Engineer View - Limited Fields --}}
+                @if(!$canEditAll && !$canEditEngineering)
+                    {{-- View Only - Not assigned and not admin/manager --}}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        You can only view this job's details as it's not assigned to you.
+                    </div>
+                    <div class="form-wizard">
+                        <div class="form-section mb-4">
+                            <h6 class="section-title">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Job Information (View Only)
+                            </h6>
+                            {{-- Read-only view of all fields --}}
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Customer Name</label>
+                                    <input type="text" class="form-control" value="{{ $callLog->customer_name }}" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Customer Email</label>
+                                    <input type="text" class="form-control" value="{{ $callLog->customer_email ?? 'N/A' }}" readonly>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Fault Description</label>
+                                    <textarea class="form-control" rows="3" readonly>{{ $callLog->fault_description }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <input type="text" class="form-control" value="{{ ucfirst(str_replace('_', ' ', $callLog->status)) }}" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Assigned To</label>
+                                    <input type="text" class="form-control" value="{{ $callLog->assignedTo?->name ?? 'Unassigned' }}" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                @elseif($canEditEngineering && !$canEditAll)
+                    {{-- Engineer View - Limited to engineering fields --}}
                     <div class="form-wizard">
                         {{-- Read-only Customer Info --}}
                         <div class="form-section mb-4">
@@ -151,7 +206,6 @@
                                     <label for="status" class="form-label">Job Status *</label>
                                     <select class="form-select @error('status') is-invalid @enderror" 
                                             id="status" name="status" required>
-                                        <option value="pending" @selected(old('status', $callLog->status) == 'pending')>Pending</option>
                                         <option value="assigned" @selected(old('status', $callLog->status) == 'assigned')>Assigned</option>
                                         <option value="in_progress" @selected(old('status', $callLog->status) == 'in_progress')>In Progress</option>
                                         <option value="complete" @selected(old('status', $callLog->status) == 'complete')>Complete</option>
@@ -259,13 +313,13 @@
                     </div>
 
                 @else
-                    {{-- Admin/Accounts View - Full Access --}}
+                    {{-- Manager/Admin View - Full Access with different permissions for basic info --}}
                     <div class="form-wizard">
                         {{-- Customer Information --}}
                         <div class="form-section mb-4">
                             <h6 class="section-title">
                                 <i class="fas fa-user me-2"></i>
-                                Customer Information
+                                Customer Information @if($isManager && !$isAdmin)<small class="text-muted">(Limited Edit)</small>@endif
                             </h6>
                             
                             <div class="row g-3 mt-2">
@@ -288,6 +342,7 @@
                                            id="customer_name" 
                                            name="customer_name" 
                                            value="{{ old('customer_name', $callLog->customer_name) }}" 
+                                           {{ $isManager && !$isAdmin ? 'readonly' : '' }}
                                            required>
                                     @error('customer_name')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -301,6 +356,7 @@
                                            id="customer_email" 
                                            name="customer_email" 
                                            value="{{ old('customer_email', $callLog->customer_email) }}" 
+                                           {{ $isManager && !$isAdmin ? 'readonly' : '' }}
                                            required>
                                     @error('customer_email')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -313,7 +369,8 @@
                                            class="form-control @error('customer_phone') is-invalid @enderror" 
                                            id="customer_phone" 
                                            name="customer_phone" 
-                                           value="{{ old('customer_phone', $callLog->customer_phone) }}">
+                                           value="{{ old('customer_phone', $callLog->customer_phone) }}"
+                                           {{ $isManager && !$isAdmin ? 'readonly' : '' }}>
                                     @error('customer_phone')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -325,7 +382,8 @@
                                            class="form-control @error('customer_address') is-invalid @enderror" 
                                            id="customer_address" 
                                            name="customer_address" 
-                                           value="{{ old('customer_address', $callLog->customer_address) }}">
+                                           value="{{ old('customer_address', $callLog->customer_address) }}"
+                                           {{ $isManager && !$isAdmin ? 'readonly' : '' }}>
                                     @error('customer_address')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -421,7 +479,7 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label for="amount_charged" class="form-label">Amount Charged *</label>
+                                    <label for="amount_charged" class="form-label">Amount Charged * @if($isManager && !$isAdmin)<small class="text-muted">(Read Only)</small>@endif</label>
                                     <div class="input-group">
                                         <span class="input-group-text">$</span>
                                         <input type="number" 
@@ -431,6 +489,7 @@
                                                value="{{ old('amount_charged', $callLog->amount_charged) }}" 
                                                step="0.01" 
                                                min="0" 
+                                               {{ $isManager && !$isAdmin ? 'readonly' : '' }}
                                                required>
                                     </div>
                                     @error('amount_charged')
@@ -526,6 +585,7 @@
                 @endif
 
                 {{-- Form Actions --}}
+                @if($canEditAll || $canEditEngineering)
                 <div class="form-actions mt-4 pt-3 border-top">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="action-buttons">
@@ -546,6 +606,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
             </form>
         </div>
     </div>
@@ -725,6 +786,12 @@
     outline: none;
 }
 
+/* Read-only styling */
+.form-control[readonly] {
+    background-color: var(--gray-100);
+    opacity: 0.7;
+}
+
 /* INPUT GROUPS */
 .input-group-text {
     background: var(--gray-50);
@@ -817,6 +884,12 @@
 .alert-danger {
     background: #FEE2E2;
     color: #991B1B;
+}
+
+.alert-info {
+    background: #E0F2FE;
+    color: #0C4A6E;
+    border: 1px solid #7DD3FC;
 }
 
 /* INVALID FEEDBACK */
